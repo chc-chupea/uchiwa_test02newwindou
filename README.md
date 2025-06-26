@@ -1,0 +1,2 @@
+# uchiwa_test02newwindou
+うちわ作成用保存画像が新しいウィンドウで開きます
