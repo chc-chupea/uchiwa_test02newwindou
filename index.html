@@ -236,7 +236,7 @@
         const imageUpload = document.getElementById('imageUpload');
         const uploadOption = document.getElementById('uploadOption');
         const undoButton = document.getElementById('undoButton');
-        const redoButton = document = document.getElementById('redoButton'); // Corrected typo here, but it seems intentional double assignment.
+        const redoButton = document.getElementById('redoButton'); // Fixed typo here
         const duplicateButton = document.getElementById('duplicateButton');
         const deleteButton = document.getElementById('deleteButton');
         const bringToFrontButton = document.getElementById('bringToFrontButton');
@@ -258,8 +258,8 @@
         let dragOffsetX, dragOffsetY; // ドラッグ開始時のオフセット
 
         // タッチ操作用の変数
-        let lastTouchDist = null; // 2本指間の初期距離
-        let initialTouchAngle = null; // 2本指間の初期角度
+        let startTouchDist = null; // 2本指間の初期距離 (ジェスチャー開始時のみ設定)
+        let initialTouchAngle = null; // 2本指間の初期角度 (ジェスチャー開始時のみ設定)
         let currentDecoInitialRotation = 0; // タッチ操作開始時のデコレーションの回転角度
         let currentDecoInitialWidth = 0; // タッチ操作開始時のデコレーションの幅
         let currentDecoInitialHeight = 0; // タッチ操作開始時のデコレーションの高さ
@@ -1034,18 +1034,6 @@
 
             let clickedElement = null; // クリックされた要素（デコレーションまたは背景画像）
 
-            // 履歴を保存する前に、現在のselectedDecorationの初期状態を保存
-            if (selectedDecoration) {
-                currentDecoInitialRotation = selectedDecoration.rotation || 0;
-                if (selectedDecoration.type === 'text' || selectedDecoration.type === 'emoji') {
-                    currentDecoInitialSize = selectedDecoration.size;
-                } else {
-                    currentDecoInitialWidth = selectedDecoration.width;
-                    currentDecoInitialHeight = selectedDecoration.height;
-                }
-            }
-
-
             // 1. デコレーションのヒットテスト (手前から奥へ)
             for (let i = decorations.length - 1; i >= 0; i--) { 
                 const deco = decorations[i];
@@ -1120,7 +1108,9 @@
 
             if (distToRotateHandle < handleRadius) {
                 interactionState = { type: 'rotate' };
-                startAngle = getAngle({ x: selectedDecoration.x, y: selectedDecoration.y }, pos);
+                // startAngle は、回転ハンドルのドラッグ開始時のみ必要
+                // selectedDecoration の中心とクリック位置を結ぶ角度
+                startAngle = getAngle({ x: selectedDecoration.x, y: selectedDecoration.y }, pos); 
                 photoCanvas.style.cursor = 'crosshair';
                 console.log("ROTATION HANDLE DETECTED!");
                 setupInteractionListeners();
@@ -1153,8 +1143,18 @@
                 // 2本指タッチの場合、拡大縮小・回転ジェスチャーを開始
                 const touch1 = getTouchPos(e.touches[0]);
                 const touch2 = getTouchPos(e.touches[1]);
-                lastTouchDist = getDistance(touch1, touch2);
-                initialTouchAngle = getAngle(touch1, touch2);
+                startTouchDist = getDistance(touch1, touch2); // ジェスチャー開始時の距離を保存
+                initialTouchAngle = getAngle(touch1, touch2); // ジェスチャー開始時の角度を保存
+                
+                // デコレーションの初期状態を保存 (相対的な変化計算のため)
+                currentDecoInitialRotation = selectedDecoration.rotation || 0;
+                if (selectedDecoration.type === 'text' || selectedDecoration.type === 'emoji') {
+                    currentDecoInitialSize = selectedDecoration.size;
+                } else {
+                    currentDecoInitialWidth = selectedDecoration.width;
+                    currentDecoInitialHeight = selectedDecoration.height;
+                }
+
                 interactionState = { type: 'multi-touch' }; // 新しいインタラクション状態
 
             } else {
@@ -1189,7 +1189,7 @@
             e.preventDefault();
             if (!selectedDecoration) return; // selectedDecorationがnullの場合、処理を停止
 
-            const pos = getEventPos(e);
+            const pos = getEventPos(e); // 現在のマウス/タッチ位置 (Canvas座標系)
             const currentX = pos.x;
             const currentY = pos.y;
             let target = selectedDecoration; // selectedDecorationを操作対象とする
@@ -1200,13 +1200,13 @@
             } else if (interactionState.type === 'resize') {
                 const centerX = target.x;
                 const centerY = target.y;
-                let currentBounds = getDecorationBounds(target); 
+                // currentBoundsは使わない。常に最初のタップ位置と現在の位置でスケールファクターを計算
                 const currentDist = getDistance({x: centerX, y: centerY}, {x: currentX, y: currentY});
                 const initialDist = getDistance({x: centerX, y: centerY}, {x: startX, y: startY});
 
                 if (initialDist === 0) return;
 
-                const scaleFactor = currentDist / initialDist;
+                const scaleFactor = currentDist / initialDist; // 最初のタップからのスケール変化率
                 
                 if (target.type === 'text' || target.type === 'emoji') {
                     target.size = currentDecoInitialSize * scaleFactor;
@@ -1217,36 +1217,35 @@
 
             } else if (interactionState.type === 'rotate') {
                 const currentAngle = getAngle({ x: target.x, y: target.y }, pos);
-                const deltaAngle = currentAngle - startAngle;
-                target.rotation = (target.rotation || 0) + deltaAngle;
-                startAngle = currentAngle; // 次のフレームのために角度を更新
+                const deltaAngle = currentAngle - startAngle; // 開始角度からの変化量
+                target.rotation = currentDecoInitialRotation + deltaAngle; // 初期回転角度に変化量を加算
+                // startAngle はここでは更新しない。常にジェスチャー開始時を基準とするため。
                 console.log(`[回転] Current Angle: ${(currentAngle * 180 / Math.PI).toFixed(2)} deg, Delta: ${(deltaAngle * 180 / Math.PI).toFixed(2)} deg, New Rotation: ${(target.rotation * 180 / Math.PI).toFixed(2)} deg`);
             } else if (interactionState.type === 'multi-touch' && e.touches && e.touches.length === 2) {
                 const touch1 = getTouchPos(e.touches[0]);
                 const touch2 = getTouchPos(e.touches[1]);
                 const newDist = getDistance(touch1, touch2);
-                const newAngle = getAngle(touch1, touch2);
+                const currentAngle = getAngle(touch1, touch2);
 
-                // スケーリング
-                if (lastTouchDist !== null) {
-                    const scaleChange = newDist / lastTouchDist;
+                // スケーリング (ジェスチャー開始時の距離を基準に計算)
+                if (startTouchDist !== null && startTouchDist !== 0) { // startTouchDistが0でないことを確認
+                    const scaleFactor = newDist / startTouchDist;
                     if (target.type === 'text' || target.type === 'emoji') {
-                        target.size = currentDecoInitialSize * scaleChange;
+                        target.size = currentDecoInitialSize * scaleFactor;
                     } else {
-                        target.width = currentDecoInitialWidth * scaleChange;
-                        target.height = currentDecoInitialHeight * scaleChange;
+                        target.width = currentDecoInitialWidth * scaleFactor;
+                        target.height = currentDecoInitialHeight * scaleFactor;
                     }
                 }
 
-                // 回転
+                // 回転 (ジェスチャー開始時の角度を基準に計算)
                 if (initialTouchAngle !== null) {
-                    const angleChange = newAngle - initialTouchAngle;
+                    const angleChange = currentAngle - initialTouchAngle;
                     target.rotation = currentDecoInitialRotation + angleChange;
                 }
                 
-                // 次のフレームのために現在の距離と角度を更新
-                lastTouchDist = newDist;
-                initialTouchAngle = newAngle; 
+                // `lastTouchDist` や `initialTouchAngle` をここで更新しない
+                // これらはジェスチャー開始時の基準点として保持されるべき
             }
             drawCanvas();
             updateButtonStates();
@@ -1254,7 +1253,7 @@
 
         function endInteraction() {
             // タッチジェスチャーの変数をリセット
-            lastTouchDist = null;
+            startTouchDist = null; // lastTouchDist の代わりに startTouchDist をリセット
             initialTouchAngle = null;
             currentDecoInitialRotation = 0;
             currentDecoInitialWidth = 0;
