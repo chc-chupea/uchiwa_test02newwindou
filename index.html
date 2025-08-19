@@ -177,7 +177,7 @@
             </div>
 
             <div class="w-full mt-6">
-                <h3 class="text-xl font-medium mb-3 text-gray-700">😄 絵文字を追加</h3>
+                <h3 class="text-xl font-medium mb-3 text-gray-700">� 絵文字を追加</h3>
                 <div id="emojiContainer" class="flex flex-wrap gap-2 justify-center">
                     <!-- 絵文字はJavaScriptで動的に追加されます -->
                 </div>
@@ -227,7 +227,7 @@
         const textColorPicker = document.getElementById('textColorPicker');
         const fontSizeSelect = document.getElementById('fontSizeSelect');
         const fontFamilySelect = document.getElementById('fontFamilySelect');
-        const outlineColorPicker = document = document.getElementById('outlineColorPicker');
+        const outlineColorPicker = document.getElementById('outlineColorPicker'); // Fixed typo here
         const outlineWidthInput = document.getElementById('outlineWidthInput');
         const addTextButton = document.getElementById('addTextButton');
         const emojiContainer = document.getElementById('emojiContainer');
@@ -965,7 +965,7 @@
                     type: 'text',
                     content: text,
                     color: color,
-                    size: fontSize,
+                    size: 200, // 初期フォントサイズを大きく設定
                     fontFamily: fontFamily,
                     outlineColor: outlineColor,
                     outlineWidth: outlineWidth,
@@ -985,7 +985,7 @@
                 id: crypto.randomUUID(),
                 type: 'emoji',
                 content: emoji,
-                size: 100,
+                size: 200, // 初期絵文字サイズを大きく設定
                 x: photoCanvas.width / 2 + (Math.random() - 0.5) * 200,
                 y: photoCanvas.height / 2 + (Math.random() - 0.5) * 200,
                 rotation: 0,
@@ -999,7 +999,7 @@
             const img = new Image();
             img.src = url;
             img.onload = () => {
-                const stickerWidth = 200;
+                const stickerWidth = 400; // 初期スタンプ幅を大きく設定
                 const stickerHeight = (img.naturalHeight / img.naturalWidth) * stickerWidth;
                 decorations.push({
                     id: crypto.randomUUID(),
