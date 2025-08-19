@@ -297,14 +297,16 @@
             'https://placehold.co/100x100/99ff99/000000?text=🌸'
         ];
 
-        const EMOJIS = ['😊', '😄', '😂', '👍', '❤️', '🌟', '🎉', '🎶'];
+        const EMOJIS = ['😊', '😄', '�', '👍', '❤️', '🌟', '🎉', '🎶'];
 
         // プルダウンメニューに表示するフォントサイズのオプション
         const FONT_SIZES = [48, 72, 96, 120];
 
         // 操作ハンドルのサイズを元のサイズに近く、見やすいサイズに調整
-        const HANDLE_SIZE = 120; 
-        const ROTATE_HANDLE_OFFSET = 150; 
+        const HANDLE_SIZE_CANVAS_UNITS = 120; // Canvas座標系でのハンドルの基本サイズ
+        const ROTATE_HANDLE_OFFSET_CANVAS_UNITS = 150; // Canvas座標系での回転ハンドルのオフセット
+        // 選択可能領域に追加するタップバッファ (画面ピクセル単位)
+        const SELECTION_TAP_BUFFER_PX = 40; 
 
         // --- 履歴の状態を保存する関数 ---
         function saveState() {
@@ -853,7 +855,10 @@
                 ctx.strokeStyle = '#fff';
                 ctx.lineWidth = 2 / globalCanvasZoom; // ズームレベルに応じて線の太さを調整
 
-                const handleRadius = HANDLE_SIZE / 2;
+                // ハンドルのサイズを画面上で一定に保つ
+                const visibleHandleSize = HANDLE_SIZE_CANVAS_UNITS / globalCanvasZoom;
+                const visibleHandleRadius = visibleHandleSize / 2;
+                const visibleRotateHandleOffset = ROTATE_HANDLE_OFFSET_CANVAS_UNITS / globalCanvasZoom;
 
                 // リサイズハンドル (4隅の四角形と矢印)
                 const resizeHandlesData = [
@@ -864,12 +869,12 @@
                 ];
 
                 resizeHandlesData.forEach(handle => {
-                    ctx.fillRect(handle.x - handleRadius, handle.y - handleRadius, HANDLE_SIZE, HANDLE_SIZE);
-                    ctx.strokeRect(handle.x - handleRadius, handle.y - handleRadius, HANDLE_SIZE, HANDLE_SIZE);
+                    ctx.fillRect(handle.x - visibleHandleRadius, handle.y - visibleHandleRadius, visibleHandleSize, visibleHandleSize);
+                    ctx.strokeRect(handle.x - visibleHandleRadius, handle.y - visibleHandleRadius, visibleHandleSize, visibleHandleSize);
 
                     ctx.fillStyle = '#333';
-                    const arrowSize = HANDLE_SIZE * 0.4;
-                    const arrowOffset = HANDLE_SIZE * 0.3;
+                    const arrowSize = visibleHandleSize * 0.4;
+                    const arrowOffset = visibleHandleSize * 0.3;
 
                     ctx.beginPath();
                     if (handle.type === 'nw') {
@@ -896,12 +901,12 @@
 
                 // 回転ハンドル (上中央の円形ハンドルと回転アイコン)
                 const rotateHandleCenterX = 0;
-                const rotateHandleCenterY = -targetHeight / 2 - ROTATE_HANDLE_OFFSET;
+                const rotateHandleCenterY = -targetHeight / 2 - visibleRotateHandleOffset;
 
                 // 回転ハンドルのみ色を変更
                 ctx.fillStyle = '#ef4444'; // 赤色
                 ctx.beginPath();
-                ctx.arc(rotateHandleCenterX, rotateHandleCenterY, handleRadius, 0, Math.PI * 2);
+                ctx.arc(rotateHandleCenterX, rotateHandleCenterY, visibleHandleRadius, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.stroke();
 
@@ -909,7 +914,7 @@
                 ctx.lineWidth = 3 / globalCanvasZoom; // ズームレベルに応じて線の太さを調整
                 ctx.lineCap = 'round';
 
-                const iconRadius = handleRadius * 0.5;
+                const iconRadius = visibleHandleRadius * 0.5;
 
                 ctx.beginPath();
                 ctx.arc(rotateHandleCenterX, rotateHandleCenterY, iconRadius, Math.PI * 0.9, Math.PI * -0.1, true);
@@ -918,7 +923,7 @@
                 const endX1 = rotateHandleCenterX + iconRadius * Math.cos(endAngle1);
                 const endY1 = rotateHandleCenterY + iconRadius * Math.sin(endAngle1);
                 const tangentAngle1 = endAngle1 + Math.PI / 2;
-                drawArrowhead(ctx, endX1, endY1, tangentAngle1, 10, 6);
+                drawArrowhead(ctx, endX1, endY1, tangentAngle1, 10 / globalCanvasZoom, 6 / globalCanvasZoom);
 
                 ctx.beginPath();
                 ctx.arc(rotateHandleCenterX, rotateHandleCenterY, iconRadius, Math.PI * -0.1, Math.PI * 0.9, true);
@@ -927,7 +932,7 @@
                 const endX2 = rotateHandleCenterX + iconRadius * Math.cos(endAngle2);
                 const endY2 = rotateHandleCenterY + iconRadius * Math.sin(endAngle2);
                 const tangentAngle2 = endAngle2 + Math.PI / 2;
-                drawArrowhead(ctx, endX2, endY2, tangentAngle2, 10, 6);
+                drawArrowhead(ctx, endX2, endY2, tangentAngle2, 10 / globalCanvasZoom, 6 / globalCanvasZoom);
 
                 ctx.lineCap = 'butt';
 
@@ -1017,12 +1022,12 @@
         // スクリーン座標をCanvas内部座標（グローバル変換考慮済み）に変換する
         function getCanvasCoords(clientX, clientY) {
             const rect = photoCanvas.getBoundingClientRect();
-            const scaleX = photoCanvas.width / rect.width;
-            const scaleY = photoCanvas.height / rect.height;
+            const scaleX_DOM = photoCanvas.width / rect.width;
+            const scaleY_DOM = photoCanvas.height / rect.height;
 
             // スクリーン座標をHTML要素内のピクセル座標に変換
-            const elementX = (clientX - rect.left) * scaleX;
-            const elementY = (clientY - rect.top) * scaleY;
+            const elementX = (clientX - rect.left) * scaleX_DOM;
+            const elementY = (clientY - rect.top) * scaleY_DOM;
 
             // グローバルなパンとズームを考慮して、デコレーションが配置されている座標系に変換
             const canvasX = (elementX - globalCanvasPanX) / globalCanvasZoom;
@@ -1067,23 +1072,14 @@
 
         function startInteraction(e) {
             e.preventDefault();
-            const currentCanvasPos = getEventCanvasPos(e); // グローバル変換考慮後のCanvas座標
-            startX = currentCanvasPos.x; // シングルタッチ/マウス操作の開始点
+            const currentCanvasPos = getEventCanvasPos(e); 
+            startX = currentCanvasPos.x; 
             startY = currentCanvasPos.y;
 
-            let clickedElement = null; // クリックされた要素（デコレーションまたは背景画像）
+            let clickedElement = null; 
 
-            // 履歴を保存する前に、現在のselectedDecorationの初期状態を保存
-            if (selectedDecoration) {
-                currentDecoInitialRotation = selectedDecoration.rotation || 0;
-                if (selectedDecoration.type === 'text' || selectedDecoration.type === 'emoji') {
-                    currentDecoInitialSize = selectedDecoration.size;
-                } else {
-                    currentDecoInitialWidth = selectedDecoration.width;
-                    currentDecoInitialHeight = selectedDecoration.height;
-                }
-            }
-
+            // ** 選択可能領域に追加するタップバッファ (Canvas単位) **
+            const effectiveSelectionPaddingCanvasUnits = SELECTION_TAP_BUFFER_PX / globalCanvasZoom;
 
             // 1. デコレーションのヒットテスト (手前から奥へ)
             for (let i = decorations.length - 1; i >= 0; i--) { 
@@ -1095,9 +1091,9 @@
                 const localClickX = Math.cos(inverseRotation) * (currentCanvasPos.x - deco.x) - Math.sin(inverseRotation) * (currentCanvasPos.y - deco.y);
                 const localClickY = Math.sin(inverseRotation) * (currentCanvasPos.x - deco.x) + Math.cos(inverseRotation) * (currentCanvasPos.y - deco.y);
 
-                // ローカル座標でバウンディングボックス内にあるか判定
-                if (localClickX >= -decoBounds.width / 2 && localClickX <= decoBounds.width / 2 &&
-                    localClickY >= -decoBounds.height / 2 && localClickY <= decoBounds.height / 2) {
+                // ローカル座標でバウンディングボックス + タップバッファ内にあるか判定
+                if (localClickX >= -decoBounds.width / 2 - effectiveSelectionPaddingCanvasUnits && localClickX <= decoBounds.width / 2 + effectiveSelectionPaddingCanvasUnits &&
+                    localClickY >= -decoBounds.height / 2 - effectiveSelectionPaddingCanvasUnits && localClickY <= decoBounds.height / 2 + effectiveSelectionPaddingCanvasUnits) {
                     clickedElement = deco;
                     break; 
                 }
@@ -1110,8 +1106,9 @@
                 const localClickX = Math.cos(inverseRotation) * (currentCanvasPos.x - backgroundImage.x) - Math.sin(inverseRotation) * (currentCanvasPos.y - backgroundImage.y);
                 const localClickY = Math.sin(inverseRotation) * (currentCanvasPos.x - backgroundImage.x) + Math.cos(inverseRotation) * (currentCanvasPos.y - backgroundImage.y);
 
-                if (localClickX >= -bgBounds.width / 2 && localClickX <= bgBounds.width / 2 &&
-                    localClickY >= -bgBounds.height / 2 && localClickY <= bgBounds.height / 2) {
+                // 背景画像もタップバッファを考慮
+                if (localClickX >= -bgBounds.width / 2 - effectiveSelectionPaddingCanvasUnits && localClickX <= bgBounds.width / 2 + effectiveSelectionPaddingCanvasUnits &&
+                    localClickY >= -bgBounds.height / 2 - effectiveSelectionPaddingCanvasUnits && localClickY <= bgBounds.height / 2 + effectiveSelectionPaddingCanvasUnits) {
                     clickedElement = backgroundImage;
                 }
             }
@@ -1123,11 +1120,11 @@
                     decorations = decorations.filter(d => d.id !== selectedDecoration.id);
                     decorations.push(selectedDecoration);
                 }
-                drawCanvas(); // 選択状態を反映して描画
+                drawCanvas(); 
             } else {
                 // 何もヒットしなかった場合は、選択解除
                 selectedDecoration = null;
-                drawCanvas(); // 選択解除を反映して描画
+                drawCanvas(); 
             }
             updateButtonStates();
 
@@ -1137,7 +1134,8 @@
             
             if (selectedDecoration) {
                 let targetBounds = getDecorationBounds(selectedDecoration);
-                const handleRadius = HANDLE_SIZE / 2 / globalCanvasZoom; // ハンドルサイズもズームを考慮
+                // ** ハンドルのヒットテスト半径もズームを考慮して調整 **
+                const handleRadiusForHitTest = (HANDLE_SIZE_CANVAS_UNITS / 2) / globalCanvasZoom; 
 
                 // クリック位置を選択された要素のローカル（未回転）座標系に変換
                 const inverseRotationOfSelected = -(selectedDecoration.rotation || 0);
@@ -1146,13 +1144,12 @@
 
                 // 3.1 回転ハンドルのヒットテスト
                 const rotateHandleLocalX = 0;
-                const rotateHandleLocalY = -targetBounds.height / 2 - ROTATE_HANDLE_OFFSET;
+                const rotateHandleLocalY = -targetBounds.height / 2 - ROTATE_HANDLE_OFFSET_CANVAS_UNITS;
                 const distToRotateHandle = getDistance({x: localClickX, y: localClickY}, {x: rotateHandleLocalX, y: rotateHandleLocalY});
 
-                if (distToRotateHandle < handleRadius) {
+                if (distToRotateHandle < handleRadiusForHitTest) {
                     interactionState = { type: 'rotate' };
-                    // startAngle は、回転ハンドルのドラッグ開始時のみ必要
-                    // selectedDecoration の中心とクリック位置を結ぶ角度
+                    currentDecoInitialRotation = selectedDecoration.rotation || 0; // 回転開始時のデコレーションの回転角度を保存
                     startAngle = getAngle({ x: selectedDecoration.x, y: selectedDecoration.y }, currentCanvasPos); 
                     photoCanvas.style.cursor = 'crosshair';
                     setupInteractionListeners();
@@ -1168,8 +1165,15 @@
                 ];
                 for (let handleData of resizeHandlesData) {
                     const dist = getDistance({x: localClickX, y: localClickY}, {x: handleData.x, y: handleData.y});
-                    if (dist < handleRadius) {
+                    if (dist < handleRadiusForHitTest) {
                         interactionState = { type: 'resize', handle: handleData.type };
+                        // リサイズ開始時のデコレーションの初期状態を保存
+                        if (selectedDecoration.type === 'text' || selectedDecoration.type === 'emoji') {
+                            currentDecoInitialSize = selectedDecoration.size;
+                        } else {
+                            currentDecoInitialWidth = selectedDecoration.width;
+                            currentDecoInitialHeight = selectedDecoration.height;
+                        }
                         photoCanvas.style.cursor = handleData.cursor;
                         setupInteractionListeners();
                         return;
@@ -1182,13 +1186,23 @@
                     const touch2 = getCanvasCoords(e.touches[1].clientX, e.touches[1].clientY);
                     startTouchDist = getDistance(touch1, touch2); 
                     initialTouchAngle = getAngle(touch1, touch2); 
+                    
+                    // デコレーションの初期状態を保存 (相対的な変化計算のため)
+                    currentDecoInitialRotation = selectedDecoration.rotation || 0;
+                    if (selectedDecoration.type === 'text' || selectedDecoration.type === 'emoji') {
+                        currentDecoInitialSize = selectedDecoration.size;
+                    } else {
+                        currentDecoInitialWidth = selectedDecoration.width;
+                        currentDecoInitialHeight = selectedDecoration.height;
+                    }
+
                     interactionState = { type: 'multi-touch-decoration' }; 
                     setupInteractionListeners();
                     return;
                 }
                 
                 // 3.4 デコレーションがヒットしており、1本指タッチまたはマウスの場合、デコレーションのドラッグ操作
-                if (clickedElement) {
+                if (clickedElement) { // clickedElementがselectedDecorationと同じであることを確認済み
                     interactionState = { type: 'drag' };
                     dragOffsetX = currentCanvasPos.x - selectedDecoration.x;
                     dragOffsetY = currentCanvasPos.y - selectedDecoration.y;
@@ -1217,18 +1231,16 @@
                 // 3.6 1本指タッチまたはマウスの場合、Canvas全体のパン操作
                 if (e.buttons === 1 || (e.touches && e.touches.length === 1)) {
                     interactionState = { type: 'global-pan' };
-                    initialGlobalPanX = globalCanvasPanX; // 現在のパン値を初期値として保存
+                    initialGlobalPanX = globalCanvasPanX; 
                     initialGlobalPanY = globalCanvasPanY;
-                    // startX, startY は既にCanvas座標で設定済み
                     photoCanvas.style.cursor = 'grabbing';
                     setupInteractionListeners();
                     return;
                 }
             }
-            // どの操作にも当てはまらない場合（例：選択中でない状態で単にクリックしただけ）
+            // どの操作にも当てはまらない場合
             interactionState = { type: 'none', handle: null };
-            photoCanvas.style.cursor = 'grab'; // カーソルをリセット
-            // リスナーはすでに設定されているので、ここで何もしない
+            photoCanvas.style.cursor = 'grab'; 
         }
 
         function setupInteractionListeners() {
@@ -1249,12 +1261,12 @@
 
         function handleInteraction(e) {
             e.preventDefault();
-            const currentCanvasPos = getEventCanvasPos(e); // 現在のマウス/タッチ位置 (Canvas座標系)
+            const currentCanvasPos = getEventCanvasPos(e); 
             
-            let target = selectedDecoration; // selectedDecorationを操作対象とする
+            let target = selectedDecoration; 
 
             if (interactionState.type === 'drag') {
-                if (!target) return; // targetがnullの場合は処理しない
+                if (!target) return; 
                 target.x = currentCanvasPos.x - dragOffsetX;
                 target.y = currentCanvasPos.y - dragOffsetY;
             } else if (interactionState.type === 'resize') {
@@ -1305,33 +1317,49 @@
                 }
             } else if (interactionState.type === 'global-pan') {
                 // Canvas全体のパン
-                const deltaX_canvas = currentCanvasPos.x - startX;
-                const deltaY_canvas = currentCanvasPos.y - startY;
-                globalCanvasPanX = initialGlobalPanX + deltaX_canvas * globalCanvasZoom; // スケールを考慮してパン
-                globalCanvasPanY = initialGlobalPanY + deltaY_canvas * globalCanvasZoom; // スケールを考慮してパン
+                // スクリーン座標系の移動量で計算し、最後に現在のズームレベルで割ってCanvas座標に変換
+                const rect = photoCanvas.getBoundingClientRect();
+                const scaleX_DOM = photoCanvas.width / rect.width;
+                const scaleY_DOM = photoCanvas.height / rect.height;
+
+                const currentClientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+                const currentClientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+
+                const deltaX_screen = (currentClientX - e.screenX_at_start) * scaleX_DOM; // e.screenX_at_startはmousedown/touchstart時に設定する
+                const deltaY_screen = (currentClientY - e.screenY_at_start) * scaleY_DOM;
+
+                globalCanvasPanX = initialGlobalPanX + deltaX_screen;
+                globalCanvasPanY = initialGlobalPanY + deltaY_screen;
 
             } else if (interactionState.type === 'global-multi-touch' && e.touches && e.touches.length === 2) {
                 // Canvas全体のズームとパン
                 const touch1 = getCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
                 const touch2 = getCanvasCoords(e.touches[1].clientX, e.touches[1].clientY);
                 const newDist = getDistance(touch1, touch2);
-                const currentMidpoint = getTwoFingerMidpoint(e.touches); // スクリーン座標での中間点
+                const currentMidpoint = getTwoFingerMidpoint(e.touches); 
 
                 // ズーム
                 if (startTouchDist !== null && startTouchDist !== 0) {
                     const scaleFactor = newDist / startTouchDist;
                     globalCanvasZoom = initialGlobalZoom * scaleFactor;
-                    globalCanvasZoom = Math.max(0.1, Math.min(5, globalCanvasZoom)); // ズーム範囲を制限
+                    globalCanvasZoom = Math.max(0.1, Math.min(5, globalCanvasZoom)); 
                 }
 
                 // パン (中間点の移動量と現在のズームを考慮)
                 if (currentMidpoint && startTouchMidpoint) {
-                    const deltaX_screen = currentMidpoint.x - startTouchMidpoint.x;
-                    const deltaY_screen = currentMidpoint.y - startTouchMidpoint.y;
+                    // スクリーン座標での移動量
+                    const rect = photoCanvas.getBoundingClientRect();
+                    const scaleX_DOM = photoCanvas.width / rect.width;
+                    const scaleY_DOM = photoCanvas.height / rect.height;
+
+                    const clientMidX_current = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                    const clientMidY_current = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                    const clientMidX_start = (e.touches_start[0].clientX + e.touches_start[1].clientX) / 2; // タッチ開始時の中間点クライアント座標
+                    const clientMidY_start = (e.touches_start[0].clientY + e.touches_start[1].clientY) / 2;
+
+                    const deltaX_screen = (clientMidX_current - clientMidX_start) * scaleX_DOM;
+                    const deltaY_screen = (clientMidY_current - clientMidY_start) * scaleY_DOM;
                     
-                    // ここでのパンは、ズームの中心点が変わらないように調整する必要がある
-                    // 簡単化のため、タッチ開始時の中間点から現在の中間点への相対的な移動をパンに適用
-                    // これは少し挙動が違うかもしれないが、許容範囲とする
                     globalCanvasPanX = initialGlobalPanX + deltaX_screen;
                     globalCanvasPanY = initialGlobalPanY + deltaY_screen;
                 }
@@ -1340,21 +1368,26 @@
             updateButtonStates();
         }
 
-        function endInteraction() {
+        function endInteraction(e) {
+            // グローバルパンの開始位置をリセット
+            if (interactionState.type === 'global-pan' || interactionState.type === 'global-multi-touch') {
+                initialGlobalPanX = globalCanvasPanX;
+                initialGlobalPanY = globalCanvasPanY;
+                initialGlobalZoom = globalCanvasZoom;
+            }
+
             // タッチジェスチャーの変数をリセット
             startTouchDist = null; 
             initialTouchAngle = null;
             startTouchMidpoint = { x: 0, y: 0 };
+            
+            // e.touches_start をクリア
+            delete e.touches_start;
 
             currentDecoInitialRotation = 0;
             currentDecoInitialWidth = 0;
             currentDecoInitialHeight = 0;
             currentDecoInitialSize = 0;
-
-            initialGlobalPanX = globalCanvasPanX; // 終了時のCanvas状態を次の操作の初期値にする
-            initialGlobalPanY = globalCanvasPanY;
-            initialGlobalZoom = globalCanvasZoom;
-
 
             interactionState = { type: 'none', handle: null };
             photoCanvas.style.cursor = 'grab';
@@ -1635,3 +1668,4 @@
     </script>
 </body>
 </html>
+�
