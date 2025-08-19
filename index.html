@@ -1,79 +1,1510 @@
-captureBtn.addEventListener('click', () => {
-  if (video.readyState < 2) {
-    alert('カメラがまだ準備中です。数秒待ってから、もう一度シャッターを押してください。');
-    return;
-  }
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>うちわデコアプリ</title>
+    <!-- Tailwind CSS CDNを読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fontsを読み込み -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Mochiy+Pop+P+One&family=Yusei+Magic&family=BIZ+UDGothic:wght@400;700&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
+    <!-- 追加フォントのCSSルール（Google Fontsで提供されていないもの） -->
+    <style>
+        /* 基本的なスタイルとフォント設定 */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* 薄いグレーの背景 */
+            color: #333;
+        }
+        /* アプリ全体のコンテナスタイル */
+        .container {
+            max-width: 90%;
+            margin: 20px auto;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        /* ビデオとキャンバスの共通スタイル */
+        video, canvas {
+            display: block;
+            width: 100%;
+            border-radius: 10px;
+            background-color: #e2e8f0; /* スカイブルーグレー */
+        }
+        /* キャンバスに点線ボーダーを追加 */
+        canvas {
+            border: 2px dashed #94a3b8; /* スレートグレーの点線 */
+            cursor: grab; /* ドラッグ可能であることを示すカーソル */
+            touch-action: none; /* タッチイベントのデフォルト動作（スクロールなど）を無効化 */
+        }
+        /* プライマリーボタンのスタイル（グラデーションと影） */
+        .btn {
+            @apply px-6 py-3 rounded-full font-semibold text-white shadow-lg transition duration-300 ease-in-out;
+            background-image: linear-gradient(to right, #6366f1, #8b5cf6); /* 紫系のグラデーション */
+        }
+        .btn:hover {
+            background-image: linear-gradient(to right, #4f46e5, #7c3aed);
+            transform: translateY(-2px); /* ホバーで少し上に移動 */
+        }
+        /* セカンダリーボタンのスタイル（グラデーションなし） */
+        .btn-secondary {
+            @apply bg-gray-500 hover:bg-gray-600;
+            background-image: none; /* グラデーションを上書き */
+        }
+        /* 入力フィールドのスタイル */
+        .input-field {
+            @apply w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500;
+        }
+        /* スタンプボタン内の画像スタイル */
+        .sticker-btn img {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: contain;
+            transition: transform 0.2s; /* ホバーアニメーション */
+        }
+        .sticker-btn:hover img {
+            transform: scale(1.1); /* ホバーで少し拡大 */
+        }
+        /* ローディングオーバーレイのスタイル */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7); /* 半透明の黒背景 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            font-size: 1.5rem;
+            flex-direction: column;
+        }
+        /* スピナーアニメーション */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center mb-6 text-indigo-700">うちわデコレーションアプリ</h1>
+        <p class="text-center text-gray-600 mb-6">カメラで写真を撮って、自分だけのオリジナルうちわを作ろう！</p>
 
-  shutterSound.currentTime = 0;
-  shutterSound.play().catch(() => {});
+        <!-- ローディングオーバーレイ -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="spinner mb-4"></div>
+            <p>処理中...</p>
+        </div>
 
-  // iOS対策：ユーザー操作の直後に空のタブを開く
-  const newWindow = window.open('', '_blank');
+        <!-- カメラセクション -->
+        <div id="cameraSection" class="w-full flex flex-col items-center mb-6">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">📸 カメラ撮影</h2>
+            <video id="video" class="w-full h-80 object-cover" autoplay playsinline></video>
+            <button id="captureButton" class="btn mt-4">写真撮影</button>
 
-  const w = 3508, h = 2480;
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
+            <!-- カメラが利用できない場合のファイルアップロードオプション -->
+            <div id="uploadOption" class="w-full mt-6 p-4 border border-dashed border-gray-300 rounded-lg text-center hidden">
+                <p class="text-gray-600 mb-3">または、画像ファイルをアップロード:</p>
+                <input type="file" id="imageUpload" accept="image/*" class="hidden">
+                <label for="imageUpload" class="btn btn-secondary cursor-pointer inline-block">
+                    ファイルから画像を選択
+                </label>
+            </div>
+        </div>
 
-  const vw = video.videoWidth || video.offsetWidth;
-  const vh = video.videoHeight || video.offsetHeight;
-  const aspectVideo = vw / vh;
-  const aspectCanvas = w / h;
-  let sx = 0, sy = 0, sw = vw, sh = vh;
+        <!-- キャンバスとデコレーションセクション -->
+        <div id="canvasSection" class="w-full hidden flex flex-col items-center mb-6">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">✨ デコレーション</h2>
+            <canvas id="photoCanvas" class="w-full" style="max-width: 100%;"></canvas>
+            
+            <!-- 背景画像セクションの追加 -->
+            <div class="w-full mt-6">
+                <h3 class="text-xl font-medium mb-3 text-gray-700">🖼️ 背景画像を追加/変更</h3>
+                <input type="file" id="backgroundImageUpload" accept="image/*" class="hidden">
+                <label for="backgroundImageUpload" class="btn btn-secondary cursor-pointer inline-block">
+                    背景画像を選択/変更
+                </label>
+                <button id="removeBackgroundImageButton" class="btn btn-secondary mt-2 w-full hidden">背景画像を削除</button>
+            </div>
 
-  if (aspectVideo > aspectCanvas) {
-    sw = vh * aspectCanvas;
-    sx = (vw - sw) / 2;
-  } else {
-    sh = vw / aspectCanvas;
-    sy = (vh - sh) / 2;
-  }
+            <div class="w-full mt-6">
+                <h3 class="text-xl font-medium mb-3 text-gray-700">✏️ テキストを追加</h3>
+                <input type="text" id="textInput" placeholder="ここにテキストを入力" class="input-field mb-2">
+                <div class="flex items-center mb-2 flex-wrap"> <!-- Flex container for color picker, font size, and new font family select -->
+                    <input type="color" id="textColorPicker" value="#000000" class="w-16 h-10 border-none rounded-md cursor-pointer mr-2 mb-2 md:mb-0">
+                    <select id="fontSizeSelect" class="input-field w-24 mr-2 mb-2 md:mb-0">
+                        <option value="48">小</option>
+                        <option value="72">中</option>
+                        <option value="96" selected>大</option>
+                        <option value="120">特大</option>
+                    </select>
+                    <select id="fontFamilySelect" class="input-field flex-1 min-w-[150px]">
+                        <option value="Inter, sans-serif" style="font-family: 'Inter', sans-serif;">標準</option>
+                        <option value="'Mochiy Pop P One', cursive" style="font-family: 'Mochiy Pop P One', cursive;">もちもちポップ</option>
+                        <option value="'Yusei Magic', sans-serif" style="font-family: 'Yusei Magic', sans-serif;">遊星マジック</option>
+                        <option value="'BIZ UD Gothic', sans-serif" style="font-family: 'BIZ UD Gothic', sans-serif;">BIZ UDゴシック</option>
+                        <option value="'Zen Old Mincho', serif" style="font-family: 'Zen Old Mincho', serif;">Zen Old Mincho</option>
+                        <!-- UD Digi Kyokasho NK-B, Soukou Mincho, Kouzan Brush Font は Google Fonts に直接URLがないため、カスタムフォントURLを別途用意する必要があります。 -->
+                    </select>
+                </div>
+                <!-- アウトライン設定の追加 -->
+                <div class="flex items-center mb-2 flex-wrap mt-2">
+                    <span class="text-gray-700 mr-2">アウトライン:</span>
+                    <input type="color" id="outlineColorPicker" value="#ffffff" class="w-16 h-10 border-none rounded-md cursor-pointer mr-2 mb-2 md:mb-0">
+                    <input type="number" id="outlineWidthInput" value="5" min="0" max="20" class="input-field w-24 mr-2 mb-2 md:mb-0">
+                    <span class="text-gray-700">px</span>
+                </div>
+                <button id="addTextButton" class="btn btn-secondary mt-2 w-full">テキスト追加</button>
+            </div>
 
-  ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
+            <div class="w-full mt-6">
+                <h3 class="text-xl font-medium mb-3 text-gray-700">� 絵文字を追加</h3>
+                <div id="emojiContainer" class="flex flex-wrap gap-2 justify-center">
+                    <!-- 絵文字はJavaScriptで動的に追加されます -->
+                </div>
+            </div>
 
-  const highresImg = new Image();
-  highresImg.crossOrigin = "anonymous";
-  highresImg.onload = () => {
-    ctx.drawImage(highresImg, 0, 0, w, h);
+            <div class="w-full mt-6">
+                <h3 class="text-xl font-medium mb-3 text-gray-700">⭐ スタンプを追加</h3>
+                <div id="stickerContainer" class="flex flex-wrap gap-2 justify-center">
+                    <!-- スタンプはJavaScriptで動的に追加されます -->
+                </div>
+            </div>
 
-    canvas.toBlob(blob => {
-      const url = URL.createObjectURL(blob);
+            <div class="w-full flex justify-center gap-4 mt-8">
+                <button id="undoButton" class="btn btn-secondary flex-1" disabled>元に戻す</button>
+                <button id="redoButton" class="btn btn-secondary flex-1" disabled>やり直す</button>
+                <button id="duplicateButton" class="btn flex-1" disabled>複製</button>
+                <button id="deleteButton" class="btn btn-secondary flex-1" disabled>削除</button>
+            </div>
+            <!-- 新しく追加するレイヤー操作ボタン -->
+            <div class="w-full flex justify-center gap-4 mt-4">
+                <button id="bringToFrontButton" class="btn flex-1" disabled>最前面へ</button>
+                <button id="sendToBackButton" class="btn btn-secondary flex-1" disabled>最背面へ</button>
+                <button id="bringForwardButton" class="btn flex-1" disabled>一つ前面へ</button>
+                <button id="sendBackwardButton" class="btn btn-secondary flex-1" disabled>一つ背面へ</button>
+            </div>
+            <!-- 回転モードボタンの追加 -->
+            <button id="rotateModeButton" class="btn btn-secondary mt-4 w-full" disabled>回転モード</button>
 
-      // iPhone対応：画像を新しいタブに表示（長押し保存用）
-      newWindow.document.write(`
-        <img src="${url}" style="width:100%; max-width:900px; display:block; margin:20px auto;" />
-        <p style="text-align:center;">📌画像を長押しして「“写真”に追加」してください。</p>
-        <a href="${formURL}" target="_blank"
-           style="display:block; margin: 20px auto; text-align:center; font-size:18px;
-                  padding: 10px 20px; background:#0077cc; color:#fff; border-radius:8px;
-                  text-decoration:none; max-width:300px;">
-           📝 注文フォームへ進む
-        </a>
-      `);
-      newWindow.document.title = "画像を保存してね";
+            <button id="saveButton" class="btn mt-4 w-full">うちわ画像を保存</button>
+            <p class="text-sm text-gray-500 mt-2 text-center">※スマホの場合は画像を長押しで保存できます。</p>
+            
+            <a id="googleFormLink" href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank" class="btn bg-green-500 hover:bg-green-600 mt-4 w-full" style="background-image: none;">
+                📤 Googleフォームで送信
+            </a>
+            <p class="text-sm text-gray-500 mt-2 text-center">※フォームに移動後、保存した画像をアップロードしてください。</p>
+        </div>
+    </div>
 
-      // 元ページにもプレビュー表示（保険）
-      const previewWrapper = document.getElementById('previewWrapper');
-      const previewImg = document.getElementById('previewImage');
-      previewImg.src = '';
-      previewImg.onload = () => { notice.scrollIntoView({ behavior: 'smooth' }); };
-      previewImg.src = url;
-      previewWrapper.style.display = 'block';
+    <script>
+        const video = document.getElementById('video');
+        const captureButton = document.getElementById('captureButton');
+        const photoCanvas = document.getElementById('photoCanvas');
+        const ctx = photoCanvas.getContext('2d');
+        const cameraSection = document.getElementById('cameraSection');
+        const canvasSection = document.getElementById('canvasSection');
+        const saveButton = document.getElementById('saveButton');
+        const googleFormLink = document.getElementById('googleFormLink');
+        const textInput = document.getElementById('textInput');
+        const textColorPicker = document.getElementById('textColorPicker');
+        const fontSizeSelect = document.getElementById('fontSizeSelect');
+        const fontFamilySelect = document.getElementById('fontFamilySelect');
+        const outlineColorPicker = document.getElementById('outlineColorPicker');
+        const outlineWidthInput = document.getElementById('outlineWidthInput');
+        const addTextButton = document.getElementById('addTextButton');
+        const emojiContainer = document.getElementById('emojiContainer');
+        const stickerContainer = document.getElementById('stickerContainer');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const imageUpload = document.getElementById('imageUpload');
+        const uploadOption = document.getElementById('uploadOption');
+        const undoButton = document.getElementById('undoButton');
+        const redoButton = document.getElementById('redoButton');
+        const duplicateButton = document.getElementById('duplicateButton');
+        const deleteButton = document.getElementById('deleteButton');
+        const bringToFrontButton = document.getElementById('bringToFrontButton');
+        const sendToBackButton = document.getElementById('sendToBackButton');
+        const bringForwardButton = document.getElementById('bringForwardButton');
+        const sendBackwardButton = document.getElementById('sendBackwardButton');
+        const rotateModeButton = document.getElementById('rotateModeButton');
 
-      notice.style.display = 'block';
-      notice.innerHTML = `
-        👆画像を保存したら、申込フォームに進んでください👇<br>
-      `;
+        // 背景画像関連
+        const backgroundImageUpload = document.getElementById('backgroundImageUpload');
+        const removeBackgroundImageButton = document.getElementById('removeBackgroundImageButton');
 
-      const btn = document.createElement('a');
-      btn.href = formURL;
-      btn.target = '_blank';
-      btn.className = 'form-button';
-      btn.textContent = '📝 注文フォームへ進む';
-      notice.appendChild(btn);
-      notice.scrollIntoView({ behavior: 'smooth' });
-    }, 'image/png');
-  };
+        let stream;
+        let uchiwaTemplateImage = new Image(); // うちわテンプレート画像
+        let backgroundImage = null; // うちわフィルターの下にくる画像 (カメラ撮影 or アップロード)
+        let decorations = []; // テキスト、絵文字、スタンプなどのデコレーション
+        let selectedDecoration = null; // 現在選択中のデコレーションまたは背景画像
+        let interactionState = { type: 'none', handle: null }; // ドラッグ、リサイズ、回転の状態
+        let startX, startY; // 操作開始時の座標
+        let startAngle; // 回転操作開始時の角度
+        let dragOffsetX, dragOffsetY; // ドラッグ開始時のオフセット
 
-  highresImg.src = currentHighRes;
-});
+        // 履歴管理
+        let history = [];
+        let historyPointer = -1;
+        const MAX_HISTORY_SIZE = 50; // 履歴の最大保持数
+
+        // A4横サイズ (300DPI) に合わせてカンヴァスサイズを設定
+        const CANVAS_WIDTH = 3508; 
+        const CANVAS_HEIGHT = 2480;
+        
+        // うちわテンプレート画像はユーザーからアップロードされたfan.pngを使用
+        const UCHIWA_TEMPLATE_URL = 'fan.png'; 
+        
+        const STICKER_URLS = [
+            'https://placehold.co/100x100/ffcc00/000000?text=⭐',
+            'https://placehold.co/100x100/ff66b2/000000?text=💖',
+            'https://placehold.co/100x100/66ccff/000000?text=✨',
+            'https://placehold.co/100x100/99ff99/000000?text=🌸'
+        ];
+
+        const EMOJIS = ['😊', '😄', '😂', '👍', '❤️', '🌟', '🎉', '🎶'];
+
+        // プルダウンメニューに表示するフォントサイズのオプション
+        const FONT_SIZES = [48, 72, 96, 120];
+
+        // 操作ハンドルのサイズを元のサイズに近く、見やすいサイズに調整
+        const HANDLE_SIZE = 80; 
+        const ROTATE_HANDLE_OFFSET = 100;
+
+        // 現在の操作モードを追跡する変数
+        let currentAction = 'none'; // 'none', 'rotate_mode'
+
+        // --- 履歴の状態を保存する関数 ---
+        function saveState() {
+            if (historyPointer < history.length - 1) {
+                history = history.slice(0, historyPointer + 1); // 現在のポインタ以降の履歴を削除
+            }
+
+            // 現在の状態を保存用にシリアライズ
+            const currentState = {
+                decorations: decorations.map(d => {
+                    if (d.type === 'sticker') {
+                        // Imageオブジェクトはシリアライズできないため、そのURLを保存
+                        return { ...d, imageSrc: d.image ? d.image.src : null };
+                    }
+                    return { ...d };
+                }),
+                backgroundImage: backgroundImage ? {
+                    src: backgroundImage.image.src, // Imageオブジェクトのsrcを保存
+                    x: backgroundImage.x,
+                    y: backgroundImage.y,
+                    width: backgroundImage.width,
+                    height: backgroundImage.height,
+                    rotation: backgroundImage.rotation,
+                    // 背景画像のIDを保存
+                    id: backgroundImage.id 
+                } : null,
+                selectedDecorationId: selectedDecoration ? selectedDecoration.id : null,
+                selectedDecorationType: selectedDecoration ? selectedDecoration.type : null // 選択された要素のタイプも保存
+            };
+
+            // ディープコピーして履歴に追加
+            history.push(JSON.parse(JSON.stringify(currentState)));
+            historyPointer = history.length - 1;
+
+            // 履歴サイズ制限を超えた場合、最も古い状態を削除
+            if (history.length > MAX_HISTORY_SIZE) {
+                history.shift();
+                historyPointer--;
+            }
+            updateButtonStates(); // ボタンと入力フィールドの状態を更新
+        }
+
+        // --- 履歴の状態を適用する関数 ---
+        async function applyState(state) {
+            decorations = []; // 現在のデコレーションをクリア
+            selectedDecoration = null; // 選択中のデコレーションもクリア
+            currentAction = 'none'; // モードもリセット
+            rotateModeButton.classList.remove('bg-purple-600', 'hover:bg-purple-700'); // De-highlight
+            rotateModeButton.classList.add('bg-gray-500', 'hover:bg-gray-600');
+
+            const loadedDecorations = JSON.parse(JSON.stringify(state.decorations));
+            const newSelectedDecorationId = state.selectedDecorationId;
+            const newSelectedDecorationType = state.selectedDecorationType;
+            let foundSelected = null;
+
+            // デコレーションの復元
+            for (const d of loadedDecorations) {
+                if (d.type === 'sticker' && d.imageSrc) {
+                    const img = new Image();
+                    img.src = d.imageSrc;
+                    d.image = img;
+                    await new Promise(resolve => {
+                        img.onload = () => {
+                            decorations.push(d);
+                            if (d.id === newSelectedDecorationId && d.type === newSelectedDecorationType) {
+                                foundSelected = d;
+                            }
+                            resolve();
+                        };
+                        img.onerror = () => {
+                            console.error('Failed to load image for sticker during undo/redo:', d.imageSrc);
+                            decorations.push(d);
+                            if (d.id === newSelectedDecorationId && d.type === newSelectedDecorationType) {
+                                foundSelected = d;
+                            }
+                            resolve();
+                        };
+                    });
+                } else {
+                    decorations.push(d);
+                    if (d.id === newSelectedDecorationId && d.type === newSelectedDecorationType) {
+                        foundSelected = d;
+                    }
+                }
+            }
+            
+            // 背景画像の復元
+            if (state.backgroundImage) {
+                const img = new Image();
+                img.src = state.backgroundImage.src;
+                backgroundImage = {
+                    ...state.backgroundImage,
+                    image: img
+                };
+                await new Promise(resolve => {
+                    img.onload = () => {
+                        if (state.backgroundImage.id === newSelectedDecorationId && state.backgroundImage.type === newSelectedDecorationType) {
+                            foundSelected = backgroundImage;
+                        }
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        console.error('Failed to load background image during undo/redo:', state.backgroundImage.src);
+                        backgroundImage = null;
+                        resolve();
+                    };
+                });
+            } else {
+                backgroundImage = null;
+            }
+
+            selectedDecoration = foundSelected; // 選択中の要素を復元
+            drawCanvas();
+            updateButtonStates(); // ボタンと入力フィールドの状態を更新
+        }
+
+        // --- 各ボタンと入力フィールドの状態を更新する関数 ---
+        function updateButtonStates() {
+            undoButton.disabled = historyPointer <= 0;
+            redoButton.disabled = historyPointer >= history.length - 1;
+            
+            // 複製、削除ボタンは選択中のデコレーションまたは背景画像がある場合のみ有効
+            // 背景画像は複製不可
+            duplicateButton.disabled = !selectedDecoration || selectedDecoration.type === 'background'; 
+            deleteButton.disabled = !selectedDecoration;
+
+            // レイヤー操作ボタンの有効/無効化
+            if (selectedDecoration) {
+                if (selectedDecoration.type === 'background') {
+                    // 背景画像は常に最背面扱いなので、レイヤー操作ボタンは全て無効
+                    bringToFrontButton.disabled = true;
+                    sendToBackButton.disabled = true;
+                    bringForwardButton.disabled = true;
+                    sendBackwardButton.disabled = true;
+                } else {
+                    // デコレーションの場合
+                    const selectedIndex = decorations.indexOf(selectedDecoration);
+                    bringToFrontButton.disabled = (selectedIndex === decorations.length - 1);
+                    sendToBackButton.disabled = (selectedIndex === 0);
+                    bringForwardButton.disabled = (selectedIndex === decorations.length - 1);
+                    sendBackwardButton.disabled = (selectedIndex === 0);
+                }
+            } else {
+                // 何も選択されていない場合
+                bringToFrontButton.disabled = true;
+                sendToBackButton.disabled = true;
+                bringForwardButton.disabled = true;
+                sendBackwardButton.disabled = true;
+            }
+
+            // 背景画像削除ボタンの表示/非表示
+            removeBackgroundImageButton.classList.toggle('hidden', !backgroundImage);
+            
+            // 回転モードボタンの有効/無効化とハイライト
+            rotateModeButton.disabled = !selectedDecoration;
+            if (currentAction === 'rotate_mode' && selectedDecoration) {
+                rotateModeButton.classList.add('bg-purple-600', 'hover:bg-purple-700');
+                rotateModeButton.classList.remove('bg-gray-500', 'hover:bg-gray-600');
+            } else {
+                rotateModeButton.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+                rotateModeButton.classList.add('bg-gray-500', 'hover:bg-gray-600');
+            }
+
+            // テキストプロパティコントロールの有効/無効化と値の反映
+            if (selectedDecoration && selectedDecoration.type === 'text') {
+                textColorPicker.disabled = false;
+                fontSizeSelect.disabled = false;
+                fontFamilySelect.disabled = false;
+                outlineColorPicker.disabled = false;
+                outlineWidthInput.disabled = false;
+
+                textColorPicker.value = selectedDecoration.color;
+                
+                const currentFontSize = selectedDecoration.size;
+                let closestFontSize = FONT_SIZES[0];
+                let minDiff = Math.abs(currentFontSize - closestFontSize);
+
+                for (let i = 1; i < FONT_SIZES.length; i++) {
+                    const diff = Math.abs(currentFontSize - FONT_SIZES[i]);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestFontSize = FONT_SIZES[i];
+                    }
+                }
+                fontSizeSelect.value = closestFontSize;
+
+                fontFamilySelect.value = selectedDecoration.fontFamily || 'Inter, sans-serif';
+                outlineColorPicker.value = selectedDecoration.outlineColor || '#ffffff';
+                outlineWidthInput.value = selectedDecoration.outlineWidth !== undefined ? selectedDecoration.outlineWidth : 5;
+
+            } else {
+                textColorPicker.disabled = true;
+                fontSizeSelect.disabled = true;
+                fontFamilySelect.disabled = true;
+                outlineColorPicker.disabled = true;
+                outlineWidthInput.disabled = true;
+
+                // 選択が外れたらデフォルト値に戻す
+                textColorPicker.value = '#000000';
+                fontSizeSelect.value = '96';
+                fontFamilySelect.value = 'Inter, sans-serif';
+                outlineColorPicker.value = '#ffffff';
+                outlineWidthInput.value = 5;
+            }
+        }
+
+        // --- 初期化処理 ---
+        window.onload = function() {
+            photoCanvas.width = CANVAS_WIDTH;
+            photoCanvas.height = CANVAS_HEIGHT;
+
+            // うちわテンプレート画像のロード
+            uchiwaTemplateImage.src = UCHIWA_TEMPLATE_URL;
+            uchiwaTemplateImage.onload = () => {
+                drawCanvas(); // テンプレートがロードされたらまず描画
+            };
+            uchiwaTemplateImage.onerror = () => {
+                console.error('うちわテンプレート画像の読み込みに失敗しました。URL:', UCHIWA_TEMPLATE_URL);
+                showMessageBox('うちわテンプレート画像の読み込みに失敗しました。');
+            };
+
+            // 絵文字ボタンの生成
+            EMOJIS.forEach(emoji => {
+                const button = document.createElement('button');
+                button.textContent = emoji;
+                button.className = 'text-4xl px-3 py-2 rounded-full bg-blue-100 hover:bg-blue-200 transition duration-150';
+                button.onclick = () => addEmoji(emoji);
+                emojiContainer.appendChild(button);
+            });
+
+            // スタンプボタンの生成
+            STICKER_URLS.forEach(url => {
+                const button = document.createElement('button');
+                button.className = 'sticker-btn p-1 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-150';
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'Sticker';
+                button.appendChild(img);
+                button.onclick = () => addSticker(url);
+                stickerContainer.appendChild(button);
+            });
+
+            startCamera(); // カメラの起動
+            saveState(); // アプリ起動時の初期状態を履歴に保存
+        };
+
+        // --- カメラ操作 ---
+        async function startCamera() {
+            try {
+                loadingOverlay.classList.remove('hidden');
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment', // スマートフォンでアウトカメラ優先
+                        width: { ideal: 1920 },    // 高解像度設定
+                        height: { ideal: 1080 }
+                    }
+                });
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    video.play();
+                    loadingOverlay.classList.add('hidden');
+                };
+            } catch (err) {
+                loadingOverlay.classList.add('hidden');
+                console.error('カメラのアクセスに失敗しました:', err);
+                captureButton.disabled = true;
+                video.classList.add('hidden');
+
+                // カメラアクセス失敗時のユーザーへのメッセージ
+                if (err.name === 'NotAllowedError') {
+                    showMessageBox('カメラのアクセスが拒否されました。ブラウザの設定を確認し、カメラの使用を許可してください。');
+                } else if (err.name === 'NotFoundError') {
+                    showMessageBox('カメラデバイスが見つかりませんでした。カメラが接続されているか確認してください。');
+                } else {
+                    showMessageBox('カメラの起動中に予期せぬエラーが発生しました。');
+                }
+                uploadOption.classList.remove('hidden'); // ファイルアップロードオプションを表示
+            }
+        }
+
+        // カスタムメッセージボックス関数 (alertの代替)
+        function showMessageBox(message) {
+            const messageBox = document.createElement('div');
+            messageBox.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: #333;
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                z-index: 2000;
+                text-align: center;
+                max-width: 80%;
+            `;
+            messageBox.textContent = message;
+            document.body.appendChild(messageBox);
+
+            setTimeout(() => {
+                document.body.removeChild(messageBox);
+            }, 3000); // 3秒後に自動的に消える
+        }
+
+
+        captureButton.addEventListener('click', () => {
+            if (!video.srcObject) {
+                showMessageBox('カメラが起動していません。または、画像アップロード機能を使用してください。');
+                return;
+            }
+
+            loadingOverlay.classList.remove('hidden');
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = video.videoWidth;
+            tempCanvas.height = video.videoHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCtx.height); // Corrected typo here
+
+            const capturedImg = new Image();
+            capturedImg.src = tempCanvas.toDataURL('image/png');
+            capturedImg.onload = () => {
+                // 背景画像オブジェクトとして初期化 (capturedImageの代わりに直接backgroundImageを設定)
+                backgroundImage = {
+                    id: crypto.randomUUID(),
+                    type: 'background',
+                    image: capturedImg, // 撮影した画像をbackgroundImageに設定
+                    x: CANVAS_WIDTH / 2,
+                    y: CANVAS_HEIGHT / 2,
+                    width: capturedImg.naturalWidth,
+                    height: capturedImg.naturalHeight,
+                    rotation: 0
+                };
+                selectedDecoration = backgroundImage; // 背景画像を自動選択
+
+                drawCanvas();
+                cameraSection.classList.add('hidden');
+                canvasSection.classList.remove('hidden');
+                loadingOverlay.classList.add('hidden');
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop()); // カメラを停止
+                }
+                saveState(); // 撮影後、状態を保存
+            };
+            capturedImg.onerror = () => {
+                loadingOverlay.classList.add('hidden');
+                showMessageBox('写真のキャプチャに失敗しました。');
+            };
+        });
+
+        // --- ファイルアップロード処理（初期画像として） ---
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                loadingOverlay.classList.remove('hidden');
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const uploadedImg = new Image();
+                    uploadedImg.src = e.target.result;
+                    uploadedImg.onload = () => {
+                        // アップロード画像をbackgroundImageの初期値とする
+                        backgroundImage = {
+                            id: crypto.randomUUID(),
+                            type: 'background',
+                            image: uploadedImg,
+                            x: CANVAS_WIDTH / 2,
+                            y: CANVAS_HEIGHT / 2,
+                            width: uploadedImg.naturalWidth,
+                            height: uploadedImg.naturalHeight,
+                            rotation: 0
+                        };
+                        selectedDecoration = backgroundImage; // 背景画像を自動選択
+
+                        drawCanvas();
+                        cameraSection.classList.add('hidden');
+                        canvasSection.classList.remove('hidden');
+                        loadingOverlay.classList.add('hidden');
+                        if (stream) {
+                            stream.getTracks().forEach(track => track.stop());
+                        }
+                        saveState(); // アップロード後、状態を保存
+                    };
+                    uploadedImg.onerror = () => {
+                        loadingOverlay.classList.add('hidden');
+                        showMessageBox('画像の読み込みに失敗しました。');
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- 背景画像アップロード処理（backgroundImageを上書きまたは追加） ---
+        backgroundImageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                loadingOverlay.classList.remove('hidden');
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        // 新しい背景画像を生成または既存のものを更新
+                        backgroundImage = {
+                            id: crypto.randomUUID(), // 新しいID
+                            type: 'background',
+                            image: img,
+                            x: CANVAS_WIDTH / 2,
+                            y: CANVAS_HEIGHT / 2,
+                            width: img.naturalWidth,
+                            height: img.naturalHeight,
+                            rotation: 0
+                        };
+                        selectedDecoration = backgroundImage; // 新しく追加した画像を自動選択
+                        drawCanvas();
+                        saveState();
+                        loadingOverlay.classList.add('hidden');
+                    };
+                    img.onerror = () => {
+                        loadingOverlay.classList.add('hidden');
+                        showMessageBox('背景画像の読み込みに失敗しました。');
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- 背景画像削除ボタン ---
+        removeBackgroundImageButton.addEventListener('click', () => {
+            if (backgroundImage) {
+                backgroundImage = null;
+                if (selectedDecoration && selectedDecoration.type === 'background') {
+                    selectedDecoration = null; // 選択解除
+                }
+                drawCanvas();
+                saveState();
+            }
+        });
+
+        // --- デコレーションの現在のバウンディングボックスサイズを取得するヘルパー関数 ---
+        function getDecorationBounds(deco) {
+            let width = deco.width;
+            let height = deco.height;
+
+            if (deco.type === 'text' || deco.type === 'emoji') {
+                ctx.font = `${deco.size}px ${deco.fontFamily || 'Inter, sans-serif'}`;
+                // テキストの正確な幅を取得し、アウトラインの幅も考慮に入れる
+                width = ctx.measureText(deco.content).width + (deco.outlineWidth || 0) * 2;
+                // テキストの高さはfontSizeを基準にするが、上下の余白も考慮するため、ここではfontSizeをそのまま使用
+                height = deco.size + (deco.outlineWidth || 0) * 2; 
+            }
+            return { width: width, height: height };
+        }
+
+        // --- キャンバス描画とデコレーション ---
+        function drawCanvas() {
+            ctx.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
+
+            // 1. 背景画像を描画 (うちわフィルターの**下**に来る)
+            if (backgroundImage && backgroundImage.image && backgroundImage.image.complete) {
+                ctx.save();
+                ctx.translate(backgroundImage.x, backgroundImage.y);
+                if (backgroundImage.rotation) {
+                    ctx.rotate(backgroundImage.rotation);
+                }
+                ctx.drawImage(backgroundImage.image, -backgroundImage.width / 2, -backgroundImage.height / 2, backgroundImage.width, backgroundImage.height);
+                ctx.restore();
+            } else {
+                // 背景画像がない場合、白い背景を描画して透明うちわの下の要素が見えないようにする
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, photoCanvas.width, photoCanvas.height);
+            }
+            
+            // 2. デコレーションを描画 (テキスト、絵文字、スタンプ)
+            // これはうちわテンプレートの「上」に描画されます
+            decorations.forEach(deco => {
+                ctx.save();
+                ctx.translate(deco.x, deco.y);
+                if (deco.rotation) {
+                    ctx.rotate(deco.rotation);
+                }
+
+                if (deco.type === 'text') {
+                    ctx.font = `${deco.size}px ${deco.fontFamily || 'Inter, sans-serif'}`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    if (deco.outlineWidth > 0) {
+                        ctx.strokeStyle = deco.outlineColor || '#ffffff';
+                        ctx.lineWidth = deco.outlineWidth;
+                        ctx.strokeText(deco.content, 0, 0);
+                    }
+                    ctx.fillStyle = deco.color;
+                    ctx.fillText(deco.content, 0, 0);
+
+                } else if (deco.type === 'emoji') {
+                    ctx.font = `${deco.size}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(deco.content, 0, 0);
+                } else if (deco.type === 'sticker' && deco.image && deco.image.complete) {
+                    ctx.drawImage(deco.image, -deco.width / 2, -deco.height / 2, deco.width, deco.height);
+                }
+                ctx.restore();
+            });
+
+            // 3. うちわテンプレートオーバーレイを描画 (最前面に、他の要素の上に描画)
+            // これにより、うちわのフレームが常に一番上に表示されます。
+            if (uchiwaTemplateImage.complete && uchiwaTemplateImage.naturalWidth !== 0) {
+                 ctx.drawImage(uchiwaTemplateImage, 0, 0, photoCanvas.width, photoCanvas.height);
+            } else {
+                // テンプレート画像が読み込めない場合のフォールバック（透明な円形のガイド）
+                // このフォールバックはフィルターではなく、あくまでうちわの形状を推測するためのガイドとして描画されます。
+                ctx.beginPath();
+                ctx.arc(photoCanvas.width / 2, photoCanvas.height / 2, Math.min(photoCanvas.width, photoCanvas.height) / 3, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(100, 100, 100, 0.5)'; // 半透明の線
+                ctx.lineWidth = 5;
+                ctx.stroke();
+            }
+
+            // 4. 選択中のデコレーションまたは背景画像に操作ハンドルを描画 (最前面)
+            if (selectedDecoration) {
+                ctx.save();
+                ctx.translate(selectedDecoration.x, selectedDecoration.y);
+                if (selectedDecoration.rotation) {
+                    ctx.rotate(selectedDecoration.rotation);
+                }
+
+                let targetBounds = getDecorationBounds(selectedDecoration);
+                let targetWidth = targetBounds.width;
+                let targetHeight = targetBounds.height;
+                
+                // バウンディングボックスの描画
+                ctx.strokeStyle = '#2563eb';
+                ctx.lineWidth = 6;
+                ctx.setLineDash([]);
+                ctx.strokeRect(-targetWidth / 2, -targetHeight / 2, targetWidth, targetHeight);
+
+                // ハンドルの描画
+                ctx.fillStyle = '#facc15';
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+
+                const handleRadius = HANDLE_SIZE / 2;
+
+                // リサイズハンドル (4隅の四角形と矢印)
+                const resizeHandlesData = [
+                    { x: -targetWidth / 2, y: -targetHeight / 2, type: 'nw', cursor: 'nwse-resize' },
+                    { x: targetWidth / 2, y: -targetHeight / 2, type: 'ne', cursor: 'nesw-resize' },
+                    { x: -targetWidth / 2, y: targetHeight / 2, type: 'sw', cursor: 'nesw-resize' },
+                    { x: targetWidth / 2, y: targetHeight / 2, type: 'se', cursor: 'nwse-resize' }
+                ];
+
+                resizeHandlesData.forEach(handle => {
+                    ctx.fillRect(handle.x - handleRadius, handle.y - handleRadius, HANDLE_SIZE, HANDLE_SIZE);
+                    ctx.strokeRect(handle.x - handleRadius, handle.y - handleRadius, HANDLE_SIZE, HANDLE_SIZE);
+
+                    ctx.fillStyle = '#333';
+                    const arrowSize = HANDLE_SIZE * 0.4;
+                    const arrowOffset = HANDLE_SIZE * 0.3;
+
+                    ctx.beginPath();
+                    if (handle.type === 'nw') {
+                        ctx.moveTo(handle.x - arrowOffset, handle.y - arrowOffset);
+                        ctx.lineTo(handle.x - arrowOffset + arrowSize, handle.y - arrowOffset);
+                        ctx.lineTo(handle.x - arrowOffset, handle.y - arrowOffset + arrowSize);
+                    } else if (handle.type === 'ne') {
+                        ctx.moveTo(handle.x + arrowOffset, handle.y - arrowOffset);
+                        ctx.lineTo(handle.x + arrowOffset - arrowSize, handle.y - arrowOffset);
+                        ctx.lineTo(handle.x + arrowOffset, handle.y - arrowOffset + arrowSize);
+                    } else if (handle.type === 'sw') {
+                        ctx.moveTo(handle.x - arrowOffset, handle.y + arrowOffset);
+                        ctx.lineTo(handle.x - arrowOffset + arrowSize, handle.y + arrowOffset);
+                        ctx.lineTo(handle.x - arrowOffset, handle.y + arrowOffset - arrowSize);
+                    } else if (handle.type === 'se') {
+                        ctx.moveTo(handle.x + arrowOffset, handle.y + arrowOffset);
+                        ctx.lineTo(handle.x + arrowOffset - arrowSize, handle.y + arrowOffset);
+                        ctx.lineTo(handle.x + arrowOffset, handle.y + arrowOffset - arrowSize);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = '#facc15';
+                });
+
+                // 回転ハンドル (上中央の円形ハンドルと回転アイコン)
+                const rotateHandleCenterX = 0;
+                const rotateHandleCenterY = -targetHeight / 2 - ROTATE_HANDLE_OFFSET;
+
+                ctx.beginPath();
+                ctx.arc(rotateHandleCenterX, rotateHandleCenterY, handleRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+
+                const iconRadius = handleRadius * 0.5;
+
+                ctx.beginPath();
+                ctx.arc(rotateHandleCenterX, rotateHandleCenterY, iconRadius, Math.PI * 0.9, Math.PI * -0.1, true);
+                ctx.stroke();
+                const endAngle1 = Math.PI * -0.1;
+                const endX1 = rotateHandleCenterX + iconRadius * Math.cos(endAngle1);
+                const endY1 = rotateHandleCenterY + iconRadius * Math.sin(endAngle1);
+                const tangentAngle1 = endAngle1 + Math.PI / 2;
+                drawArrowhead(ctx, endX1, endY1, tangentAngle1, 10, 6);
+
+                ctx.beginPath();
+                ctx.arc(rotateHandleCenterX, rotateHandleCenterY, iconRadius, Math.PI * -0.1, Math.PI * 0.9, true);
+                ctx.stroke();
+                const endAngle2 = Math.PI * 0.9;
+                const endX2 = rotateHandleCenterX + iconRadius * Math.cos(endAngle2);
+                const endY2 = rotateHandleCenterY + iconRadius * Math.sin(endAngle2);
+                const tangentAngle2 = endAngle2 + Math.PI / 2;
+                drawArrowhead(ctx, endX2, endY2, tangentAngle2, 10, 6);
+
+                ctx.lineCap = 'butt';
+
+                ctx.restore();
+            }
+        }
+
+        // 矢印の先端を描画するヘルパー関数
+        function drawArrowhead(context, x, y, angle, headLength, headWidth) {
+            context.beginPath();
+            context.moveTo(x, y);
+            context.lineTo(x - headLength * Math.cos(angle - Math.PI / 6), y - headLength * Math.sin(angle - Math.PI / 6));
+            context.lineTo(x - headLength * Math.cos(angle + Math.PI / 6), y - headLength * Math.sin(angle + Math.PI / 6));
+            context.closePath();
+            context.fill();
+        }
+
+        // --- デコレーション追加関数 ---
+        addTextButton.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            if (text) {
+                const color = textColorPicker.value;
+                const fontSize = parseInt(fontSizeSelect.value, 10);
+                const fontFamily = fontFamilySelect.value;
+                const outlineColor = outlineColorPicker.value;
+                const outlineWidth = parseInt(outlineWidthInput.value, 10);
+
+                decorations.push({
+                    id: crypto.randomUUID(),
+                    type: 'text',
+                    content: text,
+                    color: color,
+                    size: fontSize,
+                    fontFamily: fontFamily,
+                    outlineColor: outlineColor,
+                    outlineWidth: outlineWidth,
+                    x: photoCanvas.width / 2,
+                    y: photoCanvas.height / 2,
+                    rotation: 0,
+                });
+                textInput.value = '';
+                selectedDecoration = decorations[decorations.length - 1]; // 追加したテキストを選択状態に
+                drawCanvas();
+                saveState();
+            }
+        });
+
+        function addEmoji(emoji) {
+            decorations.push({
+                id: crypto.randomUUID(),
+                type: 'emoji',
+                content: emoji,
+                size: 100,
+                x: photoCanvas.width / 2 + (Math.random() - 0.5) * 200,
+                y: photoCanvas.height / 2 + (Math.random() - 0.5) * 200,
+                rotation: 0,
+            });
+            selectedDecoration = decorations[decorations.length - 1]; // 追加した絵文字を選択状態に
+            drawCanvas();
+            saveState();
+        }
+
+        function addSticker(url) {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => {
+                const stickerWidth = 200;
+                const stickerHeight = (img.naturalHeight / img.naturalWidth) * stickerWidth;
+                decorations.push({
+                    id: crypto.randomUUID(),
+                    type: 'sticker',
+                    image: img,
+                    x: photoCanvas.width / 2 + (Math.random() - 0.5) * 200,
+                    y: photoCanvas.height / 2 + (Math.random() - 0.5) * 200,
+                    width: stickerWidth,
+                    height: stickerHeight,
+                    rotation: 0,
+                });
+                selectedDecoration = decorations[decorations.length - 1]; // 追加したスタンプを選択状態に
+                drawCanvas();
+                saveState();
+            };
+            img.onerror = () => console.error(`スタンプ画像 ${url} の読み込みに失敗しました。`);
+        }
+
+        // --- デコレーションの操作機能 (ドラッグ、リサイズ、回転) ---
+        function getEventPos(event) {
+            const rect = photoCanvas.getBoundingClientRect();
+            const scaleX = photoCanvas.width / rect.width;
+            const scaleY = photoCanvas.height / rect.height;
+
+            let clientX, clientY;
+            if (event.touches && event.touches.length > 0) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function getDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        }
+
+        function getAngle(center, p) {
+            return Math.atan2(p.y - center.y, p.x - center.x);
+        }
+
+        photoCanvas.addEventListener('mousedown', startInteraction);
+        photoCanvas.addEventListener('touchstart', startInteraction, { passive: false });
+
+        function startInteraction(e) {
+            e.preventDefault();
+            const pos = getEventPos(e);
+            startX = pos.x;
+            startY = pos.y;
+
+            let clickedElement = null; // クリックされた要素（デコレーションまたは背景画像）
+
+            // 1. デコレーションのヒットテスト (手前から奥へ)
+            for (let i = decorations.length - 1; i >= 0; i--) { 
+                const deco = decorations[i];
+                let decoBounds = getDecorationBounds(deco);
+
+                // クリック位置をデコレーションのローカル座標に変換 (回転を考慮)
+                const inverseRotation = -(deco.rotation || 0);
+                const localClickX = Math.cos(inverseRotation) * (pos.x - deco.x) - Math.sin(inverseRotation) * (pos.y - deco.y);
+                const localClickY = Math.sin(inverseRotation) * (pos.x - deco.x) + Math.cos(inverseRotation) * (pos.y - deco.y);
+
+                // ローカル座標でバウンディングボックス内にあるか判定
+                if (localClickX >= -decoBounds.width / 2 && localClickX <= decoBounds.width / 2 &&
+                    localClickY >= -decoBounds.height / 2 && localClickY <= decoBounds.height / 2) {
+                    clickedElement = deco;
+                    break; 
+                }
+            }
+
+            // 2. デコレーションがヒットしなかった場合、背景画像をヒットテスト
+            if (!clickedElement && backgroundImage) {
+                let bgBounds = getDecorationBounds(backgroundImage);
+                const inverseRotation = -(backgroundImage.rotation || 0);
+                const localClickX = Math.cos(inverseRotation) * (pos.x - backgroundImage.x) - Math.sin(inverseRotation) * (pos.y - backgroundImage.y);
+                const localClickY = Math.sin(inverseRotation) * (pos.x - backgroundImage.x) + Math.cos(inverseRotation) * (pos.y - backgroundImage.y);
+
+                if (localClickX >= -bgBounds.width / 2 && localClickX <= bgBounds.width / 2 &&
+                    localClickY >= -bgBounds.height / 2 && localClickY <= bgBounds.height / 2) {
+                    clickedElement = backgroundImage;
+                }
+            }
+
+            // 3. 何もクリックされなかった場合、選択解除して終了
+            if (!clickedElement) {
+                selectedDecoration = null;
+                interactionState = { type: 'none', handle: null };
+                currentAction = 'none'; // 回転モードもリセット
+                rotateModeButton.classList.remove('bg-purple-600', 'hover:bg-purple-700'); 
+                rotateModeButton.classList.add('bg-gray-500', 'hover:bg-gray-600');
+                photoCanvas.style.cursor = 'grab';
+                drawCanvas();
+                updateButtonStates();
+                return;
+            }
+
+            // クリックされた要素があれば、それを選択状態にする
+            selectedDecoration = clickedElement;
+            if (selectedDecoration.type !== 'background') { // 背景画像はレイヤー順を変えない
+                decorations = decorations.filter(d => d.id !== selectedDecoration.id);
+                decorations.push(selectedDecoration);
+            }
+            drawCanvas(); // 選択状態を反映して描画
+
+            // ここから、選択された要素に対する操作を判定
+            let targetBounds = getDecorationBounds(selectedDecoration);
+            const handleRadius = HANDLE_SIZE / 2;
+
+            // クリック位置を選択された要素のローカル（未回転）座標系に変換
+            const inverseRotationOfSelected = -(selectedDecoration.rotation || 0);
+            const localClickX = Math.cos(inverseRotationOfSelected) * (pos.x - selectedDecoration.x) - Math.sin(inverseRotationOfSelected) * (pos.y - selectedDecoration.y);
+            const localClickY = Math.sin(inverseRotationOfSelected) * (pos.x - selectedDecoration.x) + Math.cos(inverseRotationOfSelected) * (pos.y - selectedDecoration.y);
+
+            // 3.1 回転ハンドルのヒットテスト
+            const rotateHandleLocalX = 0;
+            const rotateHandleLocalY = -targetBounds.height / 2 - ROTATE_HANDLE_OFFSET;
+            const distToRotateHandle = getDistance({x: localClickX, y: localClickY}, {x: rotateHandleLocalX, y: rotateHandleLocalY});
+            if (distToRotateHandle < handleRadius) {
+                interactionState = { type: 'rotate' };
+                startAngle = getAngle({ x: selectedDecoration.x, y: selectedDecoration.y }, pos);
+                photoCanvas.style.cursor = 'crosshair';
+                setupInteractionListeners();
+                updateButtonStates();
+                return;
+            }
+            
+            // 3.2 リサイズハンドルのヒットテスト
+            const resizeHandlesData = [
+                { x: -targetBounds.width / 2, y: -targetBounds.height / 2, type: 'nw', cursor: 'nwse-resize' },
+                { x: targetBounds.width / 2, y: -targetBounds.height / 2, type: 'ne', cursor: 'nesw-resize' },
+                { x: -targetBounds.width / 2, y: targetBounds.height / 2, type: 'sw', cursor: 'nesw-resize' },
+                { x: targetBounds.width / 2, y: targetBounds.height / 2, type: 'se', cursor: 'nwse-resize' }
+            ];
+            for (let handleData of resizeHandlesData) {
+                const dist = getDistance({x: localClickX, y: localClickY}, {x: handleData.x, y: handleData.y});
+                if (dist < handleRadius) {
+                    interactionState = { type: 'resize', handle: handleData.type };
+                    photoCanvas.style.cursor = handleData.cursor;
+                    setupInteractionListeners();
+                    updateButtonStates();
+                    return;
+                }
+            }
+            
+            // 3.3 ハンドルにヒットせず、「回転モード」が有効な場合
+            if (currentAction === 'rotate_mode') {
+                interactionState = { type: 'rotate' };
+                startAngle = getAngle({ x: selectedDecoration.x, y: selectedDecoration.y }, pos);
+                photoCanvas.style.cursor = 'crosshair';
+                currentAction = 'none'; // 回転モードを解除
+                rotateModeButton.classList.remove('bg-purple-600', 'hover:bg-purple-700'); 
+                rotateModeButton.classList.add('bg-gray-500', 'hover:bg-gray-600');
+                setupInteractionListeners();
+                updateButtonStates();
+                return;
+            }
+
+            // 3.4 いずれのハンドルにもヒットせず、回転モードでもない場合、ドラッグ操作
+            interactionState = { type: 'drag' };
+            dragOffsetX = pos.x - selectedDecoration.x;
+            dragOffsetY = pos.y - selectedDecoration.y;
+            photoCanvas.style.cursor = 'grabbing';
+            setupInteractionListeners();
+            updateButtonStates();
+        }
+
+        function setupInteractionListeners() {
+            photoCanvas.addEventListener('mousemove', handleInteraction);
+            photoCanvas.addEventListener('touchmove', handleInteraction, { passive: false });
+            photoCanvas.addEventListener('mouseup', endInteraction);
+            photoCanvas.addEventListener('touchend', endInteraction);
+            photoCanvas.addEventListener('mouseleave', endInteraction);
+        }
+
+        function removeInteractionListeners() {
+            photoCanvas.removeEventListener('mousemove', handleInteraction);
+            photoCanvas.removeEventListener('touchmove', handleInteraction);
+            photoCanvas.removeEventListener('mouseup', endInteraction);
+            photoCanvas.removeEventListener('touchend', endInteraction);
+            photoCanvas.removeEventListener('mouseleave', endInteraction);
+        }
+
+        function handleInteraction(e) {
+            e.preventDefault();
+            if (!selectedDecoration) return; // selectedDecorationがnullの場合、処理を停止
+
+            const pos = getEventPos(e);
+            const currentX = pos.x;
+            const currentY = pos.y;
+            let target = selectedDecoration; // selectedDecorationを操作対象とする
+
+            if (interactionState.type === 'drag') {
+                target.x = currentX - dragOffsetX;
+                target.y = currentY - dragOffsetY;
+            } else if (interactionState.type === 'resize') {
+                const centerX = target.x;
+                const centerY = target.y;
+                // 現在のバウンディングボックス情報を取得
+                let currentBounds = getDecorationBounds(target); 
+                const currentDist = getDistance({x: centerX, y: centerY}, {x: currentX, y: currentY});
+                const initialDist = getDistance({x: centerX, y: centerY}, {x: startX, y: startY});
+
+                if (initialDist === 0) return;
+
+                const scaleFactor = currentDist / initialDist;
+                
+                if (target.type === 'text' || target.type === 'emoji') {
+                    // テキスト/絵文字はfontSizeを直接変更してサイズ調整
+                    target.size *= scaleFactor;
+                } else {
+                    // 画像/スタンプはwidthとheightを変更
+                    target.width *= scaleFactor;
+                    target.height *= scaleFactor;
+                }
+
+                // 次のフレームでの相対的な開始位置を更新
+                startX = currentX;
+                startY = currentY;
+
+            } else if (interactionState.type === 'rotate') {
+                const currentAngle = getAngle({ x: target.x, y: target.y }, pos);
+                const deltaAngle = currentAngle - startAngle;
+                target.rotation = (target.rotation || 0) + deltaAngle;
+                startAngle = currentAngle;
+            }
+            drawCanvas();
+            updateButtonStates();
+        }
+
+        function endInteraction() {
+            interactionState = { type: 'none', handle: null };
+            photoCanvas.style.cursor = 'grab';
+            removeInteractionListeners();
+            drawCanvas();
+            saveState(); // 操作終了時に状態を保存
+        }
+
+        // --- Undo/Redoボタンイベントリスナー ---
+        undoButton.addEventListener('click', async () => {
+            if (historyPointer > 0) {
+                historyPointer--;
+                await applyState(history[historyPointer]);
+            }
+        });
+
+        redoButton.addEventListener('click', async () => {
+            if (historyPointer < history.length - 1) {
+                historyPointer++;
+                await applyState(history[historyPointer]);
+            }
+        });
+
+        // --- 複製ボタンイベントリスナー ---
+        duplicateButton.addEventListener('click', () => {
+            if (selectedDecoration && selectedDecoration.type !== 'background') { // 背景画像は複製不可
+                const original = selectedDecoration;
+                let newCopy;
+
+                const offsetX = 50;
+                const offsetY = 50;
+
+                if (original.type === 'sticker') {
+                    const newImage = new Image();
+                    newImage.src = original.image.src;
+                    newCopy = {
+                        id: crypto.randomUUID(),
+                        type: 'sticker',
+                        image: newImage,
+                        x: original.x + offsetX,
+                        y: original.y + offsetY,
+                        width: original.width,
+                        height: original.height,
+                        rotation: original.rotation,
+                    };
+                    newImage.onload = () => {
+                        decorations.push(newCopy);
+                        selectedDecoration = newCopy;
+                        drawCanvas();
+                        saveState();
+                    };
+                    newImage.onerror = () => {
+                        console.error('Failed to load duplicated sticker image:', newImage.src);
+                        showMessageBox('スタンプ画像の複製に失敗しました。');
+                    };
+                } else if (original.type === 'text') {
+                    newCopy = {
+                        id: crypto.randomUUID(),
+                        type: original.type,
+                        content: original.content,
+                        color: original.color,
+                        size: original.size,
+                        fontFamily: original.fontFamily,
+                        outlineColor: original.outlineColor,
+                        outlineWidth: original.outlineWidth,
+                        x: original.x + offsetX,
+                        y: original.y + offsetY,
+                        rotation: original.rotation,
+                    };
+                    decorations.push(newCopy);
+                    selectedDecoration = newCopy;
+                    drawCanvas();
+                    saveState();
+                } else if (original.type === 'emoji') {
+                    newCopy = {
+                        id: crypto.randomUUID(),
+                        type: original.type,
+                        content: original.content,
+                        size: original.size,
+                        x: original.x + offsetX,
+                        y: original.y + offsetY,
+                        rotation: original.rotation,
+                    };
+                    decorations.push(newCopy);
+                    selectedDecoration = newCopy;
+                    drawCanvas();
+                    saveState();
+                }
+            } else {
+                showMessageBox('複製するデコレーションを選択してください。背景画像は複製できません。');
+            }
+        });
+
+        // --- 削除ボタンイベントリスナー ---
+        deleteButton.addEventListener('click', () => {
+            if (selectedDecoration) {
+                if (selectedDecoration.type === 'background') {
+                    backgroundImage = null;
+                } else {
+                    decorations = decorations.filter(deco => deco.id !== selectedDecoration.id);
+                }
+                selectedDecoration = null;
+                drawCanvas();
+                saveState();
+            } else {
+                showMessageBox('削除するデコレーションを選択してください。');
+            }
+        });
+
+        // --- 最前面へ移動ボタンイベントリスナー ---
+        bringToFrontButton.addEventListener('click', () => {
+            if (selectedDecoration && selectedDecoration.type !== 'background') {
+                decorations = decorations.filter(deco => deco.id !== selectedDecoration.id);
+                decorations.push(selectedDecoration);
+                drawCanvas();
+                saveState();
+            } else {
+                showMessageBox('最前面へ移動するデコレーションを選択してください。背景画像は移動できません。');
+            }
+        });
+
+        // --- 最背面へ移動ボタンイベントリスナー ---
+        sendToBackButton.addEventListener('click', () => {
+            if (selectedDecoration && selectedDecoration.type !== 'background') {
+                decorations = decorations.filter(deco => deco.id !== selectedDecoration.id);
+                decorations.unshift(selectedDecoration);
+                drawCanvas();
+                saveState();
+            } else {
+                showMessageBox('最背面へ移動するデコレーションを選択してください。背景画像は移動できません。');
+            }
+        });
+
+        // --- 一つ前面へ移動ボタンイベントリスナー ---
+        bringForwardButton.addEventListener('click', () => {
+            if (selectedDecoration && selectedDecoration.type !== 'background') {
+                const index = decorations.indexOf(selectedDecoration);
+                if (index !== -1 && index < decorations.length - 1) {
+                    [decorations[index], decorations[index + 1]] = [decorations[index + 1], decorations[index]];
+                    drawCanvas();
+                    saveState();
+                }
+            } else {
+                showMessageBox('一つ前面へ移動するデコレーションを選択してください。背景画像は移動できません。');
+            }
+        });
+
+        // --- 一つ背面へ移動ボタンイベントリスナー ---
+        sendBackwardButton.addEventListener('click', () => {
+            if (selectedDecoration && selectedDecoration.type !== 'background') {
+                const index = decorations.indexOf(selectedDecoration);
+                if (index !== -1 && index > 0) {
+                    [decorations[index], decorations[index - 1]] = [decorations[index - 1], decorations[index]];
+                    drawCanvas();
+                    saveState();
+                }
+            } else {
+                showMessageBox('一つ背面へ移動するデコレーションを選択してください。背景画像は移動できません。');
+            }
+        });
+
+        // --- 回転モードボタンイベントリスナー ---
+        rotateModeButton.addEventListener('click', () => {
+            if (selectedDecoration) {
+                if (currentAction === 'rotate_mode') {
+                    currentAction = 'none';
+                    showMessageBox('回転モードを解除しました。');
+                } else {
+                    currentAction = 'rotate_mode';
+                    showMessageBox('回転モードが有効になりました。選択中の要素をドラッグして回転してください。');
+                }
+            } else {
+                showMessageBox('回転するデコレーションを選択してください。');
+                currentAction = 'none'; // 何も選択されていない場合はモードをリセット
+            }
+            updateButtonStates(); // ボタンのハイライト状態を更新
+        });
+
+        // --- 選択中のテキストプロパティ変更イベントリスナー ---
+        textColorPicker.addEventListener('input', () => {
+            if (selectedDecoration && selectedDecoration.type === 'text') {
+                selectedDecoration.color = textColorPicker.value;
+                drawCanvas();
+                // リアルタイム変更は履歴を大量に生成するため、endInteractionでのみsaveState()を呼ぶ
+            }
+        });
+
+        fontSizeSelect.addEventListener('change', () => {
+            if (selectedDecoration && selectedDecoration.type === 'text') {
+                selectedDecoration.size = parseInt(fontSizeSelect.value, 10);
+                drawCanvas();
+                saveState(); // プルダウンからの変更は一回の操作とみなして保存
+            }
+        });
+
+        fontFamilySelect.addEventListener('change', () => {
+            if (selectedDecoration && selectedDecoration.type === 'text') {
+                selectedDecoration.fontFamily = fontFamilySelect.value;
+                drawCanvas();
+                saveState(); // プルダウンからの変更は一回の操作とみなして保存
+            }
+        });
+
+        outlineColorPicker.addEventListener('input', () => {
+            if (selectedDecoration && selectedDecoration.type === 'text') {
+                selectedDecoration.outlineColor = outlineColorPicker.value;
+                drawCanvas();
+                // リアルタイム変更は履歴を大量に生成するため、endInteractionでのみsaveState()を呼ぶ
+            }
+        });
+
+        outlineWidthInput.addEventListener('input', () => {
+            if (selectedDecoration && selectedDecoration.type === 'text') {
+                selectedDecoration.outlineWidth = parseInt(outlineWidthInput.value, 10);
+                drawCanvas();
+                // リアルタイム変更は履歴を大量に生成するため、endInteractionでのみsaveState()を呼ぶ
+            }
+        });
+
+
+        // --- 保存とGoogleフォーム送信 ---
+        saveButton.addEventListener('click', () => {
+            // 一時キャンバスをもう一度作成し、最終的な画像を生成する
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = photoCanvas.width;
+            finalCanvas.height = photoCanvas.height;
+            const finalCtx = finalCanvas.getContext('2d');
+
+            // 1. 背景画像を描画
+            if (backgroundImage && backgroundImage.image && backgroundImage.image.complete) {
+                finalCtx.save();
+                finalCtx.translate(backgroundImage.x, backgroundImage.y);
+                if (backgroundImage.rotation) {
+                    finalCtx.rotate(backgroundImage.rotation);
+                }
+                finalCtx.drawImage(backgroundImage.image, -backgroundImage.width / 2, -backgroundImage.height / 2, backgroundImage.width, backgroundImage.height);
+                finalCtx.restore();
+            } else {
+                // 背景画像がない場合、白い背景を描画
+                finalCtx.fillStyle = '#ffffff';
+                finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+            }
+
+            // 2. デコレーションを描画
+            decorations.forEach(deco => {
+                finalCtx.save();
+                finalCtx.translate(deco.x, deco.y);
+                if (deco.rotation) {
+                    finalCtx.rotate(deco.rotation);
+                }
+
+                if (deco.type === 'text') {
+                    finalCtx.font = `${deco.size}px ${deco.fontFamily || 'Inter, sans-serif'}`;
+                    finalCtx.textAlign = 'center';
+                    finalCtx.textBaseline = 'middle';
+
+                    if (deco.outlineWidth > 0) {
+                        finalCtx.strokeStyle = deco.outlineColor || '#ffffff';
+                        finalCtx.lineWidth = deco.outlineWidth;
+                        finalCtx.strokeText(deco.content, 0, 0);
+                    }
+                    finalCtx.fillStyle = deco.color;
+                    finalCtx.fillText(deco.content, 0, 0);
+
+                } else if (deco.type === 'emoji') {
+                    finalCtx.font = `${deco.size}px sans-serif`;
+                    finalCtx.textAlign = 'center';
+                    finalCtx.textBaseline = 'middle';
+                    finalCtx.fillText(deco.content, 0, 0);
+                } else if (deco.type === 'sticker' && deco.image && deco.image.complete) {
+                    finalCtx.drawImage(deco.image, -deco.width / 2, -deco.height / 2, deco.width, deco.height);
+                }
+                finalCtx.restore();
+            });
+
+            // 3. うちわテンプレートオーバーレイを描画 (最前面)
+            if (uchiwaTemplateImage.complete && uchiwaTemplateImage.naturalWidth !== 0) {
+                 finalCtx.drawImage(uchiwaTemplateImage, 0, 0, finalCanvas.width, finalCanvas.height);
+            } else {
+                // フォールバックのガイドは最終画像には描画しない
+            }
+
+
+            const imageDataURL = finalCanvas.toDataURL('image/png');
+
+            const link = document.createElement('a');
+            link.download = 'uchiwa_decorated.png';
+            link.href = imageDataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showMessageBox('画像を保存しました！スマートフォンの場合は、表示された画像を長押しして保存してください。');
+        });
+
+        googleFormLink.href = 'https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform';
+    </script>
+</body>
+</html>
+�
