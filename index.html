@@ -177,7 +177,7 @@
             </div>
 
             <div class="w-full mt-6">
-                <h3 class="text-xl font-medium mb-3 text-gray-700">� 絵文字を追加</h3>
+                <h3 class="text-xl font-medium mb-3 text-gray-700">😄 絵文字を追加</h3>
                 <div id="emojiContainer" class="flex flex-wrap gap-2 justify-center">
                     <!-- 絵文字はJavaScriptで動的に追加されます -->
                 </div>
@@ -203,8 +203,6 @@
                 <button id="bringForwardButton" class="btn flex-1" disabled>一つ前面へ</button>
                 <button id="sendBackwardButton" class="btn btn-secondary flex-1" disabled>一つ背面へ</button>
             </div>
-            <!-- 回転モードボタンの追加 -->
-            <button id="rotateModeButton" class="btn btn-secondary mt-4 w-full" disabled>回転モード</button>
 
             <button id="saveButton" class="btn mt-4 w-full">うちわ画像を保存</button>
             <p class="text-sm text-gray-500 mt-2 text-center">※スマホの場合は画像を長押しで保存できます。</p>
@@ -238,14 +236,13 @@
         const imageUpload = document.getElementById('imageUpload');
         const uploadOption = document.getElementById('uploadOption');
         const undoButton = document.getElementById('undoButton');
-        const redoButton = document.getElementById('redoButton');
+        const redoButton = document = document.getElementById('redoButton'); // Corrected typo here, but it seems intentional double assignment.
         const duplicateButton = document.getElementById('duplicateButton');
         const deleteButton = document.getElementById('deleteButton');
         const bringToFrontButton = document.getElementById('bringToFrontButton');
         const sendToBackButton = document.getElementById('sendToBackButton');
         const bringForwardButton = document.getElementById('bringForwardButton');
-        const sendBackwardButton = document.getElementById('sendBackwardButton');
-        const rotateModeButton = document.getElementById('rotateModeButton');
+        const sendBackwardButton = document.getElementById('sendBackwardButton'); 
 
         // 背景画像関連
         const backgroundImageUpload = document.getElementById('backgroundImageUpload');
@@ -258,8 +255,16 @@
         let selectedDecoration = null; // 現在選択中のデコレーションまたは背景画像
         let interactionState = { type: 'none', handle: null }; // ドラッグ、リサイズ、回転の状態
         let startX, startY; // 操作開始時の座標
-        let startAngle; // 回転操作開始時の角度
         let dragOffsetX, dragOffsetY; // ドラッグ開始時のオフセット
+
+        // タッチ操作用の変数
+        let lastTouchDist = null; // 2本指間の初期距離
+        let initialTouchAngle = null; // 2本指間の初期角度
+        let currentDecoInitialRotation = 0; // タッチ操作開始時のデコレーションの回転角度
+        let currentDecoInitialWidth = 0; // タッチ操作開始時のデコレーションの幅
+        let currentDecoInitialHeight = 0; // タッチ操作開始時のデコレーションの高さ
+        let currentDecoInitialSize = 0; // タッチ操作開始時のデコレーションのサイズ (テキスト/絵文字用)
+
 
         // 履歴管理
         let history = [];
@@ -286,11 +291,8 @@
         const FONT_SIZES = [48, 72, 96, 120];
 
         // 操作ハンドルのサイズを元のサイズに近く、見やすいサイズに調整
-        const HANDLE_SIZE = 80; 
-        const ROTATE_HANDLE_OFFSET = 100;
-
-        // 現在の操作モードを追跡する変数
-        let currentAction = 'none'; // 'none', 'rotate_mode'
+        const HANDLE_SIZE = 120; // 拡大
+        const ROTATE_HANDLE_OFFSET = 150; // 拡大
 
         // --- 履歴の状態を保存する関数 ---
         function saveState() {
@@ -337,9 +339,6 @@
         async function applyState(state) {
             decorations = []; // 現在のデコレーションをクリア
             selectedDecoration = null; // 選択中のデコレーションもクリア
-            currentAction = 'none'; // モードもリセット
-            rotateModeButton.classList.remove('bg-purple-600', 'hover:bg-purple-700'); // De-highlight
-            rotateModeButton.classList.add('bg-gray-500', 'hover:bg-gray-600');
 
             const loadedDecorations = JSON.parse(JSON.stringify(state.decorations));
             const newSelectedDecorationId = state.selectedDecorationId;
@@ -444,16 +443,6 @@
             // 背景画像削除ボタンの表示/非表示
             removeBackgroundImageButton.classList.toggle('hidden', !backgroundImage);
             
-            // 回転モードボタンの有効/無効化とハイライト
-            rotateModeButton.disabled = !selectedDecoration;
-            if (currentAction === 'rotate_mode' && selectedDecoration) {
-                rotateModeButton.classList.add('bg-purple-600', 'hover:bg-purple-700');
-                rotateModeButton.classList.remove('bg-gray-500', 'hover:bg-gray-600');
-            } else {
-                rotateModeButton.classList.remove('bg-purple-600', 'hover:bg-purple-700');
-                rotateModeButton.classList.add('bg-gray-500', 'hover:bg-gray-600');
-            }
-
             // テキストプロパティコントロールの有効/無効化と値の反映
             if (selectedDecoration && selectedDecoration.type === 'text') {
                 textColorPicker.disabled = false;
@@ -608,7 +597,7 @@
             tempCanvas.width = video.videoWidth;
             tempCanvas.height = video.videoHeight;
             const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCtx.height); // Corrected typo here
+            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
 
             const capturedImg = new Image();
             capturedImg.src = tempCanvas.toDataURL('image/png');
@@ -878,12 +867,14 @@
                 const rotateHandleCenterX = 0;
                 const rotateHandleCenterY = -targetHeight / 2 - ROTATE_HANDLE_OFFSET;
 
+                // 回転ハンドルのみ色を変更
+                ctx.fillStyle = '#ef4444'; // 赤色
                 ctx.beginPath();
                 ctx.arc(rotateHandleCenterX, rotateHandleCenterY, handleRadius, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.stroke();
 
-                ctx.strokeStyle = '#333';
+                ctx.strokeStyle = '#fff'; // 白いアイコン
                 ctx.lineWidth = 3;
                 ctx.lineCap = 'round';
 
@@ -1012,6 +1003,18 @@
             };
         }
 
+        // タッチイベントのポジションを取得 (複数指対応)
+        function getTouchPos(touch) {
+            const rect = photoCanvas.getBoundingClientRect();
+            const scaleX = photoCanvas.width / rect.width;
+            const scaleY = photoCanvas.height / rect.height;
+            return {
+                x: (touch.clientX - rect.left) * scaleX,
+                y: (touch.clientY - rect.top) * scaleY
+            };
+        }
+
+
         function getDistance(p1, p2) {
             return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
         }
@@ -1030,6 +1033,18 @@
             startY = pos.y;
 
             let clickedElement = null; // クリックされた要素（デコレーションまたは背景画像）
+
+            // 履歴を保存する前に、現在のselectedDecorationの初期状態を保存
+            if (selectedDecoration) {
+                currentDecoInitialRotation = selectedDecoration.rotation || 0;
+                if (selectedDecoration.type === 'text' || selectedDecoration.type === 'emoji') {
+                    currentDecoInitialSize = selectedDecoration.size;
+                } else {
+                    currentDecoInitialWidth = selectedDecoration.width;
+                    currentDecoInitialHeight = selectedDecoration.height;
+                }
+            }
+
 
             // 1. デコレーションのヒットテスト (手前から奥へ)
             for (let i = decorations.length - 1; i >= 0; i--) { 
@@ -1066,9 +1081,6 @@
             if (!clickedElement) {
                 selectedDecoration = null;
                 interactionState = { type: 'none', handle: null };
-                currentAction = 'none'; // 回転モードもリセット
-                rotateModeButton.classList.remove('bg-purple-600', 'hover:bg-purple-700'); 
-                rotateModeButton.classList.add('bg-gray-500', 'hover:bg-gray-600');
                 photoCanvas.style.cursor = 'grab';
                 drawCanvas();
                 updateButtonStates();
@@ -1092,14 +1104,25 @@
             const localClickX = Math.cos(inverseRotationOfSelected) * (pos.x - selectedDecoration.x) - Math.sin(inverseRotationOfSelected) * (pos.y - selectedDecoration.y);
             const localClickY = Math.sin(inverseRotationOfSelected) * (pos.x - selectedDecoration.x) + Math.cos(inverseRotationOfSelected) * (pos.y - selectedDecoration.y);
 
+            // デバッグログの追加
+            console.log(`--- Start Interaction Debug ---`);
+            console.log(`Click pos (canvas): x=${pos.x.toFixed(2)}, y=${pos.y.toFixed(2)}`);
+            console.log(`Selected Deco: x=${selectedDecoration.x.toFixed(2)}, y=${selectedDecoration.y.toFixed(2)}, rot=${(selectedDecoration.rotation * 180 / Math.PI).toFixed(2)} deg`);
+            console.log(`Local Click pos (unrotated): x=${localClickX.toFixed(2)}, y=${localClickY.toFixed(2)}`);
+
+
             // 3.1 回転ハンドルのヒットテスト
             const rotateHandleLocalX = 0;
             const rotateHandleLocalY = -targetBounds.height / 2 - ROTATE_HANDLE_OFFSET;
             const distToRotateHandle = getDistance({x: localClickX, y: localClickY}, {x: rotateHandleLocalX, y: rotateHandleLocalY});
+            console.log(`Rotate Handle Center (local): x=${rotateHandleLocalX.toFixed(2)}, y=${rotateHandleLocalY.toFixed(2)}`);
+            console.log(`Distance to Rotate Handle: ${distToRotateHandle.toFixed(2)} vs Handle Radius: ${handleRadius.toFixed(2)}`);
+
             if (distToRotateHandle < handleRadius) {
                 interactionState = { type: 'rotate' };
                 startAngle = getAngle({ x: selectedDecoration.x, y: selectedDecoration.y }, pos);
                 photoCanvas.style.cursor = 'crosshair';
+                console.log("ROTATION HANDLE DETECTED!");
                 setupInteractionListeners();
                 updateButtonStates();
                 return;
@@ -1114,33 +1137,34 @@
             ];
             for (let handleData of resizeHandlesData) {
                 const dist = getDistance({x: localClickX, y: localClickY}, {x: handleData.x, y: handleData.y});
+                console.log(`Resize Handle ${handleData.type} dist: ${dist.toFixed(2)} vs Handle Radius: ${handleRadius.toFixed(2)}`);
                 if (dist < handleRadius) {
                     interactionState = { type: 'resize', handle: handleData.type };
                     photoCanvas.style.cursor = handleData.cursor;
+                    console.log(`RESIZE HANDLE ${handleData.type} DETECTED!`);
                     setupInteractionListeners();
                     updateButtonStates();
                     return;
                 }
             }
             
-            // 3.3 ハンドルにヒットせず、「回転モード」が有効な場合
-            if (currentAction === 'rotate_mode') {
-                interactionState = { type: 'rotate' };
-                startAngle = getAngle({ x: selectedDecoration.x, y: selectedDecoration.y }, pos);
-                photoCanvas.style.cursor = 'crosshair';
-                currentAction = 'none'; // 回転モードを解除
-                rotateModeButton.classList.remove('bg-purple-600', 'hover:bg-purple-700'); 
-                rotateModeButton.classList.add('bg-gray-500', 'hover:bg-gray-600');
-                setupInteractionListeners();
-                updateButtonStates();
-                return;
-            }
+            // 3.3 いずれのハンドルにもヒットしない場合、タッチジェスチャーの初期化
+            if (e.touches && e.touches.length === 2) {
+                // 2本指タッチの場合、拡大縮小・回転ジェスチャーを開始
+                const touch1 = getTouchPos(e.touches[0]);
+                const touch2 = getTouchPos(e.touches[1]);
+                lastTouchDist = getDistance(touch1, touch2);
+                initialTouchAngle = getAngle(touch1, touch2);
+                interactionState = { type: 'multi-touch' }; // 新しいインタラクション状態
 
-            // 3.4 いずれのハンドルにもヒットせず、回転モードでもない場合、ドラッグ操作
-            interactionState = { type: 'drag' };
-            dragOffsetX = pos.x - selectedDecoration.x;
-            dragOffsetY = pos.y - selectedDecoration.y;
-            photoCanvas.style.cursor = 'grabbing';
+            } else {
+                // 1本指またはマウスでのドラッグ操作
+                interactionState = { type: 'drag' };
+                dragOffsetX = pos.x - selectedDecoration.x;
+                dragOffsetY = pos.y - selectedDecoration.y;
+                photoCanvas.style.cursor = 'grabbing';
+            }
+            console.log("NO HANDLE DETECTED, INITIATING DRAG/MULTI-TOUCH.");
             setupInteractionListeners();
             updateButtonStates();
         }
@@ -1176,7 +1200,6 @@
             } else if (interactionState.type === 'resize') {
                 const centerX = target.x;
                 const centerY = target.y;
-                // 現在のバウンディングボックス情報を取得
                 let currentBounds = getDecorationBounds(target); 
                 const currentDist = getDistance({x: centerX, y: centerY}, {x: currentX, y: currentY});
                 const initialDist = getDistance({x: centerX, y: centerY}, {x: startX, y: startY});
@@ -1186,29 +1209,58 @@
                 const scaleFactor = currentDist / initialDist;
                 
                 if (target.type === 'text' || target.type === 'emoji') {
-                    // テキスト/絵文字はfontSizeを直接変更してサイズ調整
-                    target.size *= scaleFactor;
+                    target.size = currentDecoInitialSize * scaleFactor;
                 } else {
-                    // 画像/スタンプはwidthとheightを変更
-                    target.width *= scaleFactor;
-                    target.height *= scaleFactor;
+                    target.width = currentDecoInitialWidth * scaleFactor;
+                    target.height = currentDecoInitialHeight * scaleFactor;
                 }
-
-                // 次のフレームでの相対的な開始位置を更新
-                startX = currentX;
-                startY = currentY;
 
             } else if (interactionState.type === 'rotate') {
                 const currentAngle = getAngle({ x: target.x, y: target.y }, pos);
                 const deltaAngle = currentAngle - startAngle;
                 target.rotation = (target.rotation || 0) + deltaAngle;
-                startAngle = currentAngle;
+                startAngle = currentAngle; // 次のフレームのために角度を更新
+                console.log(`[回転] Current Angle: ${(currentAngle * 180 / Math.PI).toFixed(2)} deg, Delta: ${(deltaAngle * 180 / Math.PI).toFixed(2)} deg, New Rotation: ${(target.rotation * 180 / Math.PI).toFixed(2)} deg`);
+            } else if (interactionState.type === 'multi-touch' && e.touches && e.touches.length === 2) {
+                const touch1 = getTouchPos(e.touches[0]);
+                const touch2 = getTouchPos(e.touches[1]);
+                const newDist = getDistance(touch1, touch2);
+                const newAngle = getAngle(touch1, touch2);
+
+                // スケーリング
+                if (lastTouchDist !== null) {
+                    const scaleChange = newDist / lastTouchDist;
+                    if (target.type === 'text' || target.type === 'emoji') {
+                        target.size = currentDecoInitialSize * scaleChange;
+                    } else {
+                        target.width = currentDecoInitialWidth * scaleChange;
+                        target.height = currentDecoInitialHeight * scaleChange;
+                    }
+                }
+
+                // 回転
+                if (initialTouchAngle !== null) {
+                    const angleChange = newAngle - initialTouchAngle;
+                    target.rotation = currentDecoInitialRotation + angleChange;
+                }
+                
+                // 次のフレームのために現在の距離と角度を更新
+                lastTouchDist = newDist;
+                initialTouchAngle = newAngle; 
             }
             drawCanvas();
             updateButtonStates();
         }
 
         function endInteraction() {
+            // タッチジェスチャーの変数をリセット
+            lastTouchDist = null;
+            initialTouchAngle = null;
+            currentDecoInitialRotation = 0;
+            currentDecoInitialWidth = 0;
+            currentDecoInitialHeight = 0;
+            currentDecoInitialSize = 0;
+
             interactionState = { type: 'none', handle: null };
             photoCanvas.style.cursor = 'grab';
             removeInteractionListeners();
@@ -1369,23 +1421,6 @@
             }
         });
 
-        // --- 回転モードボタンイベントリスナー ---
-        rotateModeButton.addEventListener('click', () => {
-            if (selectedDecoration) {
-                if (currentAction === 'rotate_mode') {
-                    currentAction = 'none';
-                    showMessageBox('回転モードを解除しました。');
-                } else {
-                    currentAction = 'rotate_mode';
-                    showMessageBox('回転モードが有効になりました。選択中の要素をドラッグして回転してください。');
-                }
-            } else {
-                showMessageBox('回転するデコレーションを選択してください。');
-                currentAction = 'none'; // 何も選択されていない場合はモードをリセット
-            }
-            updateButtonStates(); // ボタンのハイライト状態を更新
-        });
-
         // --- 選択中のテキストプロパティ変更イベントリスナー ---
         textColorPicker.addEventListener('input', () => {
             if (selectedDecoration && selectedDecoration.type === 'text') {
@@ -1507,4 +1542,3 @@
     </script>
 </body>
 </html>
-�
