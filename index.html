@@ -197,9 +197,9 @@
 <body>
   <div id="langButtons">
     <button onclick="setLanguage('ja')">🇯🇵JP</button>
-    <button onclick="setLanguage('en')">🇺🇸EN</button>
+    <button onclick="setLanguage('en')">�🇸EN</button>
     <button onclick="setLanguage('zh')">🇨🇳中文</button>
-    <button onclick="setLanguage('ko')">🇰�KO</button>
+    <button onclick="setLanguage('ko')">🇰🇷KO</button>
     <button onclick="setLanguage('vi')">🇻🇳VIt</button>
   </div>
   <button id="howToBtn" style="margin:10px; padding:10px 20px; border-radius:20px; background:#2196f3; color:white; border:none; cursor:pointer;" data-ja="❓ 使い方" data-en="❓ How to Use" data-zh="❓ 使用方法" data-ko="❓ 사용 방법" data-vi="❓ Cách sử dụng">❓ 使い方</button>
@@ -257,7 +257,7 @@
             <button id="addTextBtn" data-ja="文字追加" data-en="Add Text" data-zh="添加文字" data-ko="글자 추가" data-vi="Thêm chữ">文字追加</button>
           </div>
           <div id="stampGroup">
-            <label>スタンプ：</labe
+            <label>スタンプ：</label>
             <button onclick="addStamp('❤️')">❤️</button>
             <button onclick="addStamp('⭐')">⭐</button>
             <button onclick="addStamp('🎶')">🎶</button>
@@ -297,8 +297,8 @@
       ja: '⚠️ まだファイルが選ばれていません。うちわに使う画像を選んでください。',
       en: '⚠️ No file selected yet. Please upload an image.',
       zh: '⚠️ 尚未选择文件，请上传图片。',
-      ko: '⚠️ 아직 파일이 선택되지 않았습니다。이미지를 업로드하세요。',
-      vi: '⚠️ Chưa chọn tệp. Vui lòng tải ảnh lên。',
+      ko: '⚠️ 아직 파일이 선택되지 않았습니다。이미지를 업ロード하세요。',
+      vi: '⚠️ Chưa chọn tệp. VCari tệp。',
     };
     
     let currentLang = 'ja';
@@ -322,6 +322,7 @@
 
     const selectionHandleSize = 40; // 選択ハンドルのサイズ（ピクセル）
     const rotationHandleSize = 60; // 回転ハンドルのサイズ（ピクセル）
+    const textBorderOffset = 20; // テキストの選択枠のオフセット（パディング）
 
     // 新しい状態変数：写真が確定されたかどうか
     let photoConfirmed = false; 
@@ -362,19 +363,23 @@
       reader.onload = function(event) {
         uploadedImg = new Image();
         uploadedImg.onload = () => {
-          // 画像をキャンバスの中心に配置し、キャンバスに収まるように初期スケールを設定
-          const aspectRatio = uploadedImg.width / uploadedImg.height;
-          let initialWidth = canvas.width * 0.8; // キャンバス幅の80%を初期幅とする
-          let initialHeight = initialWidth / aspectRatio;
+          // 画像の初期配置ロジックを改善
+          const imgAspect = uploadedImg.width / uploadedImg.height;
+          const canvasAspect = canvas.width / canvas.height;
+          let scale;
+          const paddingRatio = 0.9; // キャンバスの90%に収まるように
 
-          if (initialHeight > canvas.height * 0.8) { // 高さがキャンバスの80%を超える場合、高さ基準で調整
-              initialHeight = canvas.height * 0.8;
-              initialWidth = initialHeight * aspectRatio;
+          if (imgAspect > canvasAspect) {
+            // 画像がキャンバスより横長の場合、幅に合わせてスケール
+            scale = (canvas.width * paddingRatio) / uploadedImg.width;
+          } else {
+            // 画像がキャンバスより縦長または同じ場合、高さに合わせてスケール
+            scale = (canvas.height * paddingRatio) / uploadedImg.height;
           }
-          
+
           uploadedImg.x = canvas.width / 2;
           uploadedImg.y = canvas.height / 2;
-          uploadedImg.scale = initialWidth / uploadedImg.width; // 実際の画像サイズに対するスケール
+          uploadedImg.scale = scale; 
           uploadedImg.rotation = 0;
 
           photoConfirmed = false; // 写真を再アップロードした場合は未確定状態に戻す
@@ -384,7 +389,6 @@
           editableObjects = []; // 新しい写真がロードされたらデコレーションはクリア
           decoHistory = []; // デコレーション履歴もクリア
           decoHistoryIndex = -1;
-          // savePhotoEditState(); // 写真の初期状態を保存（写真編集のUndo/Redo用ではないが、状態の記録として）
           draw();
           document.getElementById('area-canvas').scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
@@ -518,7 +522,7 @@
         // uploadedImg.widthとuploadedImg.heightは元の画像サイズ
         // uploadedImg.scaleは、元の画像サイズをキャンバスに描画する際の倍率
         // drawImageの第3,4引数で実際の描画サイズを指定する
-        ctx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2, uploadedImg.width, uploadedImg.height);
+        ctx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2, uploadedImg.width * uploadedImg.scale, uploadedImg.height * uploadedImg.scale);
         ctx.restore();
       }
 
@@ -536,7 +540,7 @@
           ctx.fillText(obj.text, 0, 0);
         } else if (obj.type === 'image') {
           if (obj.img && obj.img.complete) {
-            ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+            ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width * obj.scale, obj.height * obj.scale);
           }
         }
         ctx.restore();
@@ -569,14 +573,18 @@
           objRenderedWidth = ctx.measureText(obj.text).width;
           objRenderedHeight = obj.fontSize * obj.scale;
           ctx.restore();
+          // テキストの場合は選択枠にオフセットを追加
+          objRenderedWidth += textBorderOffset;
+          objRenderedHeight += textBorderOffset;
       } else { // image
           objRenderedWidth = obj.width * obj.scale;
           objRenderedHeight = obj.height * obj.scale;
       }
-
-      ctx.strokeStyle = '#2196f3';
-      ctx.lineWidth = 4;
-      ctx.setLineDash([10, 10]);
+      
+      // 選択枠
+      ctx.strokeStyle = '#2196f3'; // 明るい青
+      ctx.lineWidth = 6; // 太い線
+      ctx.setLineDash([15, 10]); // 点線スタイルをより明確に
       ctx.strokeRect(-objRenderedWidth / 2, -objRenderedHeight / 2, objRenderedWidth, objRenderedHeight);
       ctx.setLineDash([]);
 
@@ -591,13 +599,19 @@
         ctx.beginPath();
         ctx.arc(h.x, h.y, selectionHandleSize / 2, 0, 2 * Math.PI);
         ctx.fill();
+        ctx.strokeStyle = '#fff'; // ハンドルの境界線を白くして見やすく
+        ctx.lineWidth = 2;
+        ctx.stroke();
       });
 
       // 回転ハンドル
       ctx.beginPath();
       ctx.arc(0, -objRenderedHeight / 2 - rotationHandleSize / 2 - 10, rotationHandleSize / 2, 0, 2 * Math.PI); // 位置を調整
-      ctx.fillStyle = '#f44336';
+      ctx.fillStyle = '#f44336'; // 赤色
       ctx.fill();
+      ctx.strokeStyle = '#fff'; // ハンドルの境界線を白くして見やすく
+      ctx.lineWidth = 2;
+      ctx.stroke();
       ctx.restore();
     }
     
@@ -796,15 +810,13 @@
           objRenderedWidth = ctx.measureText(obj.text).width;
           objRenderedHeight = obj.fontSize * obj.scale; // テキストの高さはフォントサイズとする
           ctx.restore();
+          // テキストの場合は、選択枠のオフセットも考慮
+          return rotatedX >= -objRenderedWidth / 2 - textBorderOffset / 2 && rotatedX <= objRenderedWidth / 2 + textBorderOffset / 2 && rotatedY >= -objRenderedHeight / 2 - textBorderOffset / 2 && rotatedY <= objRenderedHeight / 2 + textBorderOffset / 2;
       } else { // image
           objRenderedWidth = obj.width * obj.scale;
           objRenderedHeight = obj.height * obj.scale;
+          return rotatedX >= -objRenderedWidth / 2 && rotatedX <= objRenderedWidth / 2 && rotatedY >= -objRenderedHeight / 2 && rotatedY <= objRenderedHeight / 2;
       }
-
-      const halfWidth = objRenderedWidth / 2;
-      const halfHeight = objRenderedHeight / 2;
-
-      return rotatedX >= -halfWidth && rotatedX <= halfWidth && rotatedY >= -halfHeight && rotatedY <= halfHeight;
     }
 
     // ハンドルのヒットテスト（リサイズ・回転ハンドルがクリックされたかどうか）
@@ -827,6 +839,9 @@
             objRenderedWidth = ctx.measureText(obj.text).width;
             objRenderedHeight = obj.fontSize * obj.scale;
             ctx.restore();
+            // テキストの場合は選択枠のオフセットも考慮
+            objRenderedWidth += textBorderOffset;
+            objRenderedHeight += textBorderOffset;
         } else {
             objRenderedWidth = obj.width * obj.scale;
             objRenderedHeight = obj.height * obj.scale;
@@ -935,22 +950,30 @@
         const rotatedMouseX = (pos.x - currentCenter.x) * Math.cos(-angle) - (pos.y - currentCenter.y) * Math.sin(-angle);
         const rotatedMouseY = (pos.x - currentCenter.x) * Math.sin(-angle) + (pos.y - currentCenter.y) * Math.cos(-angle);
         
-        // 元のオブジェクトサイズとスケールに基づいて、新しいスケールを計算
-        // ここでのobj.width/heightはスケール適用前の「元のサイズ」
-        let originalObjWidth = selectedObject.width;
-        let originalObjHeight = selectedObject.height;
-
+        let originalObjWidth, originalObjHeight;
         if (selectedObject.type === 'text') {
             ctx.save();
             ctx.font = `${selectedObject.fontSize}px ${selectedObject.font}`;
             originalObjWidth = ctx.measureText(selectedObject.text).width;
             originalObjHeight = selectedObject.fontSize;
             ctx.restore();
+            // リサイズ計算時もオフセットを考慮に入れる
+            originalObjWidth += textBorderOffset;
+            originalObjHeight += textBorderOffset;
+        } else {
+            originalObjWidth = selectedObject.width;
+            originalObjHeight = selectedObject.height;
         }
-
-        const newScaleX = Math.abs(rotatedX * 2 / originalObjWidth);
-        const newScaleY = Math.abs(rotatedY * 2 / originalObjHeight);
-        let newScale = Math.max(newScaleX, newScaleY); // 最大値で統一スケールを適用
+        
+        // リサイズは中心からの相対距離で計算し、アスペクト比を保つ
+        // マウス位置から中心までの距離を計算し、それを元のサイズの半分と比較
+        const distFromCenter = Math.hypot(rotatedMouseX, rotatedMouseY);
+        const originalHalfDiagonal = Math.hypot(originalObjWidth / 2, originalObjHeight / 2);
+        
+        let newScale = 1;
+        if (originalHalfDiagonal > 0) { // ゼロ除算を避ける
+            newScale = distFromCenter / originalHalfDiagonal;
+        }
 
         // 最小・最大スケールを設定
         selectedObject.scale = Math.max(0.1, Math.min(5, newScale)); 
@@ -981,8 +1004,9 @@
       if (!uploadedImg || photoConfirmed) return; // 写真がロードされている、かつ未確定の場合のみズーム
       e.preventDefault();
       const oldScale = uploadedImg.scale;
-      uploadedImg.scale += e.deltaY * -0.0005; // ズーム速度を調整
-      uploadedImg.scale = Math.max(0.1, Math.min(5, uploadedImg.scale));
+      const zoomFactor = 1.05; // ズーム速度を調整
+      const newScale = e.deltaY < 0 ? oldScale * zoomFactor : oldScale / zoomFactor;
+      uploadedImg.scale = Math.max(0.1, Math.min(5, newScale));
 
       // ズームイン/アウトの中心がマウスカーソルになるように調整
       const mousePos = getMousePos(e);
@@ -991,7 +1015,6 @@
       uploadedImg.y = mousePos.y - ((mousePos.y - uploadedImg.y) * scaleRatio);
 
       draw();
-      // savePhotoEditState(); // ここでは履歴保存は不要
     }
 
     let lastTouch = null;
@@ -1014,6 +1037,7 @@
                     const handleType = getHandleHit(selectedObject, pos.x, pos.y);
                     dragMode = handleType || 'move';
                     hitSomething = true;
+                    // 選択されたオブジェクトを最前面に移動
                     editableObjects.splice(i, 1);
                     editableObjects.push(selectedObject);
                     break;
@@ -1038,17 +1062,23 @@
         draw();
         updateButtonStates();
 
-      } else if (touches.length === 2 && !photoConfirmed) { // 写真が未確定の場合のみ写真のマルチタッチ操作
-        selectedObject = null;
-        dragMode = null; // 単一オブジェクトのドラッグモードをクリア
+      } else if (touches.length === 2) {
+        // マルチタッチジェスチャーの初期状態を保存
         lastTouch = touches;
+        let targetObjectForMultiTouch = null;
 
-        if (uploadedImg) {
+        if (!photoConfirmed && uploadedImg) {
+            targetObjectForMultiTouch = uploadedImg;
+        } else if (photoConfirmed && selectedObject) {
+            targetObjectForMultiTouch = selectedObject;
+        }
+
+        if (targetObjectForMultiTouch) {
             touchStartStates = {
-                scale: uploadedImg.scale,
-                rotation: uploadedImg.rotation,
-                x: uploadedImg.x,
-                y: uploadedImg.y,
+                scale: targetObjectForMultiTouch.scale,
+                rotation: targetObjectForMultiTouch.rotation,
+                x: targetObjectForMultiTouch.x,
+                y: targetObjectForMultiTouch.y,
                 p1: getMousePos(touches[0]),
                 p2: getMousePos(touches[1]),
             };
@@ -1068,8 +1098,27 @@
       if (touches.length === 1 && dragMode) {
         const pos = getMousePos(touches[0]);
         // マウスムーブロジックを再利用
+        // touchStartStatesのdragModeに対応する初期状態をセット
+        if (!startObjectState && selectedObject && (dragMode === 'move' || dragMode === 'resize' || dragMode === 'rotate')) {
+            startObjectState = { 
+                x: selectedObject.x, 
+                y: selectedObject.y, 
+                scale: selectedObject.scale, 
+                rotation: selectedObject.rotation 
+            };
+            startPoint = { x: pos.x, y: pos.y };
+        } else if (!startObjectState && uploadedImg && dragMode === 'move_photo') {
+            startObjectState = { 
+                x: uploadedImg.x, 
+                y: uploadedImg.y, 
+                scale: uploadedImg.scale, 
+                rotation: uploadedImg.rotation 
+            };
+            startPoint = { x: pos.x, y: pos.y };
+        }
         handleMouseMove({ preventDefault: () => {}, clientX: pos.x, clientY: pos.y });
-      } else if (touches.length === 2 && lastTouch && uploadedImg && !photoConfirmed) { // 写真が未確定の場合のみ写真のマルチタッチ操作
+
+      } else if (touches.length === 2 && lastTouch) {
         const p1 = getMousePos(touches[0]);
         const p2 = getMousePos(touches[1]);
         
@@ -1078,42 +1127,55 @@
         const currentDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
         const currentAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
 
-        // スケーリング
-        if (touchStartStates.initialDist !== 0) {
-            uploadedImg.scale = touchStartStates.scale * (currentDist / touchStartStates.initialDist);
-            uploadedImg.scale = Math.max(0.1, Math.min(5, uploadedImg.scale));
+        let targetObject = null;
+        if (!photoConfirmed && uploadedImg) {
+            targetObject = uploadedImg;
+        } else if (photoConfirmed && selectedObject) {
+            targetObject = selectedObject;
         }
 
-        // 回転
-        uploadedImg.rotation = touchStartStates.rotation + (currentAngle - touchStartStates.initialAngle);
-        
-        // パン（移動）
-        // ズームと回転の中心を考慮したパン
-        const oldX = touchStartStates.x;
-        const oldY = touchStartStates.y;
-        
-        uploadedImg.x = oldX + (currentMidX - touchStartStates.initialMidX);
-        uploadedImg.y = oldY + (currentMidY - touchStartStates.initialMidY);
-        
-        draw();
-        lastTouch = touches;
+        if (targetObject && touchStartStates.initialDist !== undefined) { // touchStartStatesが適切に設定されているか確認
+            // スケーリング (アスペクト比を維持)
+            if (touchStartStates.initialDist > 0) { // ゼロ除算を避ける
+                targetObject.scale = touchStartStates.scale * (currentDist / touchStartStates.initialDist);
+                targetObject.scale = Math.max(0.1, Math.min(5, targetObject.scale));
+            }
+
+            // 回転
+            targetObject.rotation = touchStartStates.rotation + (currentAngle - touchStartStates.initialAngle);
+            
+            // パン（移動）
+            // ズームと回転の中心を考慮したパン
+            // マルチタッチの中心がオブジェクトの中心からどれだけ移動したかを計算
+            const deltaMidX = currentMidX - touchStartStates.initialMidX;
+            const deltaMidY = currentMidY - touchStartStates.initialMidY;
+            
+            targetObject.x = touchStartStates.x + deltaMidX;
+            targetObject.y = touchStartStates.y + deltaMidY;
+            
+            draw();
+            lastTouch = touches;
+        }
       }
     }
     
     // タッチエンドイベント
     function handleTouchEnd(e) {
       // 指が離れた時、何かしらの操作モードがアクティブであれば履歴を保存
-      if (dragMode && photoConfirmed) { // デコレーションモードであれば履歴を保存
+      if (photoConfirmed && (dragMode === 'move' || dragMode === 'resize' || dragMode === 'rotate')) { // デコレーションモードでの単一タッチ操作
           saveDecoState();
-      } else if (dragMode === 'move_photo' && !photoConfirmed) { // 写真編集モードでの単一タッチ操作
+      } else if (!photoConfirmed && dragMode === 'move_photo') { // 写真編集モードでの単一タッチ操作
           // 写真編集モードの変更は個別のUndo/Redo機能を持たない
-      } else if (e.touches.length < 2 && lastTouch && uploadedImg && !photoConfirmed) { // 写真のマルチタッチジェスチャーが終了した場合
-          // 写真編集モードの変更は個別のUndo/Redo機能を持たない
+      } else if (e.touches.length === 0 && lastTouch) { // 全ての指が離れた場合（マルチタッチジェスチャーの終了）
+          if (photoConfirmed && selectedObject) {
+              saveDecoState();
+          }
       }
 
       dragMode = null;
       lastTouch = null;
       touchStartStates = {}; // マルチタッチ状態をクリア
+      startObjectState = null; // 単一タッチ操作の開始状態もクリア
       updateButtonStates();
     }
     
@@ -1252,4 +1314,3 @@
   <script src="https://www.line-website.com/social-plugins/js/thirdparty/loader.min.js"></script>
 </body>
 </html>
-�
