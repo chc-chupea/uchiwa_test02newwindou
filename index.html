@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&family=Kosugi+Maru&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&family=Kosugi+Maru&family=DotGothic16&family=Train+One&family=Cherry+Bomb+One&family=Kaisei+Tokumin&display=swap" rel="stylesheet">
   <meta charset="UTF-8" />
-  <title>Myうちわ - デコ機能付き</title>
+  <title>Myうちわ - アップロード版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
@@ -26,11 +26,19 @@
       margin-bottom: 20px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
-    select, input[type="file"], button, label, input[type="text"], input[type="color"], select {
-      margin: 5px 0;
-      padding: 8px;
-      border-radius: 8px;
-      font-size: 14px;
+    .area h2 {
+      font-size: 16px;
+      margin-top: 0;
+      margin-bottom: 12px;
+      color: #1565c0;
+    }
+    select, input[type="file"], button, label {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 16px;
       border: 1px solid #ccc;
       background: #fff;
       box-sizing: border-box;
@@ -38,14 +46,17 @@
     button {
       background: #4cafef;
       color: white;
-      font-size: 14px;
-      border-radius: 20px;
+      font-size: 16px;
+      padding: 12px 24px;
+      border-radius: 30px;
       border: none;
       cursor: pointer;
-      padding: 8px 16px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: transform 0.2s, background 0.3s;
     }
     button:hover {
       background: #2196f3;
+      transform: translateY(-2px);
     }
     canvas {
       width: 100%;
@@ -55,145 +66,832 @@
       border: 1px solid #ddd;
     }
     #mainCanvas { touch-action: none; }
+    #templateLabel {
+      border: none;
+      outline: none;
+    }
+    #previewWrapper img {
+      max-width: 100%;
+      border: 6px solid #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      margin-top: 12px;
+    }
+    #previewNotice {
+      font-size: 13px;
+      margin-top: 8px;
+      color: #555;
+    }
+    #langButtons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    #langButtons button {
+      flex: 1;
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      background: #fdfdfd;
+      color: #333;
+      border-radius: 10px;
+      box-shadow: none;
+    }
+    #langButtons button:hover {
+      background: #f0f0f0;
+    }
+    #customFileLabel {
+      background: linear-gradient(135deg, #4cafef, #2196f3);
+      color: #fff;
+      border-radius: 30px;
+      padding: 14px 26px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+      display: inline-block;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+    }
+    #customFileLabel:hover {
+      background: linear-gradient(135deg, #42a5f5, #1e88e5);
+      transform: scale(1.07);
+    }
+    #decoControls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    #decoControls .control-group {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    #textInputGroup, #stampGroup, #editTools {
+      width: 100%;
+      text-align: center;
+      margin-top: 10px;
+    }
+    #customText {
+      width: 60%;
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+    #addTextBtn, #addStampBtn, .stamp-img-btn, #undoBtn, #redoBtn, #duplicateBtn, #deleteBtn, #bringFrontBtn, #sendBackBtn {
+      padding: 8px 12px;
+      font-size: 14px;
+      background-color: #eee;
+      color: #333;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: none;
+      transition: none;
+      width: auto;
+    }
+    #addTextBtn {
+      background: #00bcd4;
+      color: white;
+    }
+    .stamp-img-btn img {
+      width: 40px;
+      height: auto;
+    }
+    #editTools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+    }
+    #editTools button {
+      flex: 1;
+      min-width: 80px;
+      max-width: 120px;
+    }
+    @media print {
+      body *:not(.fan-print) {
+        display: none !important;
+      }
+      #mainCanvas {
+        width: 100%;
+        height: auto;
+      }
+      canvas {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        -webkit-region-break-inside: avoid;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Myうちわ LAB 🎨</h1>
-
-  <div class="area">
-    <h2>1) デザイン＆写真を選ぶ</h2>
-    <select id="templateSelector">
-      <option value="fan1-highres.png">無地</option>
-      <option value="fan2-highres.png">夏①</option>
-      <option value="fan3-highres.png">夏②</option>
-    </select>
-    <br>
-    <label for="imageLoader" style="background:#4cafef; color:white; border-radius:20px; padding:10px 20px; cursor:pointer;">
-      写真を撮る／ライブラリから選ぶ
-    </label>
-    <input type="file" id="imageLoader" accept="image/*" style="display:none;" />
+  <div id="langButtons">
+    <button onclick="setLanguage('ja')">🇯🇵JP</button>
+    <button onclick="setLanguage('en')">🇺🇸EN</button>
+    <button onclick="setLanguage('zh')">🇨🇳中文</button>
+    <button onclick="setLanguage('ko')">🇰🇷KO</button>
+    <button onclick="setLanguage('vi')">🇻🇳VIt</button>
   </div>
-
-  <div class="area">
-    <h2>2) デザイン編集スペース</h2>
+  <button id="howToBtn" style="margin:10px; padding:10px 20px; border-radius:20px; background:#2196f3; color:white; border:none; cursor:pointer;" data-ja="❓ 使い方" data-en="❓ How to Use" data-zh="❓ 使用方法" data-ko="❓ 사용 방법" data-vi="❓ Cách sử dụng">❓ 使い方</button>
+  <div id="howToModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; max-width:600px; width:90%; padding:20px; overflow-y:auto; max-height:90%;">
+      <h2 id="howToTitle" style="text-align:center; color:#1565c0;" data-ja="📖 Myうちわ LAB 使い方" data-en="📖 How to Use My Uchiwa LAB" data-zh="📖 My团扇LAB 使用方法" data-ko="📖 My우치와 LAB 사용 방법" data-vi="📖 Cách sử dụng My Uchiwa LAB">📖 Myうちわ LAB 使い方</h2>
+      <div id="howToBody" style="text-align:left; line-height:1.6; font-size:14px; color:#333;" data-ja="<ol><li><b>デザインを選ぶ：</b> 無地／夏①／夏②から選択</li><li><b>写真を選ぶ：</b> 「写真を撮る／ライブラリから選ぶ」で撮影または画像を選択</li><li><b>編集する：</b> 1本指で移動、ピンチで拡大縮小、2本指で回転</li><li><b>プレビュー：</b> 「決定 → プレビュー」を押して完成イメージを確認</li><li><b>保存：</b><ul><li>iPhone → 画像を長押しして「写真に追加」</li><li>Android → 画像を長押しして「画像を保存」</li></ul></li><li><b>注文フォーム：</b> 保存したら「注文フォームへ進む」から申込</li><li><b>LINEでシェア：</b> ページ下部のボタンから友達にURLを送信</li></ol>" data-en="<ol><li><b>Choose a design:</b> Select Plain / Summer ① / Summer ②.</li><li><b>Choose a photo:</b> Tap &quot;Take Photo / Choose from Library&quot; to take or pick an image.</li><li><b>Edit:</b> Drag with one finger to move; pinch to zoom; rotate with two fingers.</li><li><b>Preview:</b> Tap &quot;Confirm → Preview&quot; to check the final image.</li><li><b>Save:</b><ul><li>iPhone → Press and hold the image, then select &quot;Add to Photos&quot;.</li><li>Android → Press and hold the image, then select &quot;Save Image&quot;.</li></ul></li><li><b>Order form:</b> After saving, proceed via &quot;Go to Order Form&quot;.</li><li><b>Share on LINE:</b> Use the button at the bottom to send the page URL to friends.</li></ol>" data-zh="<ol><li><b>选择设计：</b> 从「素色／夏季①／夏季②」中选择。</li><li><b>选择照片：</b> 点击「拍照 / 从图库选择」，拍摄或选择图片。</li><li><b>编辑：</b> 单指拖动移动；捏合缩放；双指旋转。</li><li><b>预览：</b> 点击「确认 → 预览」查看完成效果。</li><li><b>保存：</b><ul><li>iPhone → 长按图片，选择「添加到照片」。</li><li>Android → 长按图片，选择「保存图片」。</li></ul></li><li><b>订单表单：</b> 保存后，点击「前往订单表单」提交。</li><li><b>用 LINE 分享：</b> 使用页面底部的按钮，将URL发送给朋友。</li></ol>" data-ko="<ol><li><b>디자인 선택:</b> 무지 / 여름① / 여름② 중에서 선택합니다.</li><li><b>사진 선택:</b> &quot;사진 찍기 / 라이브러리에서 선택&quot;을 눌러 촬영하거나 이미지를 선택합니다.</li><li><b>편집:</b> 한 손가락으로 이동, 핀치로 확대/축소, 두 손가락으로 회전합니다.</li><li><b>미리보기:</b> &quot;확인 → 미리보기&quot;를 눌러 완성 이미지를 확인합니다.</li><li><b>저장:</b><ul><li>iPhone → 이미지를 길게 눌러 &quot;사진에 추가&quot;를 선택합니다.</li><li>Android → 이미지를 길게 눌러 &quot;이미지 저장&quot;을 선택합니다.</li></ul></li><li><b>주문 양식:</b> 저장 후 &quot;주문 양식으로 이동&quot; 버튼으로 진행합니다.</li><li><b>LINE 공유:</b> 페이지 하단 버튼으로 친구에게 URL을 전송합니다.</li></ol>" data-vi="<ol><li><b>Chọn thiết kế:</b> Chọn Trơn / Mùa hè ① / Mùa hè ②.</li><li><b>Chọn ảnh:</b> Nhấn &quot;Chụp ảnh / Chọn từ thư viện&quot; để chụp hoặc chọn ảnh.</li><li><b>Chỉnh sửa:</b> Kéo bằng một ngón tay để di chuyển; chụm để phóng to/thu nhỏ; xoay bằng hai ngón tay.</li><li><b>Xem trước:</b> Nhấn &quot;Xác nhận → Xem trước&quot; để kiểm tra hình hoàn chỉnh.</li><li><b>Lưu:</b><ul><li>iPhone → Nhấn và giữ ảnh, chọn &quot;Thêm vào Ảnh&quot;.</li><li>Android → Nhấn và giữ ảnh, chọn &quot;Lưu hình ảnh&quot;.</li></ul></li><li><b>Mẫu đơn đặt hàng:</b> Sau khi lưu, bấm &quot;Đi tới Form đặt hàng&quot; để tiếp tục.</li><li><b>Chia sẻ qua LINE:</b> Dùng nút ở cuối trang để gửi URL cho bạn bè.</li></ol>"></div>
+      <div style="text-align:center; margin-top:20px;">
+        <button onclick="document.getElementById('howToModal').style.display='none';" style="padding:10px 20px; border:none; border-radius:20px; background:#f44336; color:white; cursor:pointer;" data-ja="閉じる" data-en="Close" data-zh="关闭" data-ko="닫기" data-vi="Đóng">閉じる</button>
+      </div>
+    </div>
+  </div>
+  <h1 id="title" data-ja="Myうちわ LAB" data-en="Let's Make Our Own Fan!" data-zh="一起来制作我们的团扇！" data-ko="우리만의 부채를 만들어보자!" data-vi="Hãy cùng làm quạt giấy của riêng mình!">Myうちわ LAB</h1>
+  <div class="area" id="area-select">
+    <h2 data-ja="1)デザイン＆写真を選ぶ" data-en="1) Selection" data-zh="① 选择设计和照片" data-ko="① 디자인과 사진 선택" data-vi="① Chọn thiết kế & ảnh">1)デザイン＆写真を選ぶ</h2>
+    <label id="templateLabel" data-ja="うちわのデザインを選んでね👇" data-en="Choose a fan design👇" data-zh="请选择一个团扇设计👇" data-ko="부채 디자인을 선택하세요👇" data-vi="Chọn thiết kế quạt👇">うちわのデザインを選んでね👇</label>
+    <select id="templateSelector">
+      <option value="fan1-highres.png" data-ja="無地" data-en="Plain" data-zh="素色" data-ko="무지" data-vi="Trơn">無地</option>
+      <option value="fan2-highres.png" data-ja="夏①" data-en="Summer ①" data-zh="夏季①" data-ko="여름①" data-vi="Mùa hè ①">夏①</option>
+      <option value="fan3-highres.png" data-ja="夏②" data-en="Summer ②" data-zh="夏季②" data-ko="여름②" data-vi="Mùa hè ②">夏②</option>
+    </select>
+    <br />
+    <label for="imageLoader" id="customFileLabel" data-ja="写真を撮る／ライブラリから選ぶ" data-en="Take Photo / Choose from Library" data-zh="拍照 / 从图库选择" data-ko="사진 찍기 / 라이브러리에서 선택" data-vi="Chụp ảnh / Chọn từ thư viện">写真を撮る／ライブラリから選ぶ</label>
+    <input type="file" id="imageLoader" accept="image/*" style="display:none;" />
+    <br />
+    <p id="reuploadNotice" data-ja="※ 画像は何度でも選び直せます。" data-en="※ You can re-select the image as many times as you like." data-zh="※ 您可以多次重新选择图片。" data-ko="※ 이미지는 언제든지 다시 선택할 수 있습니다." data-vi="※ Bạn có thể chọn lại ảnh bao nhiêu lần cũng được." style="font-size: 12px; color: #666;"></p>
+  </div>
+  <div class="area" id="area-deco">
+    <h2 data-ja="2)デコレーション編集" data-en="2) Decorations" data-zh="② 装饰编辑" data-ko="② 꾸미기 편집" data-vi="② Chỉnh sửa trang trí">2)デコレーション編集</h2>
+    <div id="decoControls">
+      <div id="textInputGroup">
+        <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
+        <select id="fontPicker">
+          <option value="'M PLUS Rounded 1c', sans-serif" style="font-family: 'M PLUS Rounded 1c', sans-serif">通常</option>
+          <option value="'DotGothic16', sans-serif" style="font-family: 'DotGothic16', sans-serif">ドットゴシック</option>
+          <option value="'Train One', cursive" style="font-family: 'Train One', cursive">Train One</option>
+          <option value="'Cherry Bomb One', cursive" style="font-family: 'Cherry Bomb One', cursive">手書き風</option>
+          <option value="'Kaisei Tokumin', serif" style="font-family: 'Kaisei Tokumin', serif">丸文字</option>
+        </select>
+        <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
+        <button id="addTextBtn" data-ja="文字追加" data-en="Add Text" data-zh="添加文字" data-ko="글자 추가" data-vi="Thêm chữ">文字追加</button>
+      </div>
+      <div id="stampGroup">
+        <label>スタンプ：</label>
+        <button onclick="addStamp('❤️')">❤️</button>
+        <button onclick="addStamp('⭐')">⭐</button>
+        <button onclick="addStamp('🎶')">🎶</button>
+        <label>ステッカー：</label>
+        <button class="stamp-img-btn" onclick="addStamp('01loveu.png', true)"><img src="01loveu.png" alt="大好きだよステッカー" /></button>
+        <button class="stamp-img-btn" onclick="addStamp('02ntwithFace.png', true)"><img src="02ntwithFace.png" alt="顔が天才ステッカー" /></button>
+        <button class="stamp-img-btn" onclick="addStamp('03eyestome.jpg', true)"><img src="03eyestome.jpg" alt="3秒見つめてステッカー" /></button>
+        <button class="stamp-img-btn" onclick="addStamp('04getmyheart.jpg', true)"><img src="04getmyheart.jpg" alt="撃ち抜いてステッカー" /></button>
+      </div>
+    </div>
+    <div id="editTools">
+        <button id="undoBtn" data-ja="元に戻す" data-en="Undo" data-zh="撤消" data-ko="실행 취소" data-vi="Hoàn tác">元に戻す</button>
+        <button id="redoBtn" data-ja="やり直す" data-en="Redo" data-zh="重做" data-ko="다시 실행" data-vi="Làm lại">やり直す</button>
+        <button id="duplicateBtn" data-ja="複製" data-en="Duplicate" data-zh="复制" data-ko="복제" data-vi="Sao chép">複製</button>
+        <button id="deleteBtn" data-ja="削除" data-en="Delete" data-zh="删除" data-ko="삭제" data-vi="Xóa">削除</button>
+        <button id="bringFrontBtn" data-ja="前面へ" data-en="Bring Front" data-zh="置于顶层" data-ko="앞으로" data-vi="Lên trước">前面へ</button>
+        <button id="sendBackBtn" data-ja="背面へ" data-en="Send Back" data-zh="置于底层" data-ko="뒤로" data-vi="Ra sau">背面へ</button>
+    </div>
+  </div>
+  <div class="area" id="area-canvas">
+    <h2 data-ja="3) デザイン編集スペース" data-en="3) Canvas" data-zh="③ 设计编辑区" data-ko="③ 디자인 편집 공간" data-vi="③ Khu vực chỉnh sửa thiết kế">3)デザイン編集スペース</h2>
     <div id="canvasWrapper">
       <canvas id="mainCanvas" width="3508" height="2480"></canvas>
     </div>
-    <button id="saveBtn">決定 → プレビュー</button>
+    <p id="editNotice" data-ja="※ 写真は1本の指で位置を動かせます。2本の指で大きさや向きを変えることができます。" data-en="※ Move the photo with one finger. Pinch to zoom, use two fingers to rotate." data-zh="※ 用一根手指移动照片。捏合缩放，用两根手指旋转。" data-ko="※ 손가락 한 개로 사진을 이동합니다. 두 손가락으로 확대/축소 및 회전할 수 있습니다." data-vi="※ Dùng một ngón tay để di chuyển ảnh. Chụm để phóng to/thu nhỏ, hai ngón tay để xoay." style="font-size: 12px; color: #666; margin-bottom: 10px;"></p>
+    <p id="decoEditNotice" style="font-size: 12px; color: #666;">※ 文字・スタンプ・ステッカーはシングルタップで選択、ドラッグで移動、選択枠のハンドルでサイズ変更・回転ができます。</p>
+    <button id="saveBtn" data-ja="決定 → プレビュー" data-en="Confirm → Preview" data-zh="确认 → 预览" data-ko="확인 → 미리보기" data-vi="Xác nhận → Xem trước">決定 → プレビュー</button>
+    <p id="notice" style="font-size:14px; color:red;"></p>
   </div>
-
-  <!-- === Decoration Toolbar === -->
-  <div id="decoToolbar" class="area">
-    <h2>3) デコレーション</h2>
-    <div style="display:flex; flex-wrap:wrap; gap:8px;">
-      <input id="decoTextInput" type="text" placeholder="推しへのメッセージや絵文字（例：❤️）" style="flex:1; min-width:200px;">
-      <input id="decoColor" type="color" value="#ff69b4" title="文字色">
-      <select id="decoFont" title="フォント">
-        <option value="M PLUS Rounded 1c">Rounded</option>
-        <option value="Kosugi Maru">Kosugi Maru</option>
-        <option value="Arial">Arial</option>
-        <option value="serif">Serif</option>
-        <option value="monospace">Monospace</option>
-      </select>
-      <button id="addTextBtn">＋テキスト/絵文字を追加</button>
-      <label style="display:inline-block; padding:10px 14px; border:1px solid #ccc; border-radius:10px; cursor:pointer;">
-        ＋PNGスタンプ<input id="stampLoader" type="file" accept="image/png" style="display:none;">
-      </label>
-    </div>
-
-    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
-      <button id="btnDuplicate">複製</button>
-      <button id="btnDelete">削除</button>
-      <button id="btnBringFront">前面へ</button>
-      <button id="btnSendBack">背面へ</button>
-      <button id="btnUndo">↶ 戻る</button>
-      <button id="btnRedo">↷ やり直し</button>
-    </div>
-
-    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
-      <button class="preset-stamp" data-src="01loveu.png">❤️Love U</button>
-      <button class="preset-stamp" data-src="02ntwithFace.png">😊With Face</button>
-      <button class="preset-stamp" data-src="03eyestome.png">👀 Eyes</button>
-      <button class="preset-stamp" data-src="04getmyheart.png">💖Heart</button>
-    </div>
-  </div>
-
   <div class="area" id="area-result">
-    <h2>完成イメージ</h2>
+    <h2 data-ja="4) 完成イメージ" data-en="4) Final Image" data-zh="④ 最终效果图" data-ko="④ 최종 이미지" data-vi="④ Hình hoàn chỉnh">4)完成イメージ</h2>
     <div id="previewWrapper" style="display:none; text-align:center; margin-top:16px;">
       <img id="previewImage" alt="合成画像プレビュー" style="max-width:90%; border:1px solid #ccc; border-radius:10px;" />
     </div>
+    <div id="previewNotice" style="font-size:14px; color:black; margin-top:10px;"></div>
+    <br>
+    <button id="go-to-form" data-ja="📝 注文フォームへ進む" data-en="📝 Go to Order Form" data-zh="📝 前往订单表单" data-ko="📝 주문 양식으로 이동" data-vi="📝 Đi tới Form đặt hàng">📝 注文フォームへ進む</button>
+    <div id="manual-link" style="display: none; margin-top: 10px;" data-ja='フォームに進めない場合は <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">こちら</a> をクリックしてください。' data-en='If you cannot access the form, please click <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">here</a>.' data-zh='如果无法进入表单，请点击 <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">这里</a>。' data-ko='폼에 접속할 수 없는 경우 <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">여기</a>를 클릭하세요.' data-vi='Nếu không mở được form, vui lòng nhấn <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">tại đây</a>.'>フォームに進めない場合は <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">こちら</a> をクリックしてください。</div>
+    <div class="line-it-button" data-lang="ja" data-type="share-a" data-url="https://chc-chupea.github.io/my-uchiwa-studio/" style="display: inline-block; margin-top: 20px;"></div>
   </div>
-
+  <footer id="footer-text" style="font-size: 6px; color: #888; margin-top: 20px;" data-ja="© 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br>このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br>※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。" data-en="© 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br>This web application is an in-house project developed by an employee for local events.<br>*This is not an official service but is used considering compatibility with business activities." data-zh="© 2025 中国新闻销售中心。由佐佐木瞳开发的网络应用程序。保留所有权利。<br>该应用程序是中国新闻销售中心员工为社区活动自主开发的项目。<br>*此应用并非官方服务，但考虑到业务需要而使用。" data-ko="© 2025 주고쿠 신문 판매 센터. 사사키 히토미가 개발한 웹 애플리케이션. 모든 권리 보유.<br>이 웹앱은 지역 이벤트를 위해 직원이 자체 개발한 프로젝트입니다.<br>*본 앱은 공식 서비스가 아니지만 업무와의 친화성을 고려하여 사용됩니다." data-vi="© 2025 Trung tâm Phân phối Báo Chugoku. Ứng dụng web do Hitomi Sasaki phát triển. Giữ toàn quyền.<br>Ứng dụng này là dự án tự phát triển của nhân viên cho sự kiện địa phương.<br>*Đây không phải dịch vụ chính thức nhưng được dùng do phù hợp với công việc.">© 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br>このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br>※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。</footer>
   <script>
+    const saveWarningTexts = {
+      ja: '⚠️ まだファイルが選ばれていません。うちわに使う画像を選んでください。',
+      en: '⚠️ No file selected yet. Please upload an image.',
+      zh: '⚠️ 尚未选择文件，请上传图片。',
+      ko: '⚠️ 아직 파일이 선택되지 않았습니다. 이미지를 업로드하세요.',
+      vi: '⚠️ Chưa chọn tệp. Vui lòng tải ảnh lên.',
+    };
+    
+    let currentLang = 'ja';
     const canvas = document.getElementById('mainCanvas');
     const ctx = canvas.getContext('2d');
+    let history = [];
+    let historyIndex = -1;
     let uploadedImg = null;
-    let imgX = 100, imgY = 100, scale = 1, rotation = 0;
-    let isDragging = false, lastX, lastY, dragMode = null;
+    let templateImg = new Image();
+    let editableObjects = [];
+    let selectedObject = null;
+    let dragMode = null;
+    let startPoint = { x: 0, y: 0 };
+    let startObjectState = null;
+    const selectionHandleSize = 40; // 選択ハンドルのサイズ（ピクセル）
+    const rotationHandleSize = 60; // 回転ハンドルのサイズ（ピクセル）
 
     const templateSelector = document.getElementById('templateSelector');
-    let templateImg = new Image();
     templateImg.src = templateSelector.value;
-    templateSelector.addEventListener('change', () => { templateImg.src = templateSelector.value; draw(); });
-    templateImg.onload = () => draw();
+    templateSelector.addEventListener('change', () => {
+      templateImg.src = templateSelector.value;
+      saveState();
+      draw();
+    });
 
+    templateImg.onload = () => draw();
     document.getElementById('imageLoader').addEventListener('change', function(e) {
       const reader = new FileReader();
       reader.onload = function(event) {
         uploadedImg = new Image();
         uploadedImg.onload = () => {
-          imgX = canvas.width / 2;
-          imgY = canvas.height / 2;
-          scale = 1;
-          rotation = 0;
+          uploadedImg.x = canvas.width / 2;
+          uploadedImg.y = canvas.height / 2;
+          uploadedImg.scale = 1;
+          uploadedImg.rotation = 0;
+          saveState();
           draw();
+          document.getElementById('area-canvas').scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
         uploadedImg.src = event.target.result;
       };
       reader.readAsDataURL(e.target.files[0]);
     });
 
-    // ======= デコレーション処理（長い部分すべて統合済み） =======
-    // 上の回答で提示したデコレーション管理用のJSをすべて統合した完全版
-    // （elements配列, snapshot/undo/redo, addText, addStampFromFile,
-    // draw/drawElement/drawSelection, ヒットテスト, イベント処理, スマホ対応）
+    function saveState() {
+      history = history.slice(0, historyIndex + 1);
+      const state = {
+        uploadedImg: uploadedImg ? {
+          src: uploadedImg.src, x: uploadedImg.x, y: uploadedImg.y, scale: uploadedImg.scale, rotation: uploadedImg.rotation
+        } : null,
+        editableObjects: JSON.parse(JSON.stringify(editableObjects))
+      };
+      history.push(state);
+      historyIndex++;
+      updateButtonStates();
+    }
 
-    // ★ presetスタンプ追加処理
-    document.querySelectorAll('.preset-stamp').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const src = btn.dataset.src;
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        restoreState();
+      }
+    }
+
+    function redo() {
+      if (historyIndex < history.length - 1) {
+        historyIndex++;
+        restoreState();
+      }
+    }
+
+    function restoreState() {
+      const state = history[historyIndex];
+      uploadedImg = state.uploadedImg ? Object.assign(new Image(), { src: state.uploadedImg.src, x: state.uploadedImg.x, y: state.uploadedImg.y, scale: state.uploadedImg.scale, rotation: state.uploadedImg.rotation }) : null;
+      uploadedImg.onload = draw;
+      editableObjects = state.editableObjects.map(obj => {
+        if (obj.type === 'text') return obj;
+        if (obj.type === 'image') {
+          const newImg = new Image();
+          newImg.src = obj.src;
+          obj.img = newImg;
+          return obj;
+        }
+      });
+      selectedObject = null;
+      draw();
+      updateButtonStates();
+    }
+    
+    function updateButtonStates() {
+        document.getElementById('undoBtn').disabled = historyIndex <= 0;
+        document.getElementById('redoBtn').disabled = historyIndex >= history.length - 1;
+        const hasSelection = !!selectedObject;
+        document.getElementById('duplicateBtn').disabled = !hasSelection;
+        document.getElementById('deleteBtn').disabled = !hasSelection;
+        document.getElementById('bringFrontBtn').disabled = !hasSelection || (hasSelection && editableObjects.indexOf(selectedObject) === editableObjects.length - 1);
+        document.getElementById('sendBackBtn').disabled = !hasSelection || (hasSelection && editableObjects.indexOf(selectedObject) === 0);
+    }
+    
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = true;
+
+      if (uploadedImg) {
+        ctx.save();
+        ctx.translate(uploadedImg.x, uploadedImg.y);
+        ctx.rotate(uploadedImg.rotation);
+        ctx.scale(uploadedImg.scale, uploadedImg.scale);
+        ctx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
+        ctx.restore();
+      }
+
+      editableObjects.forEach(obj => {
+        ctx.save();
+        ctx.translate(obj.x, obj.y);
+        ctx.rotate(obj.rotation);
+        ctx.scale(obj.scale, obj.scale);
+
+        if (obj.type === 'text') {
+          ctx.font = `${obj.fontSize}px ${obj.font}`;
+          ctx.fillStyle = obj.color;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(obj.text, 0, 0);
+        } else if (obj.type === 'image') {
+          if (obj.img && obj.img.complete) {
+            ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+          }
+        }
+        ctx.restore();
+      });
+
+      if (templateImg.complete) {
+        ctx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
+      }
+
+      if (selectedObject) {
+        drawSelectionHandles(selectedObject);
+      }
+    }
+
+    function drawSelectionHandles(obj) {
+      ctx.save();
+      ctx.translate(obj.x, obj.y);
+      ctx.rotate(obj.rotation);
+      const w = obj.width * obj.scale;
+      const h = obj.height * obj.scale;
+
+      ctx.strokeStyle = '#2196f3';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([10, 10]);
+      ctx.strokeRect(-w / 2, -h / 2, w, h);
+      ctx.setLineDash([]);
+
+      const handles = [
+        { x: -w / 2, y: -h / 2, cursor: 'nw-resize' },
+        { x: w / 2, y: -h / 2, cursor: 'ne-resize' },
+        { x: w / 2, y: h / 2, cursor: 'se-resize' },
+        { x: -w / 2, y: h / 2, cursor: 'sw-resize' },
+      ];
+      ctx.fillStyle = '#2196f3';
+      handles.forEach(h => {
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, selectionHandleSize / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        h.cursor = 'nwse-resize';
+      });
+
+      ctx.beginPath();
+      ctx.arc(0, -h/2 - rotationHandleSize, rotationHandleSize/2, 0, 2 * Math.PI);
+      ctx.fillStyle = '#f44336';
+      ctx.fill();
+      ctx.restore();
+    }
+    
+    function addTextToOverlay() {
+      const text = document.getElementById('customText').value;
+      if (!text) return;
+      const font = document.getElementById('fontPicker').value;
+      const color = document.getElementById('colorPicker').value;
+      const obj = {
+        type: 'text',
+        text: text,
+        font: font,
+        color: color,
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        scale: 1,
+        rotation: 0,
+        width: 300,
+        height: 100,
+        fontSize: 100,
+      };
+      editableObjects.push(obj);
+      selectedObject = obj;
+      saveState();
+      draw();
+    }
+    
+    function addStamp(content, isImage = false) {
+      let obj;
+      if (isImage) {
         const img = new Image();
+        img.src = content;
         img.onload = () => {
-          const base = 600;
-          const ratio = Math.min(base / img.width, base / img.height);
-          const w = img.width * ratio;
-          const h = img.height * ratio;
-          elements.push({
-            id: crypto.randomUUID(),
-            type: 'stamp',
-            image: img,
-            w,h,
-            x: canvas.width/2,
-            y: canvas.height/2,
-            scale:1,
-            rotation:0
-          });
-          selectedId = elements[elements.length - 1].id;
+          obj = {
+            type: 'image',
+            src: content,
+            img: img,
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            scale: 1,
+            rotation: 0,
+            width: img.naturalWidth,
+            height: img.naturalHeight,
+          };
+          editableObjects.push(obj);
+          selectedObject = obj;
+          saveState();
           draw();
         };
-        img.src = src;
-      });
-    });
+      } else {
+        obj = {
+          type: 'text',
+          text: content,
+          font: 'Arial',
+          color: 'black',
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          scale: 1,
+          rotation: 0,
+          width: 100,
+          height: 100,
+          fontSize: 150,
+        };
+        editableObjects.push(obj);
+        selectedObject = obj;
+        saveState();
+        draw();
+      }
+    }
 
-    // ---------- 保存処理 ----------
+    document.getElementById('addTextBtn').addEventListener('click', addTextToOverlay);
+    document.getElementById('undoBtn').addEventListener('click', undo);
+    document.getElementById('redoBtn').addEventListener('click', redo);
+    document.getElementById('duplicateBtn').addEventListener('click', () => {
+      if (!selectedObject) return;
+      const newObj = JSON.parse(JSON.stringify(selectedObject));
+      newObj.x += 50;
+      newObj.y += 50;
+      if (newObj.type === 'image') {
+        const img = new Image();
+        img.src = newObj.src;
+        newObj.img = img;
+      }
+      editableObjects.push(newObj);
+      selectedObject = newObj;
+      saveState();
+      draw();
+    });
+    document.getElementById('deleteBtn').addEventListener('click', () => {
+      if (!selectedObject) return;
+      const index = editableObjects.indexOf(selectedObject);
+      if (index > -1) {
+        editableObjects.splice(index, 1);
+        selectedObject = null;
+        saveState();
+        draw();
+      }
+    });
+    document.getElementById('bringFrontBtn').addEventListener('click', () => {
+      if (!selectedObject) return;
+      const index = editableObjects.indexOf(selectedObject);
+      if (index > -1 && index < editableObjects.length - 1) {
+        const obj = editableObjects.splice(index, 1)[0];
+        editableObjects.push(obj);
+        saveState();
+        draw();
+      }
+    });
+    document.getElementById('sendBackBtn').addEventListener('click', () => {
+      if (!selectedObject) return;
+      const index = editableObjects.indexOf(selectedObject);
+      if (index > 0) {
+        const obj = editableObjects.splice(index, 1)[0];
+        editableObjects.unshift(obj);
+        saveState();
+        draw();
+      }
+    });
+    document.getElementById('fontPicker').addEventListener('change', (e) => {
+        if (selectedObject && selectedObject.type === 'text') {
+            selectedObject.font = e.target.value;
+            draw();
+            saveState();
+        }
+    });
+    document.getElementById('colorPicker').addEventListener('input', (e) => {
+        if (selectedObject && selectedObject.type === 'text') {
+            selectedObject.color = e.target.value;
+            draw();
+            saveState();
+        }
+    });
+    
+    // イベントリスナーの修正
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('mouseleave', handleMouseUp);
+    canvas.addEventListener('wheel', handleMouseWheel);
+    canvas.addEventListener('touchstart', handleTouchStart);
+    canvas.addEventListener('touchmove', handleTouchMove);
+    canvas.addEventListener('touchend', handleTouchEnd);
+    canvas.addEventListener('touchcancel', handleTouchEnd);
+    
+    function getMousePos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+      };
+    }
+    
+    function hitTest(obj, x, y) {
+      const p = { x, y };
+      const cos = Math.cos(-obj.rotation);
+      const sin = Math.sin(-obj.rotation);
+      const translatedX = p.x - obj.x;
+      const translatedY = p.y - obj.y;
+      const rotatedX = translatedX * cos - translatedY * sin;
+      const rotatedY = translatedX * sin + translatedY * cos;
+      const halfWidth = (obj.width * obj.scale) / 2;
+      const halfHeight = (obj.height * obj.scale) / 2;
+      return rotatedX >= -halfWidth && rotatedX <= halfWidth && rotatedY >= -halfHeight && rotatedY <= halfHeight;
+    }
+
+    function getHandleHit(obj, x, y) {
+        if (!obj) return null;
+        const p = { x, y };
+        const cos = Math.cos(-obj.rotation);
+        const sin = Math.sin(-obj.rotation);
+        const translatedX = p.x - obj.x;
+        const translatedY = p.y - obj.y;
+        const rotatedX = translatedX * cos - translatedY * sin;
+        const rotatedY = translatedX * sin + translatedY * cos;
+        const w = obj.width * obj.scale;
+        const h = obj.height * obj.scale;
+        
+        const handles = [
+            { x: -w / 2, y: -h / 2, name: 'resize' },
+            { x: w / 2, y: -h / 2, name: 'resize' },
+            { x: w / 2, y: h / 2, name: 'resize' },
+            { x: -w / 2, y: h / 2, name: 'resize' },
+        ];
+        for (let i = 0; i < handles.length; i++) {
+            if (Math.hypot(rotatedX - handles[i].x, rotatedY - handles[i].y) < selectionHandleSize) {
+                return 'resize';
+            }
+        }
+        if (Math.hypot(rotatedX, rotatedY + h / 2 + rotationHandleSize) < rotationHandleSize) {
+            return 'rotate';
+        }
+        return null;
+    }
+    
+    function handleMouseDown(e) {
+      e.preventDefault();
+      const pos = getMousePos(e);
+      let hit = false;
+      for (let i = editableObjects.length - 1; i >= 0; i--) {
+        const obj = editableObjects[i];
+        if (hitTest(obj, pos.x, pos.y)) {
+          selectedObject = obj;
+          const handleType = getHandleHit(selectedObject, pos.x, pos.y);
+          if (handleType) {
+              dragMode = handleType;
+          } else {
+              dragMode = 'move';
+          }
+          hit = true;
+          startPoint = { x: pos.x, y: pos.y };
+          startObjectState = { x: selectedObject.x, y: selectedObject.y, scale: selectedObject.scale, rotation: selectedObject.rotation };
+          break;
+        }
+      }
+      if (uploadedImg && !hit && hitTest(uploadedImg, pos.x, pos.y)) {
+          selectedObject = null;
+          dragMode = 'move_photo';
+          startPoint = { x: pos.x, y: pos.y };
+          startObjectState = { x: uploadedImg.x, y: uploadedImg.y, scale: uploadedImg.scale, rotation: uploadedImg.rotation };
+      } else if (!hit && !uploadedImg) {
+          selectedObject = null;
+          dragMode = null;
+      }
+      if (!hit && uploadedImg) selectedObject = null;
+      draw();
+      updateButtonStates();
+    }
+    
+    function handleMouseMove(e) {
+      e.preventDefault();
+      const pos = getMousePos(e);
+      if (!dragMode) {
+          const handleType = getHandleHit(selectedObject, pos.x, pos.y);
+          canvas.style.cursor = handleType ? (handleType === 'resize' ? 'pointer' : 'crosshair') : 'default';
+          return;
+      }
+      const dx = pos.x - startPoint.x;
+      const dy = pos.y - startPoint.y;
+
+      if (dragMode === 'move') {
+        selectedObject.x = startObjectState.x + dx;
+        selectedObject.y = startObjectState.y + dy;
+      } else if (dragMode === 'move_photo') {
+        uploadedImg.x = startObjectState.x + dx;
+        uploadedImg.y = startObjectState.y + dy;
+      } else if (dragMode === 'resize') {
+        const startDist = Math.hypot(startPoint.x - startObjectState.x, startPoint.y - startObjectState.y);
+        const currentDist = Math.hypot(pos.x - selectedObject.x, pos.y - selectedObject.y);
+        selectedObject.scale = startObjectState.scale * (currentDist / startDist);
+      } else if (dragMode === 'rotate') {
+        const angleStart = Math.atan2(startPoint.y - selectedObject.y, startPoint.x - selectedObject.x);
+        const angleCurrent = Math.atan2(pos.y - selectedObject.y, pos.x - selectedObject.x);
+        selectedObject.rotation = startObjectState.rotation + (angleCurrent - angleStart);
+      }
+      draw();
+    }
+    
+    function handleMouseUp(e) {
+      if (dragMode) saveState();
+      dragMode = null;
+      canvas.style.cursor = 'default';
+    }
+
+    function handleMouseWheel(e) {
+      if (!uploadedImg) return;
+      e.preventDefault();
+      uploadedImg.scale += e.deltaY * -0.001;
+      uploadedImg.scale = Math.max(0.1, Math.min(5, uploadedImg.scale));
+      draw();
+      saveState();
+    }
+
+    let lastTouch = null;
+    function handleTouchStart(e) {
+      e.preventDefault();
+      const touches = e.touches;
+      if (touches.length === 1) {
+        const pos = getMousePos(touches[0]);
+        handleMouseDown({ preventDefault: () => {}, clientX: pos.x, clientY: pos.y, button: 0 });
+      } else if (touches.length === 2) {
+        selectedObject = null;
+        dragMode = null;
+        lastTouch = touches;
+        updateButtonStates();
+      }
+    }
+
+    function handleTouchMove(e) {
+      e.preventDefault();
+      const touches = e.touches;
+      if (touches.length === 1 && dragMode) {
+        const pos = getMousePos(touches[0]);
+        handleMouseMove({ preventDefault: () => {}, clientX: pos.x, clientY: pos.y });
+      } else if (touches.length === 2 && lastTouch) {
+        const p1 = getMousePos(touches[0]);
+        const p2 = getMousePos(touches[1]);
+        const startP1 = getMousePos(lastTouch[0]);
+        const startP2 = getMousePos(lastTouch[1]);
+        const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        const startDist = Math.hypot(startP2.x - startP1.x, startP2.y - startP1.y);
+        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+        const startAngle = Math.atan2(startP2.y - startP1.y, startP2.x - startP1.x);
+
+        if (uploadedImg) {
+            uploadedImg.scale *= dist / startDist;
+            uploadedImg.rotation += angle - startAngle;
+        }
+        draw();
+        lastTouch = touches;
+      }
+    }
+    
+    function handleTouchEnd(e) {
+      if (dragMode) saveState();
+      dragMode = null;
+      lastTouch = null;
+    }
+    
     document.getElementById('saveBtn').addEventListener('click', () => {
-      canvas.toBlob(blob => {
+      const noticeEl = document.getElementById('notice');
+      if (!uploadedImg) {
+        noticeEl.textContent = saveWarningTexts[currentLang] || saveWarningTexts['ja'];
+        noticeEl.style.color = 'red';
+        noticeEl.style.display = 'block';
+        setTimeout(() => { noticeEl.textContent = ''; noticeEl.style.display = 'none'; }, 3000);
+        return;
+      }
+      
+      const combinedCanvas = document.createElement('canvas');
+      combinedCanvas.width = canvas.width;
+      combinedCanvas.height = canvas.height;
+      const combinedCtx = combinedCanvas.getContext('2d');
+      combinedCtx.imageSmoothingEnabled = true;
+
+      if (uploadedImg) {
+        combinedCtx.save();
+        combinedCtx.translate(uploadedImg.x, uploadedImg.y);
+        combinedCtx.rotate(uploadedImg.rotation);
+        combinedCtx.scale(uploadedImg.scale, uploadedImg.scale);
+        combinedCtx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
+        combinedCtx.restore();
+      }
+      
+      editableObjects.forEach(obj => {
+        combinedCtx.save();
+        combinedCtx.translate(obj.x, obj.y);
+        combinedCtx.rotate(obj.rotation);
+        combinedCtx.scale(obj.scale, obj.scale);
+        if (obj.type === 'text') {
+          combinedCtx.font = `${obj.fontSize}px ${obj.font}`;
+          combinedCtx.fillStyle = obj.color;
+          combinedCtx.textAlign = 'center';
+          combinedCtx.textBaseline = 'middle';
+          combinedCtx.fillText(obj.text, 0, 0);
+        } else if (obj.type === 'image') {
+          if (obj.img && obj.img.complete) {
+            combinedCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+          }
+        }
+        combinedCtx.restore();
+      });
+
+      if (templateImg.complete) {
+        combinedCtx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
+      }
+      
+      combinedCanvas.toBlob(blob => {
+        const errorTexts = {
+          ja: '画像作成に失敗しました。もう一度お試しください。',
+          en: 'Failed to create image. Please try again.',
+          zh: '生成图像失败。请再试一次。',
+          ko: '이미지 생성에 실패했습니다. 다시 시도해주세요.',
+          vi: 'Tạo hình ảnh thất bại. Vui lòng thử lại.'
+        };
+        if (!blob) {
+          noticeEl.textContent = errorTexts[currentLang] || errorTexts['ja'];
+          noticeEl.style.color = 'red';
+          return;
+        }
+        if (window._lastPreviewURL) {
+          try { URL.revokeObjectURL(window._lastPreviewURL); } catch (e) {}
+          window._lastPreviewURL = null;
+        }
         const url = URL.createObjectURL(blob);
-        document.getElementById('previewImage').src = url;
-        document.getElementById('previewWrapper').style.display = 'block';
+        window._lastPreviewURL = url;
+        const previewWrapper = document.getElementById('previewWrapper');
+        const previewImg = document.getElementById('previewImage');
+        previewImg.src = url;
+        previewWrapper.style.display = 'block';
+        const previewNotice = document.getElementById('previewNotice');
+        const previewNoticeTexts = {
+          ja: `iPhone：画像を👆長押しして「“写真”に追加」を選んで保存してください。<br><br>Android：画像を👆長押しして「画像を保存」を選択してください。<br><br>保存できたら下の「注文フォームへ進む」ボタンから申込へお進みください。`,
+          en: `iPhone: Press and hold 👆 the image, then select "Add to Photos" to save.<br><br>Android: Press and hold 👆 the image, then select "Save Image".<br><br>After saving, proceed to the order form below.`,
+          zh: `iPhone：长按👆图片，然后选择“添加到照片”进行保存。<br><br>Android：长按👆图片，然后选择“保存图片”。<br><br>保存后，请点击下面的“前往订单表单”。`,
+          ko: `iPhone: 이미지를 👆 길게 눌러 "사진에 추가"를 선택하세요.<br><br>Android: 이미지를 👆 길게 눌러 "이미지 저장"을 선택하세요.<br><br>저장 후 아래의 "주문 양식으로 이동" 버튼을 눌러 진행하세요.`,
+          vi: `iPhone: Nhấn và giữ 👆 hình, chọn "Thêm vào Ảnh" để lưu.<br><br>Android: Nhấn và giữ 👆 hình, chọn "Lưu hình ảnh".<br><br>Sau khi lưu, hãy bấm nút "Đi tới Form đặt hàng" bên dưới.`
+        };
+        previewNotice.innerHTML = previewNoticeTexts[currentLang] || previewNoticeTexts['ja'];
+        previewWrapper.scrollIntoView({ behavior: 'smooth' });
       }, 'image/png');
     });
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      document.querySelectorAll('[data-ja]').forEach(el => {
+        if (el.dataset[lang]) {
+          if (el.tagName === "OPTION" || el.tagName === "BUTTON" || el.tagName === "LABEL") {
+            el.textContent = el.dataset[lang];
+          } else {
+            el.innerHTML = el.dataset[lang];
+          }
+        }
+      });
+    }
+
+    document.getElementById('go-to-form').addEventListener('click', function () {
+        window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform";
+        setTimeout(() => { document.getElementById('manual-link').style.display = 'block'; }, 5000);
+    });
+    
+    window.addEventListener('load', () => {
+      const userLang = navigator.language || navigator.userLanguage;
+      if (userLang.startsWith('en')) setLanguage('en');
+      else if (userLang.startsWith('zh')) setLanguage('zh');
+      else if (userLang.startsWith('ko')) setLanguage('ko');
+      else if (userLang.startsWith('vi')) setLanguage('vi');
+      else setLanguage('ja');
+      saveState();
+    });
+
+    document.getElementById('howToBtn').addEventListener('click', () => {
+      document.getElementById('howToModal').style.display = 'flex';
+    });
   </script>
+  <script src="https://www.line-website.com/social-plugins/js/thirdparty/loader.min.js"></script>
 </body>
 </html>
