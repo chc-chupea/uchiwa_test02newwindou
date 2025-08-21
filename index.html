@@ -263,7 +263,6 @@
     </p>
 
     <!-- 自由テキスト入力エリア -->
-    <h3>自由テキスト</h3>
     <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
     <div style="display: flex; gap: 5px; margin-bottom: 10px;">
       <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
@@ -298,7 +297,6 @@
     </div>
     
     <!-- 編集コントロールボタンエリア -->
-    <h3>編集ツール</h3>
     <div class="edit-tools-container">
       <button id="selectBtn">選択切替</button>
       <button id="undoBtn">戻る</button>
@@ -677,7 +675,7 @@
         rotation: 0,
         color: colorPicker.value,
         fontFamily: fontPicker.value,
-        fontSize: 150 // 初期フォントサイズ
+        fontSize: 600 // 初期フォントサイズ
       };
       decorationObjects.push(newText); // 配列に追加
       selectedObject = newText; // 追加したものを選択状態にする
@@ -738,7 +736,7 @@
           rotation: 0,
           color: 'black', // 絵文字は基本黒色
           fontFamily: 'sans-serif', // 絵文字表示に適したフォント
-          fontSize: 300 // 絵文字の初期フォントサイズ
+          fontSize: 500 // 絵文字の初期フォントサイズ
         };
       }
       decorationObjects.push(newStamp); // 配列に追加
