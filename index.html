@@ -300,6 +300,12 @@
     let history = []; // 編集履歴（アンドゥ/リドゥ用）
     let historyIndex = -1; // 現在の履歴インデックス
 
+    // ジェスチャー開始時のオブジェクトの状態とタッチ中心
+    let initialObjX, initialObjY, initialObjScale, initialObjRotation;
+    let initialTouchCenterX, initialTouchCenterY;
+    // オブジェクトの中心からタッチ中心への初期オフセット（ローカル座標系）
+    let objLocalRefX, objLocalRefY; // 変更: オブジェクトのローカル座標系の参照点
+
     // --- 履歴管理機能 ---
     /**
      * 現在のデコレーションオブジェクトの状態を履歴に保存します。
@@ -768,9 +774,6 @@
     hammertime.get('pinch').set({ enable: true });
     hammertime.get('rotate').set({ enable: true });
 
-    let initialObjX, initialObjY, initialObjScale, initialObjRotation; // ジェスチャー開始時のオブジェクトの状態
-    let initialTouchCenterX, initialTouchCenterY; // ジェスチャー開始時のタッチ中心点（キャンバス座標）
-
     // 操作対象のオブジェクトを返すヘルパー関数
     function getActiveObject() {
         if (!isPhotoLocked) {
@@ -837,23 +840,49 @@
             initialObjX = activeObj.x;
             initialObjY = activeObj.y;
             initialObjScale = activeObj.scale;
-            // ジェスチャー開始時のタッチ中心点をキャンバス座標で記録
+            initialObjRotation = activeObj.rotation; // 回転も考慮
             const touchCenter = getCanvasCoords(e.center.x, e.center.y);
             initialTouchCenterX = touchCenter.x;
             initialTouchCenterY = touchCenter.y;
+
+            // オブジェクトの中心からタッチ中心へのベクトル (キャンバス座標系)
+            const dx_from_obj_to_touch_canvas = initialTouchCenterX - initialObjX;
+            const dy_from_obj_to_touch_canvas = initialTouchCenterY - initialObjY;
+
+            // このベクトルをオブジェクトの初期回転を逆にして、オブジェクトのローカル座標系に変換
+            const cos_initial_rot_inv = Math.cos(-initialObjRotation);
+            const sin_initial_rot_inv = Math.sin(-initialObjRotation);
+            const rotated_dx = dx_from_obj_to_touch_canvas * cos_initial_rot_inv - dy_from_obj_to_touch_canvas * sin_initial_rot_inv;
+            const rotated_dy = dx_from_obj_to_touch_canvas * sin_initial_rot_inv + dy_from_obj_to_touch_canvas * cos_initial_rot_inv;
+
+            // さらに初期スケールで割って、オブジェクトの「unscaled」ローカル座標系の参照点を求める
+            objLocalRefX = rotated_dx / initialObjScale;
+            objLocalRefY = rotated_dy / initialObjScale;
         }
     });
     hammertime.on('pinch', function(e) {
         const activeObj = getActiveObject();
         if (activeObj) {
-            const newScale = initialObjScale * e.scale; // 新しいスケール値
+            const currentTouchCenter = getCanvasCoords(e.center.x, e.center.y);
+            const newScale = initialObjScale * e.scale;
             
-            // 拡大縮小の中心（pivot）を指の中心に合わせるための位置調整
-            // 新しい位置 = 指の中心 + (オブジェクトの初期位置 - 指の中心) * (新しいスケール / 初期スケール)
-            activeObj.x = initialTouchCenterX + (initialObjX - initialTouchCenterX) * (newScale / initialObjScale);
-            activeObj.y = initialTouchCenterY + (initialObjY - initialTouchCenterY) * (newScale / initialObjScale);
+            // ローカル参照点に現在のスケールと回転を適用してキャンバス座標に戻す
+            const currentLocalRefScaledX = objLocalRefX * newScale;
+            const currentLocalRefScaledY = objLocalRefY * newScale;
+
+            const newRotation = initialObjRotation + (e.rotation || 0) * Math.PI / 180; // pinchイベントでもrotationが来る可能性があるので考慮
+            const cos_current_rot = Math.cos(newRotation);
+            const sin_current_rot = Math.sin(newRotation);
+
+            const currentRefRotatedX = currentLocalRefScaledX * cos_current_rot - currentLocalRefScaledY * sin_current_rot;
+            const currentRefRotatedY = currentLocalRefScaledX * sin_current_rot + currentLocalRefScaledY * cos_current_rot;
+
+            // オブジェクトの新しい中心は、現在のタッチ中心からこの変換された参照点を引いた位置
+            activeObj.x = currentTouchCenter.x - currentRefRotatedX;
+            activeObj.y = currentTouchCenter.y - currentRefRotatedY;
             activeObj.scale = newScale; // スケールを更新
-            
+            activeObj.rotation = newRotation; // 回転も更新
+
             drawAll();
         }
     });
@@ -867,33 +896,50 @@
         if (activeObj) {
             initialObjX = activeObj.x;
             initialObjY = activeObj.y;
+            initialObjScale = activeObj.scale; // スケールも考慮
             initialObjRotation = activeObj.rotation;
-            // ジェスチャー開始時のタッチ中心点をキャンバス座標で記録
             const touchCenter = getCanvasCoords(e.center.x, e.center.y);
             initialTouchCenterX = touchCenter.x;
             initialTouchCenterY = touchCenter.y;
+
+            // オブジェクトの中心からタッチ中心へのベクトル (キャンバス座標系)
+            const dx_from_obj_to_touch_canvas = initialTouchCenterX - initialObjX;
+            const dy_from_obj_to_touch_canvas = initialTouchCenterY - initialObjY;
+
+            // このベクトルをオブジェクトの初期回転を逆にして、オブジェクトのローカル座標系に変換
+            const cos_initial_rot_inv = Math.cos(-initialObjRotation);
+            const sin_initial_rot_inv = Math.sin(-initialObjRotation);
+            const rotated_dx = dx_from_obj_to_touch_canvas * cos_initial_rot_inv - dy_from_obj_to_touch_canvas * sin_initial_rot_inv;
+            const rotated_dy = dx_from_obj_to_touch_canvas * sin_initial_rot_inv + dy_from_obj_to_touch_canvas * cos_initial_rot_inv;
+
+            // さらに初期スケールで割って、オブジェクトの「unscaled」ローカル座標系の参照点を求める
+            objLocalRefX = rotated_dx / initialObjScale;
+            objLocalRefY = rotated_dy / initialObjScale;
         }
     });
     hammertime.on('rotate', function(e) {
         const activeObj = getActiveObject();
         if (activeObj) {
+            const currentTouchCenter = getCanvasCoords(e.center.x, e.center.y);
             const newRotation = initialObjRotation + e.rotation * Math.PI / 180; // 新しい回転角度 (ラジアン)
+            const currentScale = initialObjScale * (e.scale || 1); // rotateイベントでもscaleが来る可能性があるので考慮
             
-            // 回転の中心（pivot）を指の中心に合わせるための位置調整
-            // オブジェクトの中心から指の中心へのベクトル
-            const dx = initialObjX - initialTouchCenterX;
-            const dy = initialObjY - initialTouchCenterY;
+            // ローカル参照点に現在のスケールと回転を適用してキャンバス座標に戻す
+            const currentLocalRefScaledX = objLocalRefX * currentScale;
+            const currentLocalRefScaledY = objLocalRefY * currentScale;
 
-            // このベクトルを、オブジェクトの初期回転量から現在の回転量への差分だけ回転させる
-            const angleDiff = newRotation - initialObjRotation;
-            const rotatedDx = dx * Math.cos(angleDiff) - dy * Math.sin(angleDiff);
-            const rotatedDy = dx * Math.sin(angleDiff) + dy * Math.cos(angleDiff);
+            const cos_current_rot = Math.cos(newRotation);
+            const sin_current_rot = Math.sin(newRotation);
 
-            // 新しいオブジェクトの位置 = 指の中心 + 回転後のベクトル
-            activeObj.x = initialTouchCenterX + rotatedDx;
-            activeObj.y = initialTouchCenterY + rotatedDy;
+            const currentRefRotatedX = currentLocalRefScaledX * cos_current_rot - currentLocalRefScaledY * sin_current_rot;
+            const currentRefRotatedY = currentLocalRefScaledX * sin_current_rot + currentLocalRefScaledY * cos_current_rot;
+
+            // オブジェクトの新しい中心は、現在のタッチ中心からこの変換された参照点を引いた位置
+            activeObj.x = currentTouchCenter.x - currentRefRotatedX;
+            activeObj.y = currentTouchCenter.y - currentRefRotatedY;
             activeObj.rotation = newRotation; // 回転を更新
-            
+            activeObj.scale = currentScale; // スケールも更新
+
             drawAll();
         }
     });
