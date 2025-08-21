@@ -197,9 +197,12 @@
       margin-top: 8px; /* 編集ツールエリアの上マージンを維持 */
     }
     .edit-tools-container button {
+        /* flex: 0 0 auto; Removed */
+        /* min-width: 60px; Removed */
         padding: 6px 10px; /* パディングをさらに小さく */
         font-size: 13px; /* フォントサイズをさらに小さく */
         margin: 0; /* flex containerでgapを指定するため、個別のmarginをリセット */
+        /* width: auto; Let content define width */
     }
 
     /* 自由テキスト入力エリア内の要素の間隔調整 */
@@ -260,15 +263,16 @@
     </p>
 
     <!-- 自由テキスト入力エリア -->
+    <h3>自由テキスト</h3>
     <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
     <div style="display: flex; gap: 5px; margin-bottom: 10px;">
       <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
       <select id="fontPicker" style="flex: 1;">
-        <option value="Arial, sans-serif" style="font-family: Arial, sans-serif;">Arial: Sample Text</option>
-        <option value="'DotGothic16', sans-serif" style="font-family: 'DotGothic16', sans-serif;">ドットゴシック: サンプルテキスト</option>
-        <option value="'Train One', cursive" style="font-family: 'Train One', cursive;">Train One: Sample Text</option>
-        <option value="'Cherry Bomb One', cursive" style="font-family: 'Cherry Bomb One', cursive;">手書き風: Sample Text</option>
-        <option value="'Kaisei Tokumin', serif" style="font-family: 'Kaisei Tokumin', serif;">丸文字: サンプルテキスト</option>
+        <option value="Arial, sans-serif">Arial</option>
+        <option value="'DotGothic16', sans-serif">ドットゴシック</option>
+        <option value="'Train One', cursive">Train One</option>
+        <option value="'Cherry Bomb One', cursive">手書き風</option>
+        <option value="'Kaisei Tokumin', serif">丸文字</option>
       </select>
     </div>
     <button onclick="addTextToOverlay()">テキスト追加</button>
@@ -970,7 +974,7 @@
 
             // 初期ベクトルを現在のスケール倍率でスケーリング
             const scaledOffsetX = initialVecOffsetX * (currentScale / initialObjScale);
-            const scaledOffsetY = initialVecOffsetY * (currentScale / obj.initialObjScale);
+            const scaledOffsetY = initialVecOffsetY * (currentScale / initialObjScale);
 
             // スケーリングされたベクトルを回転量の差分で回転
             const rotationDelta = e.rotation * Math.PI / 180; // Hammer.jsのe.rotationはデルタ
