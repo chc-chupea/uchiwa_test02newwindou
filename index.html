@@ -197,11 +197,12 @@
       margin-top: 8px; /* 編集ツールエリアの上マージンを維持 */
     }
     .edit-tools-container button {
-        flex: 0 0 auto; /* 固定幅にせず、内容に合わせて伸縮 */
+        /* flex: 0 0 auto; Removed */
+        /* min-width: 60px; Removed */
         padding: 6px 10px; /* パディングをさらに小さく */
         font-size: 13px; /* フォントサイズをさらに小さく */
         margin: 0; /* flex containerでgapを指定するため、個別のmarginをリセット */
-        min-width: 60px; /* 最低幅を調整 */
+        /* width: auto; Let content define width */
     }
 
     /* 自由テキスト入力エリア内の要素の間隔調整 */
@@ -632,7 +633,7 @@
         if (obj.type === 'text') {
           tempCtx.fillStyle = obj.color;
           // フォントサイズはスケーリング前に設定 (px単位)
-          tempCtx.font = `${obj.fontSize / obj.scale}px ${obj.fontFamily}`;
+          ctx.font = `${obj.fontSize / obj.scale}px ${obj.fontFamily}`;
           tempCtx.textAlign = 'center';
           tempCtx.textBaseline = 'middle';
           tempCtx.fillText(obj.content, 0, 0);
