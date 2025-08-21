@@ -27,7 +27,7 @@
       background: #fff; /* 白い背景のカード */
       border-radius: 20px; /* 角丸 */
       padding: 16px;
-      margin-bottom: 20px;
+      margin-bottom: 16px; /* 間隔を少し詰める */
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* 影 */
     }
     .area h2 {
@@ -160,6 +160,69 @@
       pointer-events: none;
       opacity: 0.5; /* 半透明 */
     }
+
+    /* スタンプボタン専用スタイル */
+    .stamp-buttons-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px; /* ボタン間の隙間を均一に */
+      justify-content: center;
+      margin-top: 8px; /* スタンプエリアの上マージンを調整 */
+      margin-bottom: 8px; /* スタンプエリアの下マージンを調整 */
+    }
+    .stamp-buttons-container .stamp-button {
+      width: auto; /* コンテンツに合わせて幅を調整 */
+      min-width: 45px; /* 最低幅を確保し、タッチしやすくする */
+      padding: 8px 12px; /* パディングを調整 */
+      font-size: 24px; /* 絵文字のサイズを大きく */
+      display: inline-flex; /* flexアイテムとして表示し、中央揃え */
+      align-items: center;
+      justify-content: center;
+      height: 45px; /* ボタンの高さを固定 */
+      margin: 0; /* flex containerでgapを指定するため、個別のmarginをリセット */
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15); /* 影を少し控えめに */
+    }
+
+    .stamp-buttons-container .stamp-button img {
+        height: 30px; /* 画像スタンプのサイズを調整 */
+        vertical-align: middle; /* 垂直方向中央揃え */
+    }
+
+    /* 編集ツールボタンのレイアウト調整 */
+    .edit-tools-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px; /* ボタン間の隙間をさらに詰める */
+      justify-content: center;
+      margin-top: 8px; /* 編集ツールエリアの上マージンを維持 */
+    }
+    .edit-tools-container button {
+        flex: 0 0 auto; /* 固定幅にせず、内容に合わせて伸縮 */
+        padding: 6px 10px; /* パディングをさらに小さく */
+        font-size: 13px; /* フォントサイズをさらに小さく */
+        margin: 0; /* flex containerでgapを指定するため、個別のmarginをリセット */
+        min-width: 60px; /* 最低幅を調整 */
+    }
+
+    /* 自由テキスト入力エリア内の要素の間隔調整 */
+    #customText {
+      margin-bottom: 8px; /* 自由テキスト入力の下マージン */
+      padding: 10px; /* パディングも少し小さく */
+    }
+    #area-decorations > h3:nth-of-type(1) + input[type="text"] + div { /* 自由テキストのカラーピッカーとフォントピッカーを含むdiv */
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+    #area-decorations button[onclick="addTextToOverlay()"] {
+      margin-top: 8px; /* テキスト追加ボタンの上マージン */
+      margin-bottom: 16px; /* 次のセクションへのマージン */
+    }
+
+    /* うちわのデザイン選択ラベルから縁の線をなくす */
+    #templateLabel {
+        border: none;
+        outline: none;
+    }
   </style>
 </head>
 <body>
@@ -171,8 +234,8 @@
     <label id="templateLabel">うちわのデザインを選んでね👇</label>
     <select id="templateSelector">
       <option value="fan1-highres.png" data-lowres="fan1-lowres.png">無地</option>
-      <option value="fan2-highres.png" data-lowres="fan2-highres.png">夏祭り①</option>
-      <option value="fan3-highres.png" data-lowres="fan3-highres.png">夏祭り②</option>
+      <option value="fan2-highres.png" data-lowres="fan2-lowres.png">夏祭り①</option>
+      <option value="fan3-highres.png" data-lowres="fan3-lowres.png">夏祭り②</option>
     </select>
     <label for="imageLoader" id="customFileLabel">写真を撮る／ライブラリから選ぶ</label>
     <input type="file" id="imageLoader" accept="image/*" style="display:none;" />
@@ -215,34 +278,34 @@
 
     <!-- スタンプ（絵文字・PNG）エリア -->
     <h3>スタンプ</h3>
-    <div style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;">
-      <button onclick="addStamp('❤️')">❤️</button>
-      <button onclick="addStamp('⭐')">⭐</button>
-      <button onclick="addStamp('🎶')">🎶</button>
-      <button onclick="addStamp('01loveu.png')">
-        <img src="01loveu.png" alt="Love You" style="height: 24px; vertical-align: middle;">
+    <div class="stamp-buttons-container">
+      <button class="stamp-button" onclick="addStamp('❤️')">❤️</button>
+      <button class="stamp-button" onclick="addStamp('⭐')">⭐</button>
+      <button class="stamp-button" onclick="addStamp('🎶')">🎶</button>
+      <button class="stamp-button" onclick="addStamp('01loveu.png')">
+        <img src="01loveu.png" alt="Love You">
       </button>
-      <button onclick="addStamp('02ntwithFace.png')">
-        <img src="02ntwithFace.png" alt="NT with Face" style="height: 24px; vertical-align: middle;">
+      <button class="stamp-button" onclick="addStamp('02ntwithFace.png')">
+        <img src="02ntwithFace.png" alt="NT with Face">
       </button>
-      <button onclick="addStamp('03eyestome.png')">
-        <img src="03eyestome.png" alt="Eyes to me" style="height: 24px; vertical-align: middle;">
+      <button class="stamp-button" onclick="addStamp('03eyestome.png')">
+        <img src="03eyestome.png" alt="Eyes to me">
       </button>
-      <button onclick="addStamp('04getmyheart.png')">
-        <img src="04getmyheart.png" alt="Get my heart" style="height: 24px; vertical-align: middle;">
+      <button class="stamp-button" onclick="addStamp('04getmyheart.png')">
+        <img src="04getmyheart.png" alt="Get my heart">
       </button>
     </div>
     
     <!-- 編集コントロールボタンエリア -->
     <h3>編集ツール</h3>
-    <div style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;">
-      <button id="selectBtn" style="flex: 1;">選択切替</button>
-      <button id="undoBtn" style="flex: 1;">戻る</button>
-      <button id="redoBtn" style="flex: 1;">やり直し</button>
-      <button id="duplicateBtn" style="flex: 1;">複製</button>
-      <button id="deleteBtn" style="flex: 1; background: #f44336;">削除</button>
-      <button id="sendBackwardBtn" style="flex: 1;">背面へ</button>
-      <button id="bringForwardBtn" style="flex: 1;">前面へ</button>
+    <div class="edit-tools-container">
+      <button id="selectBtn">選択切替</button>
+      <button id="undoBtn">戻る</button>
+      <button id="redoBtn">やり直し</button>
+      <button id="duplicateBtn">複製</button>
+      <button id="deleteBtn" style="background: #f44336;">削除</button>
+      <button id="sendBackwardBtn">背面へ</button>
+      <button id="bringForwardBtn">前面へ</button>
     </div>
 
     <!-- 「決定 → プレビュー」ボタンをデコレーションエリア内に移動 -->
@@ -613,7 +676,7 @@
         rotation: 0,
         color: colorPicker.value,
         fontFamily: fontPicker.value,
-        fontSize: 500 // 初期フォントサイズ
+        fontSize: 150 // 初期フォントサイズ
       };
       decorationObjects.push(newText); // 配列に追加
       selectedObject = newText; // 追加したものを選択状態にする
@@ -674,7 +737,7 @@
           rotation: 0,
           color: 'black', // 絵文字は基本黒色
           fontFamily: 'sans-serif', // 絵文字表示に適したフォント
-          fontSize: 500 // 絵文字の初期フォントサイズ
+          fontSize: 300 // 絵文字の初期フォントサイズ
         };
       }
       decorationObjects.push(newStamp); // 配列に追加
