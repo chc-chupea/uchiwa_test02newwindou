@@ -1,21 +1,23 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&family=Kosugi+Maru&family=DotGothic16&family=Train+One&family=Cherry+Bomb+One&family=Kaisei+Tokumin&display=swap" rel="stylesheet">
   <meta charset="UTF-8" />
-  <title>Myうちわ - アップロード版</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Myうちわ - デコレーション</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&family=DotGothic16&family=Kaisei+Tokumin&family=Train+One&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: 'M PLUS Rounded 1c', sans-serif;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
       background: linear-gradient(135deg, #f0f7ff, #eaf6ff);
       margin: 0;
-      padding: 16px;
+      padding: 10px;
       color: #333;
     }
     h1 {
-      text-align: center;
-      font-size: 22px;
+      font-size: 20px;
       margin-bottom: 20px;
       color: #1565c0;
     }
@@ -24,7 +26,7 @@
       border-radius: 20px;
       padding: 16px;
       margin-bottom: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
     .area h2 {
       font-size: 16px;
@@ -32,7 +34,35 @@
       margin-bottom: 12px;
       color: #1565c0;
     }
-    select, input[type="file"], button, label {
+    #editorWrapper {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      aspect-ratio: 4 / 3;
+      margin: 0 auto;
+      background-color: #f9f9f9;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    #mainCanvas, #overlayCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+    #templateOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      object-fit: contain;
+    }
+    select, input[type="text"], input[type="color"], button, label {
       display: block;
       width: 100%;
       margin: 10px 0;
@@ -51,54 +81,12 @@
       border-radius: 30px;
       border: none;
       cursor: pointer;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
       transition: transform 0.2s, background 0.3s;
     }
     button:hover {
       background: #2196f3;
       transform: translateY(-2px);
-    }
-    canvas {
-      width: 100%;
-      height: auto;
-      background: #f9f9f9;
-      border-radius: 12px;
-      border: 1px solid #ddd;
-    }
-    #mainCanvas { touch-action: none; }
-    #templateLabel {
-      border: none;
-      outline: none;
-    }
-    #previewWrapper img {
-      max-width: 100%;
-      border: 6px solid #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      margin-top: 12px;
-    }
-    #previewNotice {
-      font-size: 13px;
-      margin-top: 8px;
-      color: #555;
-    }
-    #langButtons {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    #langButtons button {
-      flex: 1;
-      padding: 8px;
-      font-size: 14px;
-      border: 1px solid #ddd;
-      background: #fdfdfd;
-      color: #333;
-      border-radius: 10px;
-      box-shadow: none;
-    }
-    #langButtons button:hover {
-      background: #f0f0f0;
     }
     #customFileLabel {
       background: linear-gradient(135deg, #4cafef, #2196f3);
@@ -109,1208 +97,695 @@
       font-size: 16px;
       transition: 0.3s;
       display: inline-block;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
     }
     #customFileLabel:hover {
       background: linear-gradient(135deg, #42a5f5, #1e88e5);
-      transform: scale(1.07);
+      transform: scale(1.05);
     }
-    #decoControls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 10px;
-    }
-    #decoControls .control-group {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-      margin-bottom: 5px;
-    }
-    #textInputGroup, #stampGroup, #editTools {
-      width: 100%;
-      text-align: center;
-      margin-top: 10px;
-    }
-    #customText {
-      width: 60%;
-      padding: 8px;
-      font-size: 16px;
-      border-radius: 8px;
-    }
-    #addTextBtn, #addStampBtn, .stamp-img-btn, #undoBtn, #redoBtn, #duplicateBtn, #deleteBtn, #bringFrontBtn, #sendBackBtn, #confirmPhotoBtn, #reEditPhotoBtn {
-      padding: 8px 12px;
-      font-size: 14px;
-      background-color: #eee;
-      color: #333;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: none;
-      transition: none;
-      width: auto;
-    }
-    #addTextBtn, #confirmPhotoBtn {
-      background: #00bcd4;
+    .form-button {
+      background: linear-gradient(135deg, #2196f3, #1976d2);
       color: white;
+      padding: 12px 24px;
+      margin-top: 20px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 18px;
+      border-radius: 30px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      display: block;
+      width: auto;
+      margin-left: auto;
+      margin-right: auto;
     }
-    #reEditPhotoBtn {
-        background: #ff9800; /* オレンジ色 */
-        color: white;
+    .form-button:hover {
+      background: linear-gradient(135deg, #1976d2, #0d47a1);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
     }
-    .stamp-img-btn img {
-      width: 40px;
-      height: auto;
+    #previewWrapper img {
+      max-width: 100%;
+      border: 6px solid #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      margin-top: 12px;
     }
-    #editTools {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      justify-content: center;
+    .active-object {
+      outline: 2px dashed #42a5f5;
+      outline-offset: 5px;
     }
-    #editTools button {
-      flex: 1;
-      min-width: 80px;
-      max-width: 120px;
-    }
-    #decorationControlsContainer[disabled] {
-        opacity: 0.5;
-        pointer-events: none;
-    }
-    @media print {
-      body *:not(.fan-print) {
-        display: none !important;
-      }
-      #mainCanvas {
-        width: 100%;
-        height: auto;
-      }
-      canvas {
-        page-break-inside: avoid;
-        break-inside: avoid;
-        -webkit-region-break-inside: avoid;
-      }
+    #editorWrapper::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url(fan1-lowres.png) no-repeat center center / contain;
+      pointer-events: none;
+      opacity: 0.5;
     }
   </style>
 </head>
 <body>
-  <div id="langButtons">
-    <button onclick="setLanguage('ja')">🇯🇵JP</button>
-    <button onclick="setLanguage('en')">�🇸EN</button>
-    <button onclick="setLanguage('zh')">🇨🇳中文</button>
-    <button onclick="setLanguage('ko')">🇰🇷KO</button>
-    <button onclick="setLanguage('vi')">🇻🇳VIt</button>
-  </div>
-  <button id="howToBtn" style="margin:10px; padding:10px 20px; border-radius:20px; background:#2196f3; color:white; border:none; cursor:pointer;" data-ja="❓ 使い方" data-en="❓ How to Use" data-zh="❓ 使用方法" data-ko="❓ 사용 방법" data-vi="❓ Cách sử dụng">❓ 使い方</button>
-  <div id="howToModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:16px; max-width:600px; width:90%; padding:20px; overflow-y:auto; max-height:90%;">
-      <h2 id="howToTitle" style="text-align:center; color:#1565c0;" data-ja="📖 Myうちわ LAB 使い方" data-en="📖 How to Use My Uchiwa LAB" data-zh="📖 My团扇LAB 使用方法" data-ko="📖 My우치와 LAB 사용 방법" data-vi="📖 Cách sử dụng My Uchiwa LAB">📖 Myうちわ LAB 使い方</h2>
-      <div id="howToBody" style="text-align:left; line-height:1.6; font-size:14px; color:#333;" data-ja="<ol><li><b>デザインを選ぶ：</b> 無地／夏①／夏②から選択</li><li><b>写真を選ぶ：</b> 「写真を撮る／ライブラリから選ぶ」で撮影または画像を選択</li><li><b>編集する：</b> 1本指で移動、ピンチで拡大縮小、2本指で回転</li><li><b>プレビュー：：</b> 「決定 → プレビュー」を押して完成イメージを確認</li><li><b>保存：</b><ul><li>iPhone → 画像を長押しして「写真に追加」</li><li>Android → 画像を長押しして「画像を保存」</li></ul></li><li><b>注文フォーム：</b> 保存したら「注文フォームへ進む」から申込</li><li><b>LINEでシェア：</b> ページ下部のボタンから友達にURLを送信</li></ol>" data-en="<ol><li><b>Choose a design:</b> Select Plain / Summer ① / Summer ②.</li><li><b>Choose a photo:</b> Tap &quot;Take Photo / Choose from Library&quot; to take or pick an image.</li><li><b>Edit:</b> Drag with one finger to move; pinch to zoom; rotate with two fingers.</li><li><b>Preview:</b> Tap &quot;Confirm → Preview&quot; to check the final image.</li><li><b>Save:</b><ul><li>iPhone → Press and hold the image, then select &quot;Add to Photos&quot;.</li><li>Android → Press and hold the image, then select &quot;Save Image&quot;.</li></ul></li><li><b>Order form:</b> After saving, proceed via &quot;Go to Order Form&quot;.</li><li><b>Share on LINE:</b> Use the button at the bottom to send the page URL to friends.</li></ol>" data-zh="<ol><li><b>选择设计：</b> 从「素色／夏季①／夏季②」中选择。</li><li><b>选择照片：</b> 点击「拍照 / 从图库选择」，拍摄或选择图片。</li><li><b>编辑：：</b> 单指拖动移动；捏合缩放；双指旋转。</li><li><b>预览：</b> 点击「确认 → 预览」查看完成效果。</li><li><b>保存：</b><ul><li>iPhone → 长按图片，选择「添加到照片」。</li><li>Android → 长按图片，选择「保存图片」。</li></ul></li><li><b>订单表单：</b> 保存后，点击「前往订单表单」提交。</li><li><b>用 LINE 分享：</b> 使用页面底部的按钮，将URL发送给朋友。</li></ol>" data-ko="<ol><li><b>디자인 선택:</b> 무지 / 여름① / 여름② 중에서 선택합니다.</li><li><b>사진 선택:</b> &quot;사진 찍기 / 라이브러리에서 선택&quot;을 눌러 촬영하거나 이미지를 선택합니다.</li><li><b>편집:</b> 한 손가락으로 이동, 핀치로 확대/축소, 두 손가락으로 회전합니다.</li><li><b>미리보기:</b> &quot;확인 → 미리보기&quot;를 눌러 완성 이미지를 확인합니다.</li><li><b>저장:</b><ul><li>iPhone → 이미지를 길게 눌러 &quot;사진에 추가&quot;를 선택합니다.</li><li>Android → 이미지를 길게 눌러 &quot;이미지 저장&quot;을 선택합니다.</li></ul></li><li><b>주문 양식:</b> 저장 후 &quot;주문 양식으로 이동&quot; 버튼으로 진행합니다.</li><li><b>LINE 공유:</b> 페이지 하단 버튼으로 친구에게 URL을 전송합니다.</li></ol>" data-vi="<ol><li><b>Chọn thiết kế:</b> Chọn Trơn / Mùa hè ① / Mùa hè ②.</li><li><b>Chọn ảnh:</b> Nhấn &quot;Chụp ảnh / Chọn từ thư viện&quot; để chụp hoặc chọn ảnh.</li><li><b>Chỉnh sửa:</b> Kéo bằng một ngón tay để di chuyển; chụm để phóng to/thu nhỏ; xoay bằng hai ngón tay.</li><li><b>Xem trước:</b> Nhấn &quot;Xác nhận → Xem trước&quot; để kiểm tra hình hoàn chỉnh.</li><li><b>Lưu:</b><ul><li>iPhone → Nhấn và giữ ảnh, chọn &quot;Thêm vào Ảnh&quot;.</li><li>Android → Nhấn và giữ ảnh, chọn &quot;Lưu hình ảnh&quot;.</li></ul></li><li><b>Mẫu đơn đặt hàng:</b> Sau khi lưu, bấm &quot;Đi tới Form đặt hàng&quot; để tiếp tục.</li><li><b>Chia sẻ qua LINE:</b> Dùng nút ở cuối trang để gửi URL cho bạn bè.</li></ol>"></div>
-      <div style="text-align:center; margin-top:20px;">
-        <button onclick="document.getElementById('howToModal').style.display='none';" style="padding:10px 20px; border:none; border-radius:20px; background:#f44336; color:white; cursor:pointer;" data-ja="閉じる" data-en="Close" data-zh="关闭" data-ko="닫기" data-vi="Đóng">閉じる</button>
-      </div>
-    </div>
-  </div>
-  <h1 id="title" data-ja="Myうちわ LAB" data-en="Let's Make Our Own Fan!" data-zh="一起来制作我们的团扇！" data-ko="우리만의 부채를 만들어보자!" data-vi="Hãy cùng làm quạt giấy của riêng mình!">Myうちわ LAB</h1>
+
+  <h1 id="title">Myうちわ</h1>
+
   <div class="area" id="area-select">
-    <h2 data-ja="1)デザイン＆写真を選ぶ" data-en="1) Selection" data-zh="① 选择设计和照片" data-ko="① 디자인과 사진 선택" data-vi="① Chọn thiết kế & ảnh">1)デザイン＆写真を選ぶ</h2>
-    <label id="templateLabel" data-ja="うちわのデザインを選んでね👇" data-en="Choose a fan design👇" data-zh="请选择一个团扇設計👇" data-ko="부채 デザインを 선택하세요👇" data-vi="Chọn thiết kế quạt👇">うちわのデザインを選んでね👇</label>
+    <h2 id="section1-title">1) デザイン＆写真を選ぶ</h2>
+    <label id="templateLabel">うちわのデザインを選んでね👉</label>
     <select id="templateSelector">
-      <option value="fan1-highres.png" data-ja="無地" data-en="Plain" data-zh="素色" data-ko="무지" data-vi="Trơn">無地</option>
-      <option value="fan2-highres.png" data-ja="夏①" data-en="Summer ①" data-zh="夏季①" data-ko="여름①" data-vi="Mùa hè ①">夏①</option>
-      <option value="fan3-highres.png" data-ja="夏②" data-en="Summer ②" data-zh="夏季②" data-ko="여름②" data-vi="Mùa hè ②">夏②</option>
+      <option value="fan1-highres.png" data-lowres="fan1-lowres.png">無地</option>
+      <option value="fan2-highres.png" data-lowres="fan2-lowres.png">夏祭り①</option>
+      <option value="fan3-highres.png" data-lowres="fan3-lowres.png">夏祭り②</option>
     </select>
-    <br />
-    <label for="imageLoader" id="customFileLabel" data-ja="写真を撮る／ライブラリから選ぶ" data-en="Take Photo / Choose from Library" data-zh="拍照 / 从图库选择" data-ko="사진 찍기 / 라이브러리에서 선택" data-vi="Chụp ảnh / Chọn từ thư viện">写真を撮る／ライブラリから選ぶ</label>
+    <label for="imageLoader" id="customFileLabel">写真を撮る／ライブラリから選ぶ</label>
     <input type="file" id="imageLoader" accept="image/*" style="display:none;" />
-    <br />
-    <p id="reuploadNotice" data-ja="※ 画像は何度でも選び直せます。" data-en="※ You can re-select the image as many times as you like." data-zh="※ 您可以多次重新选择图片。" data-ko="※ 이미지는 언제든지 다시 선택할 수 있습니다。" data-vi="※ Bạn có thể chọn lại ảnh bao nhiêu lần cũng được。" style="font-size: 12px; color: #666;"></p>
+    <p id="reuploadNotice" style="font-size: 12px; color: #666;">※ 画像は何度でも選び直せます。</p>
   </div>
 
   <div class="area" id="area-canvas">
-    <h2 data-ja="2) デザイン編集スペース" data-en="2) Canvas" data-zh="② 设计编辑区" data-ko="② 디자인 편집 공간" data-vi="② Khu vực chỉnh sửa thiết kế">2)デザイン編集スペース</h2>
-    <div id="canvasWrapper">
+    <h2 id="section2-title">2) デザイン編集スペース</h2>
+    <div id="editorWrapper">
       <canvas id="mainCanvas" width="3508" height="2480"></canvas>
+      <img id="templateOverlay" src="fan1-lowres.png" alt="うちわテンプレート">
     </div>
-    <p id="editNotice" data-ja="※ 写真は1本の指で位置を動かせます。2本の指で大きさや向きを変えることができます。" data-en="※ Move the photo with one finger. Pinch to zoom, use two fingers to rotate." data-zh="※ 用一根手指移动照片。捏合缩放，用两根手指旋转。" data-ko="※ 손가락 한 개로 사진을 이동합니다. 두 손가락으로 확대/축소 및 회전할 수 있습니다。" data-vi="※ Dùng một ngón tay để di chuyển ảnh. Chụm để phóng to/thu nhỏ, hai ngón tay để xoay。" style="font-size: 12px; color: #666; margin-bottom: 10px;"></p>
-    <p id="decoEditNotice" style="font-size: 12px; color: #666;">※ 文字・スタンプ・ステッカーはシングルタップで選択、ドラッグで移動、選択枠のハンドルでサイズ変更・回転ができます。</p>
-    <button id="confirmPhotoBtn" data-ja="写真確定" data-en="Confirm Photo" data-zh="确认照片" data-ko="사진 확정" data-vi="Xác nhận ảnh" style="display:none;">写真確定</button>
-    <p id="notice" style="font-size:14px; color:red;"></p>
+    <p id="editNotice" style="font-size: 12px; color: #666; margin-top: 10px;">
+      ※ 画像は1本の指で位置を動かせます。2本の指で大きさや向きを変えることができます。
+    </p>
+    <button id="confirmPhotoBtn" style="margin-top: 10px;">写真の配置を確定</button>
+    <button id="reEditPhotoBtn" style="margin-top: 10px; display: none;">写真の再編集</button>
   </div>
 
-  <div class="area" id="area-deco">
-    <h2 data-ja="3) デコレーション編集" data-en="3) Decorations" data-zh="③ 装饰编辑" data-ko="③ 꾸미기 편집" data-vi="③ Chỉnh sửa trang trí">3)デコレーション編集</h2>
-    <button id="reEditPhotoBtn" data-ja="写真再編集" data-en="Re-edit Photo" data-zh="重新编辑照片" data-ko="사진 재편집" data-vi="Chỉnh sửa lại ảnh" style="display:none; margin-bottom: 10px;"></button>
-    <div id="decorationControlsContainer" disabled>
-        <div id="decoControls">
-          <div id="textInputGroup">
-            <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
-            <select id="fontPicker">
-              <option value="'M PLUS Rounded 1c', sans-serif" style="font-family: 'M PLUS Rounded 1c', sans-serif">通常</option>
-              <option value="'DotGothic16', sans-serif" style="font-family: 'DotGothic16', sans-serif">ドットゴシック</option>
-              <option value="'Train One', cursive" style="font-family: 'Train One', cursive">Train One</option>
-              <option value="'Cherry Bomb One', cursive" style="font-family: 'Cherry Bomb One', cursive">手書き風</option>
-              <option value="'Kaisei Tokumin', serif" style="font-family: 'Kaisei Tokumin', serif">丸文字</option>
-            </select>
-            <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
-            <button id="addTextBtn" data-ja="文字追加" data-en="Add Text" data-zh="添加文字" data-ko="글자 추가" data-vi="Thêm chữ">文字追加</button>
-          </div>
-          <div id="stampGroup">
-            <label>スタンプ：</label>
-            <button onclick="addStamp('❤️')">❤️</button>
-            <button onclick="addStamp('⭐')">⭐</button>
-            <button onclick="addStamp('🎶')">🎶</button>
-            <label>ステッカー：</label>
-            <button class="stamp-img-btn" onclick="addStamp('01loveu.png', true)"><img src="01loveu.png" alt="大好きだよステッカー" /></button>
-            <button class="stamp-img-btn" onclick="addStamp('02ntwithFace.png', true)"><img src="02ntwithFace.png" alt="顔が天才ステッカー" /></button>
-            <button class="stamp-img-btn" onclick="addStamp('03eyestome.png', true)"><img src="03eyestome.png" alt="3秒見つめてステッカー" /></button>
-            <button class="stamp-img-btn" onclick="addStamp('04getmyheart.png', true)"><img src="04getmyheart.png" alt="撃ち抜いてステッカー" /></button>
-          </div>
-        </div>
-        <div id="editTools">
-            <button id="undoBtn" data-ja="元に戻す" data-en="Undo" data-zh="撤消" data-ko="실행 취소" data-vi="Hoàn tác">元に戻す</button>
-            <button id="redoBtn" data-ja="やり直す" data-en="Redo" data-zh="重做" data-ko="다시 실행" data-vi="Làm lại">やり直す</button>
-            <button id="duplicateBtn" data-ja="複製" data-en="Duplicate" data-zh="复制" data-ko="복제" data-vi="Sao chép">複製</button>
-            <button id="deleteBtn" data-ja="削除" data-en="Delete" data-zh="删除" data-ko="삭제" data-vi="Xóa">削除</button>
-            <button id="bringFrontBtn" data-ja="前面へ" data-en="Bring Front" data-zh="置于顶层" data-ko="앞으로" data-vi="Lên trước">前面へ</button>
-            <button id="sendBackBtn" data-ja="背面へ" data-en="Send Back" data-zh="置于底层" data-ko="뒤로" data-vi="Ra sau">背面へ</button>
-        </div>
-        <button id="saveBtn" data-ja="決定 → プレビュー" data-en="Confirm → Preview" data-zh="确认 → 预览" data-ko="확인 → 미리보기" data-vi="Xác nhận → Xem trước">決定 → プレビュー</button>
+  <div class="area" id="area-decorations" style="display: none;">
+    <h2 id="section3-title">3) デコレーション</h2>
+    <p id="decorationNotice" style="font-size: 12px; color: #666;">
+      ※ オブジェクトをタップすると選択され、移動・サイズ変更・回転できます。
+    </p>
+
+    <h3>自由テキスト</h3>
+    <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
+    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+      <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
+      <select id="fontPicker" style="flex: 1;">
+        <option value="Arial, sans-serif">Arial</option>
+        <option value="'DotGothic16', sans-serif">ドットゴシック</option>
+        <option value="'Train One', cursive">Train One</option>
+        <option value="'Cherry Bomb One', cursive">手書き風</option>
+        <option value="'Kaisei Tokumin', serif">丸文字</option>
+      </select>
+    </div>
+    <button onclick="addTextToOverlay()">テキスト追加</button>
+
+    <h3>スタンプ</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+      <button onclick="addStamp('❤️')">❤️</button>
+      <button onclick="addStamp('⭐')">⭐</button>
+      <button onclick="addStamp('🎶')">🎶</button>
+      <button onclick="addStamp('01loveu.png')">
+        <img src="01loveu.png" alt="Love You" style="height: 24px; vertical-align: middle;">
+      </button>
+      <button onclick="addStamp('02ntwithFace.png')">
+        <img src="02ntwithFace.png" alt="NT with Face" style="height: 24px; vertical-align: middle;">
+      </button>
+      <button onclick="addStamp('03eyestome.png')">
+        <img src="03eyestome.png" alt="Eyes to me" style="height: 24px; vertical-align: middle;">
+      </button>
+      <button onclick="addStamp('04getmyheart.png')">
+        <img src="04getmyheart.png" alt="Get my heart" style="height: 24px; vertical-align: middle;">
+      </button>
+    </div>
+    
+    <h3>編集ツール</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;">
+      <button id="selectBtn" style="flex: 1;">選択切替</button>
+      <button id="undoBtn" style="flex: 1;">戻る</button>
+      <button id="redoBtn" style="flex: 1;">やり直し</button>
+      <button id="duplicateBtn" style="flex: 1;">複製</button>
+      <button id="deleteBtn" style="flex: 1; background: #f44336;">削除</button>
+      <button id="sendBackwardBtn" style="flex: 1;">背面へ</button>
+      <button id="bringForwardBtn" style="flex: 1;">前面へ</button>
     </div>
   </div>
 
-  <div class="area" id="area-result">
-    <h2 data-ja="4) 完成イメージ" data-en="4) Final Image" data-zh="④ 最终效果图" data-ko="④ 최종 이미지" data-vi="④ Hình hoàn chỉnh">4)完成イメージ</h2>
-    <div id="previewWrapper" style="display:none; text-align:center; margin-top:16px;">
-      <img id="previewImage" alt="合成画像プレビュー" style="max-width:90%; border:1px solid #ccc; border-radius:10px;" />
+  <div class="area" id="area-result" style="display: none;">
+    <h2 id="section4-title">4) 完成イメージ</h2>
+    <div id="previewWrapper">
+      <img id="previewImage" alt="合成画像プレビュー" />
     </div>
     <div id="previewNotice" style="font-size:14px; color:black; margin-top:10px;"></div>
-    <br>
-    <button id="go-to-form" data-ja="📝 注文フォームへ進む" data-en="📝 Go to Order Form" data-zh="📝 前往订单表单" data-ko="📝 주문 양식으로 이동" data-vi="📝 Đi tới Form đặt hàng">📝 注文フォームへ進む</button>
-    <div id="manual-link" style="display: none; margin-top: 10px;" data-ja='フォームに進めない場合は <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">こちら</a> をクリックしてください。' data-en='If you cannot access the form, please click <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">here</a>.' data-zh='如果无法进入表单，请点击 <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">这里</a>。' data-ko='폼에 접속할 수 없는 경우 <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">여기</a>를 클릭하세요。' data-vi='Nếu không mở được form, vui lòng nhấn <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">tại đây</a>。'>>フォームに進めない場合は <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">こちら</a> をクリックしてください。</div>
-    <div class="line-it-button" data-lang="ja" data-type="share-a" data-url="https://chc-chupea.github.io/my-uchiwa-studio/" style="display: inline-block; margin-top: 20px;"></div>
+    <button id="generateBtn" class="form-button">決定 → プレビュー</button>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform?usp=dialog"
+       target="_blank"
+       class="form-button"
+       id="goToOrderFormBtn"
+       style="display: none;">📝 注文フォームへ進む</a>
   </div>
-  <footer id="footer-text" style="font-size: 6px; color: #888; margin-top: 20px;" data-ja="© 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br>このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br>※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。" data-en="© 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br>This web application is an in-house project developed by an employee for local events.<br>*This is not an official service but is used considering compatibility with business activities." data-zh="© 2025 中国新闻销售中心。由佐佐木瞳开发的网络应用程序。保留所有权利。<br>该应用程序是中国新闻销售中心员工为社区活动自主开发的项目。<br>*此应用并非官方服务，但考虑到业务需要而使用。" data-ko="© 2025 주고쿠 신문 판매 센터. 사사키 히토미가 개발한 웹 애플리케이션. 모든 권리 보유.<br>이 웹앱은 지역 이벤트를 위해 직원이 자체 개발한 프로젝트입니다。<br>*본 앱은 공식 서비스가 아니지만 업무와의 친화성을 고려하여 사용됩니다。" data-vi="© 2025 Trung tâm Phân phối Báo Chugoku. Ứng dụng web do Hitomi Sasaki phát triển. Giữ toàn quyền.<br>Ứng dụng này là dự án tự phát triển của nhân viên cho sự kiện địa phương。<br>*Đây không phải dịch vụ chính thức nhưng được dùng do phù hợp với công việc。" >© 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br>このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br>※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。</footer>
+
+  <footer style="font-size: 6px; color: #888; margin-top: 20px;">
+    © 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br />
+    このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br />
+    ※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
   <script>
-    const saveWarningTexts = {
-      ja: '⚠️ まだファイルが選ばれていません。うちわに使う画像を選んでください。',
-      en: '⚠️ No file selected yet. Please upload an image.',
-      zh: '⚠️ 尚未选择文件，请上传图片。',
-      ko: '⚠️ 아직 파일이 선택되지 않았습니다。이미지를 업ロード하세요。',
-      vi: '⚠️ Chưa chọn tệp. VCari tệp。',
-    };
-    
-    let currentLang = 'ja';
-    const canvas = document.getElementById('mainCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    // デコレーション操作の履歴
-    let decoHistory = []; 
-    let decoHistoryIndex = -1;
-
-    let uploadedImg = null; // 現在表示・編集中の写真オブジェクト
-    let finalizedPhotoState = null; // 「写真確定」時の写真の状態を保存
-
-    let templateImg = new Image();
-    let editableObjects = []; // デコレーションオブジェクト（テキスト、画像スタンプ）
-    let selectedObject = null; // 現在選択中のデコレーションオブジェクト
-
-    let dragMode = null; // 'move', 'resize', 'rotate', 'move_photo'
-    let startPoint = { x: 0, y: 0 }; // ドラッグ開始時のポインタ位置
-    let startObjectState = null; // ドラッグ開始時のオブジェクト状態
-
-    const selectionHandleSize = 40; // 選択ハンドルのサイズ（ピクセル）
-    const rotationHandleSize = 60; // 回転ハンドルのサイズ（ピクセル）
-    const textBorderOffset = 20; // テキストの選択枠のオフセット（パディング）
-
-    // 新しい状態変数：写真が確定されたかどうか
-    let photoConfirmed = false; 
-    const decorationControlsContainer = document.getElementById('decorationControlsContainer');
+    const mainCanvas = document.getElementById('mainCanvas');
+    const ctx = mainCanvas.getContext('2d');
+    const templateOverlay = document.getElementById('templateOverlay');
+    const imageLoader = document.getElementById('imageLoader');
+    const templateSelector = document.getElementById('templateSelector');
     const confirmPhotoBtn = document.getElementById('confirmPhotoBtn');
-    const reEditPhotoBtn = document.getElementById('reEditPhotoBtn'); // 新しく追加したボタン
+    const reEditPhotoBtn = document.getElementById('reEditPhotoBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const goToOrderFormBtn = document.getElementById('goToOrderFormBtn');
+    const customText = document.getElementById('customText');
+    const colorPicker = document.getElementById('colorPicker');
+    const fontPicker = document.getElementById('fontPicker');
+    const previewWrapper = document.getElementById('previewWrapper');
+    const previewImage = document.getElementById('previewImage');
+    const previewNotice = document.getElementById('previewNotice');
+    const areaDecorations = document.getElementById('area-decorations');
 
-    // デコレーションコントロールの有効/無効を切り替える関数
-    function setDecorationControlsEnabled(enabled) {
-        // コンテナのdisabled属性を切り替える
-        decorationControlsContainer.toggleAttribute('disabled', !enabled);
-        // コンテナ内の全てのインタラクティブ要素を有効/無効にする
-        decorationControlsContainer.querySelectorAll('button, input, select').forEach(el => {
-            el.disabled = !enabled;
-        });
+    let uploadedImg = null;
+    let photoObject = null;
+    let isPhotoLocked = false;
+    let decorationObjects = [];
+    let selectedObject = null;
+    let history = [];
+    let historyIndex = -1;
+
+    const UCHIWA_RATIO = 3508 / 2480;
+
+    // --- History Management ---
+    function saveState() {
+      if (historyIndex < history.length - 1) {
+        history = history.slice(0, historyIndex + 1);
+      }
+      history.push(JSON.stringify(decorationObjects));
+      historyIndex++;
     }
 
-    // テンプレート選択処理
-    const templateSelector = document.getElementById('templateSelector');
-    templateImg.src = templateSelector.value;
-    templateSelector.addEventListener('change', () => {
-      templateImg.src = templateSelector.value;
-      // テンプレート変更時も履歴に保存（写真未確定時）
-      if (!photoConfirmed) { 
-          // 写真編集モードの場合、テンプレート変更は写真の状態の一部とみなされる
-          // ここでは特に履歴には追加しないが、描画は更新
-          draw();
-      } else {
-          // デコレーションモードでテンプレートを変更した場合、これはデコレーションの履歴には含めない
-          draw();
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        decorationObjects = JSON.parse(history[historyIndex]);
+        selectedObject = null;
+        drawAll();
       }
-    });
-    templateImg.onload = () => draw();
+    }
 
-    // 写真アップロード処理
-    document.getElementById('imageLoader').addEventListener('change', function(e) {
+    function redo() {
+      if (historyIndex < history.length - 1) {
+        historyIndex++;
+        decorationObjects = JSON.parse(history[historyIndex]);
+        selectedObject = null;
+        drawAll();
+      }
+    }
+
+    // --- Image & Canvas Management ---
+    function drawImage() {
+      if (!photoObject) return;
+
+      ctx.save();
+      ctx.translate(photoObject.x, photoObject.y);
+      ctx.rotate(photoObject.rotation);
+      ctx.scale(photoObject.scale, photoObject.scale);
+      ctx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
+      ctx.restore();
+    }
+
+    function drawDecorations() {
+      decorationObjects.forEach(obj => {
+        ctx.save();
+        ctx.translate(obj.x, obj.y);
+        ctx.rotate(obj.rotation);
+        ctx.scale(obj.scale, obj.scale);
+
+        if (obj.type === 'text') {
+          ctx.fillStyle = obj.color;
+          ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(obj.content, 0, 0);
+        } else if (obj.type === 'image') {
+          ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+        }
+
+        if (obj === selectedObject) {
+          ctx.strokeStyle = '#42a5f5';
+          ctx.lineWidth = 10;
+          ctx.setLineDash([20, 10]);
+          const rectWidth = obj.type === 'text' ? ctx.measureText(obj.content).width / obj.scale : obj.width;
+          const rectHeight = obj.type === 'text' ? obj.fontSize / obj.scale * 1.2 : obj.height;
+          ctx.strokeRect(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
+        }
+
+        ctx.restore();
+      });
+    }
+
+    function drawAll() {
+      ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+      drawImage();
+      drawDecorations();
+    }
+
+    function getRelativePosition(event) {
+      const rect = mainCanvas.getBoundingClientRect();
+      const x = (event.clientX - rect.left) * (mainCanvas.width / rect.width);
+      const y = (event.clientY - rect.top) * (mainCanvas.height / rect.height);
+      return { x, y };
+    }
+
+    function isPointInObject(p, obj) {
+      const dx = p.x - obj.x;
+      const dy = p.y - obj.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx) - obj.rotation;
+      const rotatedX = dist * Math.cos(angle);
+      const rotatedY = dist * Math.sin(angle);
+      const halfWidth = (obj.type === 'text' ? ctx.measureText(obj.content).width * obj.scale : (obj.width * obj.scale)) / 2;
+      const halfHeight = (obj.type === 'text' ? obj.fontSize * 1.2 * obj.scale : (obj.height * obj.scale)) / 2;
+      return rotatedX >= -halfWidth && rotatedX <= halfWidth && rotatedY >= -halfHeight && rotatedY <= halfHeight;
+    }
+
+    // --- Event Listeners ---
+    imageLoader.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
       const reader = new FileReader();
       reader.onload = function(event) {
         uploadedImg = new Image();
         uploadedImg.onload = () => {
-          // 画像の初期配置ロジックを改善
-          const imgAspect = uploadedImg.width / uploadedImg.height;
-          const canvasAspect = canvas.width / canvas.height;
-          let scale;
-          const paddingRatio = 0.9; // キャンバスの90%に収まるように
-
-          if (imgAspect > canvasAspect) {
-            // 画像がキャンバスより横長の場合、幅に合わせてスケール
-            scale = (canvas.width * paddingRatio) / uploadedImg.width;
-          } else {
-            // 画像がキャンバスより縦長または同じ場合、高さに合わせてスケール
-            scale = (canvas.height * paddingRatio) / uploadedImg.height;
-          }
-
-          uploadedImg.x = canvas.width / 2;
-          uploadedImg.y = canvas.height / 2;
-          uploadedImg.scale = scale; 
-          uploadedImg.rotation = 0;
-
-          photoConfirmed = false; // 写真を再アップロードした場合は未確定状態に戻す
-          confirmPhotoBtn.style.display = 'block'; // 写真確定ボタンを表示
-          reEditPhotoBtn.style.display = 'none'; // 写真再編集ボタンは非表示
-          setDecorationControlsEnabled(false); // デコレーションコントロールを無効化
-          editableObjects = []; // 新しい写真がロードされたらデコレーションはクリア
-          decoHistory = []; // デコレーション履歴もクリア
-          decoHistoryIndex = -1;
-          draw();
-          document.getElementById('area-canvas').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          photoObject = {
+            x: mainCanvas.width / 2,
+            y: mainCanvas.height / 2,
+            scale: 1,
+            rotation: 0
+          };
+          isPhotoLocked = false;
+          reEditPhotoBtn.style.display = 'none';
+          confirmPhotoBtn.style.display = 'block';
+          areaDecorations.style.display = 'none';
+          drawAll();
         };
         uploadedImg.src = event.target.result;
       };
-      reader.readAsDataURL(e.target.files[0]);
+      reader.readAsDataURL(file);
     });
 
-    // 写真確定ボタンのイベントリスナー
+    templateSelector.addEventListener('change', e => {
+      templateOverlay.src = e.target.selectedOptions[0].dataset.lowres;
+    });
+
     confirmPhotoBtn.addEventListener('click', () => {
-        if (!uploadedImg) {
-            // 写真がロードされていない場合は何もしない
-            return;
-        }
-        // 写真の状態を確定し、その状態を保存
-        finalizedPhotoState = { x: uploadedImg.x, y: uploadedImg.y, scale: uploadedImg.scale, rotation: uploadedImg.rotation };
-        photoConfirmed = true; // 写真を確定状態にする
-        confirmPhotoBtn.style.display = 'none'; // 写真確定ボタンを非表示
-        reEditPhotoBtn.style.display = 'block'; // 写真再編集ボタンを表示
-        setDecorationControlsEnabled(true); // デコレーションコントロールを有効化
-        
-        decoHistory = []; // 新しいデコレーションフェーズのために履歴をクリア
-        decoHistoryIndex = -1;
-        saveDecoState(); // 初期（空または既存の）デコレーション状態を履歴に保存
-        
-        selectedObject = null; // 選択中のデコレーションオブジェクトを解除
-        draw();
-        // デコレーション編集エリアへスクロール
-        document.getElementById('area-deco').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (!uploadedImg) return;
+      isPhotoLocked = true;
+      confirmPhotoBtn.style.display = 'none';
+      reEditPhotoBtn.style.display = 'block';
+      areaDecorations.style.display = 'block';
+      document.getElementById('area-decorations').scrollIntoView({ behavior: 'smooth' });
     });
 
-    // 写真再編集ボタンのイベントリスナー
     reEditPhotoBtn.addEventListener('click', () => {
-        photoConfirmed = false; // 写真を未確定状態に戻す
-        confirmPhotoBtn.style.display = 'block'; // 写真確定ボタンを表示
-        reEditPhotoBtn.style.display = 'none'; // 写真再編集ボタンを非表示
-        setDecorationControlsEnabled(false); // デコレーションコントロールを無効化
-        
-        // 写真の状態を確定時のものに戻す
-        if (finalizedPhotoState) {
-            uploadedImg.x = finalizedPhotoState.x;
-            uploadedImg.y = finalizedPhotoState.y;
-            uploadedImg.scale = finalizedPhotoState.scale;
-            uploadedImg.rotation = finalizedPhotoState.rotation;
-        }
-        selectedObject = null; // 選択中のデコレーションオブジェクトを解除
-        draw();
-        document.getElementById('area-canvas').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-
-    // 写真編集時の状態保存（Undo/Redo対象外）
-    function savePhotoEditState() {
-      // 現時点では、写真編集のUndo/Redoは実装しないため、履歴には保存しないが、
-      // `uploadedImg`の現在の状態は`uploadedImg`オブジェクト自体に保持される。
-    }
-
-    // デコレーション操作の状態保存
-    function saveDecoState() {
-      // 写真確定後のみデコレーション履歴を保存
-      if (!photoConfirmed) return;
-
-      decoHistory = decoHistory.slice(0, decoHistoryIndex + 1);
-      const state = JSON.parse(JSON.stringify(editableObjects)); // editableObjectsのディープコピー
-      decoHistory.push(state);
-      decoHistoryIndex++;
-      updateButtonStates();
-    }
-
-    // デコレーション操作のUndo
-    function undo() {
-      if (photoConfirmed && decoHistoryIndex > 0) { // 写真確定後かつ履歴がある場合のみ
-        decoHistoryIndex--;
-        restoreDecoState();
-      }
-    }
-
-    // デコレーション操作のRedo
-    function redo() {
-      if (photoConfirmed && decoHistoryIndex < decoHistory.length - 1) { // 写真確定後かつやり直し履歴がある場合のみ
-        decoHistoryIndex++;
-        restoreDecoState();
-      }
-    }
-
-    // デコレーション操作の履歴復元
-    function restoreDecoState() {
-      const state = decoHistory[decoHistoryIndex];
-      editableObjects = JSON.parse(JSON.stringify(state)); // ディープコピーで復元
-
-      // 画像オブジェクトはJSON.parseでは復元されないため、再構築が必要
-      editableObjects.forEach(obj => { 
-        if (obj.type === 'image') { 
-          const img = new Image(); 
-          img.src = obj.src; 
-          obj.img = img; 
-          img.onload = draw; // 画像ロード後に描画をトリガー
-        } 
-      });
+      isPhotoLocked = false;
+      reEditPhotoBtn.style.display = 'none';
+      confirmPhotoBtn.style.display = 'block';
+      areaDecorations.style.display = 'none';
       selectedObject = null;
-      draw();
-      updateButtonStates();
-    }
-    
-    // ボタンの有効/無効状態を更新
-    function updateButtonStates() {
-        // undo/redoボタンは、写真確定後かつ履歴/やり直し履歴がある場合に有効
-        document.getElementById('undoBtn').disabled = !photoConfirmed || decoHistoryIndex <= 0; 
-        document.getElementById('redoBtn').disabled = !photoConfirmed || decoHistoryIndex >= decoHistory.length - 1; 
-        
-        // デコレーション関連ボタンは、選択中のデコレーションオブジェクトがあり、かつ写真確定済みの場合に有効
-        const hasSelection = !!selectedObject && photoConfirmed; 
-        document.getElementById('duplicateBtn').disabled = !hasSelection;
-        document.getElementById('deleteBtn').disabled = !hasSelection;
-        document.getElementById('bringFrontBtn').disabled = !hasSelection || (hasSelection && editableObjects.indexOf(selectedObject) === editableObjects.length - 1);
-        document.getElementById('sendBackBtn').disabled = !hasSelection || (hasSelection && editableObjects.indexOf(selectedObject) === 0);
-        
-        // 最終的な「決定 → プレビュー」ボタンは、写真確定後に有効
-        document.getElementById('saveBtn').disabled = !photoConfirmed; 
-    }
-    
-    // キャンバス描画関数
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.imageSmoothingEnabled = true;
-
-      // 写真を描画
-      if (uploadedImg) {
-        ctx.save();
-        ctx.translate(uploadedImg.x, uploadedImg.y);
-        ctx.rotate(uploadedImg.rotation);
-        // uploadedImg.widthとuploadedImg.heightは元の画像サイズ
-        // uploadedImg.scaleは、元の画像サイズをキャンバスに描画する際の倍率
-        // drawImageの第3,4引数で実際の描画サイズを指定する
-        ctx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2, uploadedImg.width * uploadedImg.scale, uploadedImg.height * uploadedImg.scale);
-        ctx.restore();
-      }
-
-      // デコレーションオブジェクトを描画
-      editableObjects.forEach(obj => {
-        ctx.save();
-        ctx.translate(obj.x, obj.y);
-        ctx.rotate(obj.rotation);
-        // obj.scaleはobj.width/heightに乗算されるので、drawImageのサイズはそのままobj.width/heightを使用
-        if (obj.type === 'text') {
-          ctx.font = `${obj.fontSize * obj.scale}px ${obj.font}`; // スケールをフォントサイズに適用
-          ctx.fillStyle = obj.color;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(obj.text, 0, 0);
-        } else if (obj.type === 'image') {
-          if (obj.img && obj.img.complete) {
-            ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width * obj.scale, obj.height * obj.scale);
-          }
-        }
-        ctx.restore();
-      });
-
-      // テンプレート画像を最後に描画（最前面に表示）
-      if (templateImg.complete) {
-        ctx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
-      }
-
-      // 選択中のオブジェクトがデコレーションオブジェクトの場合のみハンドルを描画
-      // かつ、写真が確定されているデコレーション編集モードの場合のみ
-      if (selectedObject && photoConfirmed) {
-        drawSelectionHandles(selectedObject);
-      }
-    }
-
-    // 選択ハンドルの描画
-    function drawSelectionHandles(obj) {
-      ctx.save();
-      ctx.translate(obj.x, obj.y);
-      ctx.rotate(obj.rotation);
-      
-      let objRenderedWidth;
-      let objRenderedHeight;
-
-      if (obj.type === 'text') {
-          ctx.save();
-          ctx.font = `${obj.fontSize * obj.scale}px ${obj.font}`;
-          objRenderedWidth = ctx.measureText(obj.text).width;
-          objRenderedHeight = obj.fontSize * obj.scale;
-          ctx.restore();
-          // テキストの場合は選択枠にオフセットを追加
-          objRenderedWidth += textBorderOffset;
-          objRenderedHeight += textBorderOffset;
-      } else { // image
-          objRenderedWidth = obj.width * obj.scale;
-          objRenderedHeight = obj.height * obj.scale;
-      }
-      
-      // 選択枠
-      ctx.strokeStyle = '#2196f3'; // 明るい青
-      ctx.lineWidth = 6; // 太い線
-      ctx.setLineDash([15, 10]); // 点線スタイルをより明確に
-      ctx.strokeRect(-objRenderedWidth / 2, -objRenderedHeight / 2, objRenderedWidth, objRenderedHeight);
-      ctx.setLineDash([]);
-
-      const handles = [
-        { x: -objRenderedWidth / 2, y: -objRenderedHeight / 2 },
-        { x: objRenderedWidth / 2, y: -objRenderedHeight / 2 },
-        { x: objRenderedWidth / 2, y: objRenderedHeight / 2 },
-        { x: -objRenderedWidth / 2, y: objRenderedHeight / 2 },
-      ];
-      ctx.fillStyle = '#2196f3';
-      handles.forEach(h => {
-        ctx.beginPath();
-        ctx.arc(h.x, h.y, selectionHandleSize / 2, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.strokeStyle = '#fff'; // ハンドルの境界線を白くして見やすく
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      });
-
-      // 回転ハンドル
-      ctx.beginPath();
-      ctx.arc(0, -objRenderedHeight / 2 - rotationHandleSize / 2 - 10, rotationHandleSize / 2, 0, 2 * Math.PI); // 位置を調整
-      ctx.fillStyle = '#f44336'; // 赤色
-      ctx.fill();
-      ctx.strokeStyle = '#fff'; // ハンドルの境界線を白くして見やすく
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.restore();
-    }
-    
-    // テキスト追加関数
-    function addTextToOverlay() {
-      const text = document.getElementById('customText').value;
-      if (!text) return;
-      const font = document.getElementById('fontPicker').value;
-      const color = document.getElementById('colorPicker').value;
-      // オブジェクトの境界のために参照フォントサイズを使用
-      const initialFontSize = 100; // 初期フォントサイズ
-      ctx.font = `${initialFontSize}px ${font}`; 
-      const textMetrics = ctx.measureText(text);
-      const calculatedWidth = textMetrics.width;
-      const calculatedHeight = initialFontSize; 
-
-      const obj = {
-        type: 'text',
-        text: text,
-        font: font,
-        color: color,
-        x: canvas.width / 2,
-        y: canvas.height / 2,
-        scale: 1, // ここでのスケールは、元のテキストサイズに対する倍率
-        rotation: 0,
-        width: calculatedWidth,  // 測定された幅（スケール適用前）
-        height: calculatedHeight, // 測定された高さ（スケール適用前）
-        fontSize: initialFontSize, // 描画のための実際のフォントサイズ（スケール適用前）
-      };
-      editableObjects.push(obj);
-      selectedObject = obj;
-      saveDecoState(); // デコレーション履歴に保存
-      draw();
-    }
-    
-    // スタンプ（絵文字・画像）追加関数
-    function addStamp(content, isImage = false) {
-      let obj;
-      if (isImage) {
-        const img = new Image();
-        img.src = content;
-        img.onload = () => {
-          // 画像をキャンバスの中心に配置し、キャンバスに収まるように初期スケールを設定
-          const aspectRatio = img.naturalWidth / img.naturalHeight;
-          let initialWidth = canvas.width * 0.2; // キャンバス幅の20%を初期幅とする
-          let initialHeight = initialWidth / aspectRatio;
-
-          if (initialHeight > canvas.height * 0.2) { // 高さがキャンバスの20%を超える場合、高さ基準で調整
-              initialHeight = canvas.height * 0.2;
-              initialWidth = initialHeight * aspectRatio;
-          }
-
-          obj = {
-            type: 'image',
-            src: content,
-            img: img,
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            scale: 1, // img.onloadで調整したサイズをそのまま使うのでスケールは1
-            rotation: 0,
-            width: initialWidth,  // 初期描画幅
-            height: initialHeight, // 初期描画高さ
-          };
-          editableObjects.push(obj);
-          selectedObject = obj;
-          saveDecoState(); // デコレーション履歴に保存
-          draw();
-        };
-      } else {
-        const initialFontSize = 150; // 絵文字の初期フォントサイズ
-        obj = {
-          type: 'text', // 絵文字はシンプルにするためにテキストとして扱う
-          text: content,
-          font: 'sans-serif', // 絵文字のデフォルトフォント
-          color: 'black',
-          x: canvas.width / 2,
-          y: canvas.height / 2,
-          scale: 1,
-          rotation: 0,
-          width: initialFontSize, // おおよその幅（スケール適用前）
-          height: initialFontSize, // おおよその高さ（スケール適用前）
-          fontSize: initialFontSize, // 描画のための実際のフォントサイズ（スケール適用前）
-        };
-        editableObjects.push(obj);
-        selectedObject = obj;
-        saveDecoState(); // デコレーション履歴に保存
-        draw();
-      }
-    }
-
-    // イベントリスナー設定
-    document.getElementById('addTextBtn').addEventListener('click', addTextToOverlay);
-    document.getElementById('undoBtn').addEventListener('click', undo);
-    document.getElementById('redoBtn').addEventListener('click', redo);
-    document.getElementById('duplicateBtn').addEventListener('click', () => {
-      if (!selectedObject) return;
-      const newObj = JSON.parse(JSON.stringify(selectedObject));
-      newObj.x += 50;
-      newObj.y += 50;
-      if (newObj.type === 'image') {
-        const img = new Image();
-        img.src = newObj.src;
-        newObj.img = img;
-        img.onload = draw; // 新しい画像がロードされた後に再描画を保証
-      }
-      editableObjects.push(newObj);
-      selectedObject = newObj;
-      saveDecoState(); // デコレーション履歴に保存
-      draw();
+      drawAll();
     });
-    document.getElementById('deleteBtn').addEventListener('click', () => {
-      if (!selectedObject) return;
-      const index = editableObjects.indexOf(selectedObject);
-      if (index > -1) {
-        editableObjects.splice(index, 1);
-        selectedObject = null;
-        saveDecoState(); // デコレーション履歴に保存
-        draw();
-      }
-    });
-    document.getElementById('bringFrontBtn').addEventListener('click', () => {
-      if (!selectedObject) return;
-      const index = editableObjects.indexOf(selectedObject);
-      if (index > -1 && index < editableObjects.length - 1) {
-        const obj = editableObjects.splice(index, 1)[0];
-        editableObjects.push(obj);
-        saveDecoState(); // デコレーション履歴に保存
-        draw();
-      }
-    });
-    document.getElementById('sendBackBtn').addEventListener('click', () => {
-      if (!selectedObject) return;
-      const index = editableObjects.indexOf(selectedObject);
-      if (index > 0) {
-        const obj = editableObjects.splice(index, 1)[0];
-        editableObjects.unshift(obj);
-        saveDecoState(); // デコレーション履歴に保存
-        draw();
-      }
-    });
-    document.getElementById('fontPicker').addEventListener('change', (e) => {
-        if (selectedObject && selectedObject.type === 'text') {
-            selectedObject.font = e.target.value;
-            draw();
-            saveDecoState(); // デコレーション履歴に保存
-        }
-    });
-    document.getElementById('colorPicker').addEventListener('input', (e) => {
-        if (selectedObject && selectedObject.type === 'text') {
-            selectedObject.color = e.target.value;
-            draw();
-            saveDecoState(); // デコレーション履歴に保存
-        }
-    });
-    
-    // マウス/タッチイベントハンドラ
-    canvas.addEventListener('mousedown', handleMouseDown);
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseup', handleMouseUp);
-    canvas.addEventListener('mouseleave', handleMouseUp); // キャンバス外でマウスを離した場合
-    canvas.addEventListener('wheel', handleMouseWheel); // マウスホイールでの写真ズーム用
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchend', handleTouchEnd);
-    canvas.addEventListener('touchcancel', handleTouchEnd);
-    
-    // マウス座標をキャンバス座標に変換
-    function getMousePos(e) {
-      const rect = canvas.getBoundingClientRect();
-      // CSSで設定されたキャンバスの表示サイズと、実際の内部描画サイズとの比率を計算
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY
-      };
-    }
-    
-    // オブジェクトのヒットテスト（クリックされたかどうか）
-    function hitTest(obj, x, y) {
-      const p = { x, y };
-      // オブジェクトの回転を逆にして、クリック座標をオブジェクトのローカル座標系に変換
-      const cos = Math.cos(-obj.rotation);
-      const sin = Math.sin(-obj.rotation);
-      const translatedX = p.x - obj.x;
-      const translatedY = p.y - obj.y;
-      const rotatedX = translatedX * cos - translatedY * sin;
-      const rotatedY = translatedX * sin + translatedY * cos;
-      
-      let objRenderedWidth;
-      let objRenderedHeight;
 
-      if (obj.type === 'text') {
-          ctx.save();
-          ctx.font = `${obj.fontSize * obj.scale}px ${obj.font}`;
-          objRenderedWidth = ctx.measureText(obj.text).width;
-          objRenderedHeight = obj.fontSize * obj.scale; // テキストの高さはフォントサイズとする
-          ctx.restore();
-          // テキストの場合は、選択枠のオフセットも考慮
-          return rotatedX >= -objRenderedWidth / 2 - textBorderOffset / 2 && rotatedX <= objRenderedWidth / 2 + textBorderOffset / 2 && rotatedY >= -objRenderedHeight / 2 - textBorderOffset / 2 && rotatedY <= objRenderedHeight / 2 + textBorderOffset / 2;
-      } else { // image
-          objRenderedWidth = obj.width * obj.scale;
-          objRenderedHeight = obj.height * obj.scale;
-          return rotatedX >= -objRenderedWidth / 2 && rotatedX <= objRenderedWidth / 2 && rotatedY >= -objRenderedHeight / 2 && rotatedY <= objRenderedHeight / 2;
-      }
-    }
-
-    // ハンドルのヒットテスト（リサイズ・回転ハンドルがクリックされたかどうか）
-    function getHandleHit(obj, x, y) {
-        if (!obj) return null;
-        const p = { x, y };
-        // オブジェクトの回転を逆にして、クリック座標をオブジェクトのローカル座標系に変換
-        const cos = Math.cos(-obj.rotation);
-        const sin = Math.sin(-obj.rotation);
-        const translatedX = p.x - obj.x;
-        const translatedY = p.y - obj.y;
-        const rotatedX = translatedX * cos - translatedY * sin;
-        const rotatedY = translatedX * sin + translatedY * cos;
-        
-        let objRenderedWidth;
-        let objRenderedHeight;
-        if (obj.type === 'text') {
-            ctx.save();
-            ctx.font = `${obj.fontSize * obj.scale}px ${obj.font}`;
-            objRenderedWidth = ctx.measureText(obj.text).width;
-            objRenderedHeight = obj.fontSize * obj.scale;
-            ctx.restore();
-            // テキストの場合は選択枠のオフセットも考慮
-            objRenderedWidth += textBorderOffset;
-            objRenderedHeight += textBorderOffset;
-        } else {
-            objRenderedWidth = obj.width * obj.scale;
-            objRenderedHeight = obj.height * obj.scale;
-        }
-        
-        const handles = [
-            { x: -objRenderedWidth / 2, y: -objRenderedHeight / 2 }, // Top-left
-            { x: objRenderedWidth / 2, y: -objRenderedHeight / 2 },  // Top-right
-            { x: objRenderedWidth / 2, y: objRenderedHeight / 2 },    // Bottom-right
-            { x: -objRenderedWidth / 2, y: objRenderedHeight / 2 },  // Bottom-left
-        ];
-        for (let i = 0; i < handles.length; i++) {
-            // ハンドルがクリックされたかどうかの距離判定
-            if (Math.hypot(rotatedX - handles[i].x, rotatedY - handles[i].y) < selectionHandleSize / 2) {
-                return 'resize';
-            }
-        }
-        
-        // 回転ハンドルのヒットテスト（位置調整済み）
-        if (Math.hypot(rotatedX, rotatedY - (-objRenderedHeight / 2 - rotationHandleSize / 2 - 10)) < rotationHandleSize / 2) {
-            return 'rotate';
-        }
-        return null;
-    }
-    
-    // マウスダウンイベント
-    function handleMouseDown(e) {
-      e.preventDefault();
-      const pos = getMousePos(e);
-      let hitSomething = false; // 何かのオブジェクトにヒットしたかどうかのフラグ
-
-      if (photoConfirmed) { // 写真が確定されている場合のみ、デコレーションオブジェクトを操作
-          for (let i = editableObjects.length - 1; i >= 0; i--) { // 後ろから（前面から）チェック
-            const obj = editableObjects[i];
-            if (hitTest(obj, pos.x, pos.y)) {
-              selectedObject = obj;
-              const handleType = getHandleHit(selectedObject, pos.x, pos.y);
-              dragMode = handleType || 'move'; // ハンドルでなければ移動モード
-              hitSomething = true;
-              // 選択されたオブジェクトを最前面に移動
-              editableObjects.splice(i, 1);
-              editableObjects.push(selectedObject);
-              break;
-            }
-          }
-          if (!hitSomething) { // デコレーションモードで何もない場所をクリック
-              selectedObject = null;
-              dragMode = null;
-          }
-      } else { // 写真が未確定の場合のみ、アップロードされた写真を操作
-          if (uploadedImg && hitTest(uploadedImg, pos.x, pos.y)) {
-              selectedObject = null; // デコレーションオブジェクトの選択を解除
-              dragMode = 'move_photo';
-              hitSomething = true;
-              startPoint = { x: pos.x, y: pos.y };
-              startObjectState = { x: uploadedImg.x, y: uploadedImg.y, scale: uploadedImg.scale, rotation: uploadedImg.rotation };
-          } else { // 写真モードで何もない場所をクリック
-              selectedObject = null;
-              dragMode = null;
-          }
-      }
-      draw();
-      updateButtonStates();
-    }
-    
-    // マウスムーブイベント
-    function handleMouseMove(e) {
-      e.preventDefault();
-      const pos = getMousePos(e);
-      
-      // ホバー時のカーソルを更新
-      if (!dragMode) {
-          let cursor = 'default';
-          if (photoConfirmed) { // デコレーションモード
-              for (let i = editableObjects.length - 1; i >= 0; i--) {
-                  const obj = editableObjects[i];
-                  if (hitTest(obj, pos.x, pos.y)) {
-                      const handleType = getHandleHit(obj, pos.x, pos.y);
-                      cursor = handleType === 'resize' ? 'nwse-resize' : (handleType === 'rotate' ? 'crosshair' : 'grab');
-                      break;
-                  }
-              }
-          } else { // 写真編集モード
-              if (uploadedImg && hitTest(uploadedImg, pos.x, pos.y)) {
-                  cursor = 'grab';
-              }
-          }
-          canvas.style.cursor = cursor;
-          return;
-      }
-
-      const dx = pos.x - startPoint.x;
-      const dy = pos.y - startPoint.y;
-
-      if (dragMode === 'move' && selectedObject) {
-        selectedObject.x = startObjectState.x + dx;
-        selectedObject.y = startObjectState.y + dy;
-      } else if (dragMode === 'move_photo' && uploadedImg && !photoConfirmed) { // 写真が未確定の場合のみ移動
-        uploadedImg.x = startObjectState.x + dx;
-        uploadedImg.y = startObjectState.y + dy;
-      } else if (dragMode === 'resize' && selectedObject) {
-        const currentCenter = { x: selectedObject.x, y: selectedObject.y };
-        const angle = selectedObject.rotation;
-
-        // リサイズ計算のためにマウス位置をオブジェクトのローカル座標に回転
-        const rotatedMouseX = (pos.x - currentCenter.x) * Math.cos(-angle) - (pos.y - currentCenter.y) * Math.sin(-angle);
-        const rotatedMouseY = (pos.x - currentCenter.x) * Math.sin(-angle) + (pos.y - currentCenter.y) * Math.cos(-angle);
-        
-        let originalObjWidth, originalObjHeight;
-        if (selectedObject.type === 'text') {
-            ctx.save();
-            ctx.font = `${selectedObject.fontSize}px ${selectedObject.font}`;
-            originalObjWidth = ctx.measureText(selectedObject.text).width;
-            originalObjHeight = selectedObject.fontSize;
-            ctx.restore();
-            // リサイズ計算時もオフセットを考慮に入れる
-            originalObjWidth += textBorderOffset;
-            originalObjHeight += textBorderOffset;
-        } else {
-            originalObjWidth = selectedObject.width;
-            originalObjHeight = selectedObject.height;
-        }
-        
-        // リサイズは中心からの相対距離で計算し、アスペクト比を保つ
-        // マウス位置から中心までの距離を計算し、それを元のサイズの半分と比較
-        const distFromCenter = Math.hypot(rotatedMouseX, rotatedMouseY);
-        const originalHalfDiagonal = Math.hypot(originalObjWidth / 2, originalObjHeight / 2);
-        
-        let newScale = 1;
-        if (originalHalfDiagonal > 0) { // ゼロ除算を避ける
-            newScale = distFromCenter / originalHalfDiagonal;
-        }
-
-        // 最小・最大スケールを設定
-        selectedObject.scale = Math.max(0.1, Math.min(5, newScale)); 
-
-      } else if (dragMode === 'rotate' && selectedObject) {
-        const angleStart = Math.atan2(startPoint.y - selectedObject.y, startPoint.x - selectedObject.x);
-        const angleCurrent = Math.atan2(pos.y - selectedObject.y, pos.x - selectedObject.x);
-        selectedObject.rotation = startObjectState.rotation + (angleCurrent - angleStart);
-      }
-      draw();
-    }
-    
-    // マウスアップイベント
-    function handleMouseUp(e) {
-      // 写真確定モードであればデコレーションの履歴を保存
-      if (photoConfirmed && (dragMode === 'move' || dragMode === 'resize' || dragMode === 'rotate')) {
-          saveDecoState();
-      } else if (!photoConfirmed && dragMode === 'move_photo') {
-          // 写真編集モードの変更は個別のUndo/Redo機能を持たないが、状態は更新される
-          // savePhotoEditState(); // ここでは履歴保存は不要
-      }
-      dragMode = null;
-      canvas.style.cursor = 'default';
-    }
-
-    // マウスホイールイベント（写真のズーム用）
-    function handleMouseWheel(e) {
-      if (!uploadedImg || photoConfirmed) return; // 写真がロードされている、かつ未確定の場合のみズーム
-      e.preventDefault();
-      const oldScale = uploadedImg.scale;
-      const zoomFactor = 1.05; // ズーム速度を調整
-      const newScale = e.deltaY < 0 ? oldScale * zoomFactor : oldScale / zoomFactor;
-      uploadedImg.scale = Math.max(0.1, Math.min(5, newScale));
-
-      // ズームイン/アウトの中心がマウスカーソルになるように調整
-      const mousePos = getMousePos(e);
-      const scaleRatio = uploadedImg.scale / oldScale;
-      uploadedImg.x = mousePos.x - ((mousePos.x - uploadedImg.x) * scaleRatio);
-      uploadedImg.y = mousePos.y - ((mousePos.y - uploadedImg.y) * scaleRatio);
-
-      draw();
-    }
-
-    let lastTouch = null;
-    let touchStartStates = {}; // マルチタッチジェスチャーの初期状態を保存する
-
-    // タッチスタートイベント
-    function handleTouchStart(e) {
-      e.preventDefault(); // デフォルトのスクロールやズームを防ぐ
-      const touches = e.touches;
-
-      if (touches.length === 1) {
-        const pos = getMousePos(touches[0]);
-        let hitSomething = false;
-
-        if (photoConfirmed) { // 写真が確定されている場合のみ、デコレーションオブジェクトを操作
-            for (let i = editableObjects.length - 1; i >= 0; i--) {
-                const obj = editableObjects[i];
-                if (hitTest(obj, pos.x, pos.y)) {
-                    selectedObject = obj;
-                    const handleType = getHandleHit(selectedObject, pos.x, pos.y);
-                    dragMode = handleType || 'move';
-                    hitSomething = true;
-                    // 選択されたオブジェクトを最前面に移動
-                    editableObjects.splice(i, 1);
-                    editableObjects.push(selectedObject);
-                    break;
-                }
-            }
-            if (!hitSomething) {
-                selectedObject = null;
-                dragMode = null;
-            }
-        } else { // 写真が未確定の場合のみ、アップロードされた写真を操作
-            if (uploadedImg && hitTest(uploadedImg, pos.x, pos.y)) {
-                selectedObject = null;
-                dragMode = 'move_photo';
-                hitSomething = true;
-                startPoint = { x: pos.x, y: pos.y };
-                startObjectState = { x: uploadedImg.x, y: uploadedImg.y, scale: uploadedImg.scale, rotation: uploadedImg.rotation };
-            } else {
-                selectedObject = null;
-                dragMode = null;
-            }
-        }
-        draw();
-        updateButtonStates();
-
-      } else if (touches.length === 2) {
-        // マルチタッチジェスチャーの初期状態を保存
-        lastTouch = touches;
-        let targetObjectForMultiTouch = null;
-
-        if (!photoConfirmed && uploadedImg) {
-            targetObjectForMultiTouch = uploadedImg;
-        } else if (photoConfirmed && selectedObject) {
-            targetObjectForMultiTouch = selectedObject;
-        }
-
-        if (targetObjectForMultiTouch) {
-            touchStartStates = {
-                scale: targetObjectForMultiTouch.scale,
-                rotation: targetObjectForMultiTouch.rotation,
-                x: targetObjectForMultiTouch.x,
-                y: targetObjectForMultiTouch.y,
-                p1: getMousePos(touches[0]),
-                p2: getMousePos(touches[1]),
-            };
-            touchStartStates.initialMidX = (touchStartStates.p1.x + touchStartStates.p2.x) / 2;
-            touchStartStates.initialMidY = (touchStartStates.p1.y + touchStartStates.p2.y) / 2;
-            touchStartStates.initialDist = Math.hypot(touchStartStates.p2.x - touchStartStates.p1.x, touchStartStates.p2.y - touchStartStates.p1.y);
-            touchStartStates.initialAngle = Math.atan2(touchStartStates.p2.y - touchStartStates.p1.y, touchStartStates.p2.x - touchStartStates.p1.x);
-        }
-      }
-    }
-
-    // タッチムーブイベント
-    function handleTouchMove(e) {
-      e.preventDefault(); // デフォルトのスクロールやズームを防ぐ
-      const touches = e.touches;
-
-      if (touches.length === 1 && dragMode) {
-        const pos = getMousePos(touches[0]);
-        // マウスムーブロジックを再利用
-        // touchStartStatesのdragModeに対応する初期状態をセット
-        if (!startObjectState && selectedObject && (dragMode === 'move' || dragMode === 'resize' || dragMode === 'rotate')) {
-            startObjectState = { 
-                x: selectedObject.x, 
-                y: selectedObject.y, 
-                scale: selectedObject.scale, 
-                rotation: selectedObject.rotation 
-            };
-            startPoint = { x: pos.x, y: pos.y };
-        } else if (!startObjectState && uploadedImg && dragMode === 'move_photo') {
-            startObjectState = { 
-                x: uploadedImg.x, 
-                y: uploadedImg.y, 
-                scale: uploadedImg.scale, 
-                rotation: uploadedImg.rotation 
-            };
-            startPoint = { x: pos.x, y: pos.y };
-        }
-        handleMouseMove({ preventDefault: () => {}, clientX: pos.x, clientY: pos.y });
-
-      } else if (touches.length === 2 && lastTouch) {
-        const p1 = getMousePos(touches[0]);
-        const p2 = getMousePos(touches[1]);
-        
-        const currentMidX = (p1.x + p2.x) / 2;
-        const currentMidY = (p1.y + p2.y) / 2;
-        const currentDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-        const currentAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-
-        let targetObject = null;
-        if (!photoConfirmed && uploadedImg) {
-            targetObject = uploadedImg;
-        } else if (photoConfirmed && selectedObject) {
-            targetObject = selectedObject;
-        }
-
-        if (targetObject && touchStartStates.initialDist !== undefined) { // touchStartStatesが適切に設定されているか確認
-            // スケーリング (アスペクト比を維持)
-            if (touchStartStates.initialDist > 0) { // ゼロ除算を避ける
-                targetObject.scale = touchStartStates.scale * (currentDist / touchStartStates.initialDist);
-                targetObject.scale = Math.max(0.1, Math.min(5, targetObject.scale));
-            }
-
-            // 回転
-            targetObject.rotation = touchStartStates.rotation + (currentAngle - touchStartStates.initialAngle);
-            
-            // パン（移動）
-            // ズームと回転の中心を考慮したパン
-            // マルチタッチの中心がオブジェクトの中心からどれだけ移動したかを計算
-            const deltaMidX = currentMidX - touchStartStates.initialMidX;
-            const deltaMidY = currentMidY - touchStartStates.initialMidY;
-            
-            targetObject.x = touchStartStates.x + deltaMidX;
-            targetObject.y = touchStartStates.y + deltaMidY;
-            
-            draw();
-            lastTouch = touches;
-        }
-      }
-    }
-    
-    // タッチエンドイベント
-    function handleTouchEnd(e) {
-      // 指が離れた時、何かしらの操作モードがアクティブであれば履歴を保存
-      if (photoConfirmed && (dragMode === 'move' || dragMode === 'resize' || dragMode === 'rotate')) { // デコレーションモードでの単一タッチ操作
-          saveDecoState();
-      } else if (!photoConfirmed && dragMode === 'move_photo') { // 写真編集モードでの単一タッチ操作
-          // 写真編集モードの変更は個別のUndo/Redo機能を持たない
-      } else if (e.touches.length === 0 && lastTouch) { // 全ての指が離れた場合（マルチタッチジェスチャーの終了）
-          if (photoConfirmed && selectedObject) {
-              saveDecoState();
-          }
-      }
-
-      dragMode = null;
-      lastTouch = null;
-      touchStartStates = {}; // マルチタッチ状態をクリア
-      startObjectState = null; // 単一タッチ操作の開始状態もクリア
-      updateButtonStates();
-    }
-    
-    // 最終プレビュー生成ボタン
-    document.getElementById('saveBtn').addEventListener('click', () => {
-      const noticeEl = document.getElementById('notice');
+    generateBtn.addEventListener('click', () => {
       if (!uploadedImg) {
-        noticeEl.textContent = saveWarningTexts[currentLang] || saveWarningTexts['ja'];
-        noticeEl.style.color = 'red';
-        noticeEl.style.display = 'block';
-        setTimeout(() => { noticeEl.textContent = ''; noticeEl.style.display = 'none'; }, 3000);
+        alert('先に画像をアップロードしてください。');
         return;
       }
       
-      const combinedCanvas = document.createElement('canvas');
-      combinedCanvas.width = canvas.width;
-      combinedCanvas.height = canvas.height;
-      const combinedCtx = combinedCanvas.getContext('2d');
-      combinedCtx.imageSmoothingEnabled = true;
-
-      // アップロードされた画像を描画
-      if (uploadedImg) {
-        combinedCtx.save();
-        combinedCtx.translate(uploadedImg.x, uploadedImg.y);
-        combinedCtx.rotate(uploadedImg.rotation);
-        combinedCtx.scale(uploadedImg.scale, uploadedImg.scale);
-        combinedCtx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
-        combinedCtx.restore();
+      if (!isPhotoLocked) {
+        alert('写真の配置を確定してください。');
+        return;
       }
-      
-      // 編集可能なオブジェクト（テキスト、絵文字、ステッカー）を描画
-      editableObjects.forEach(obj => {
-        combinedCtx.save();
-        combinedCtx.translate(obj.x, obj.y);
-        combinedCtx.rotate(obj.rotation);
-        combinedCtx.scale(obj.scale, obj.scale);
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = mainCanvas.width;
+      tempCanvas.height = mainCanvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+
+      // 1. 写真を描画
+      tempCtx.save();
+      tempCtx.translate(photoObject.x, photoObject.y);
+      tempCtx.rotate(photoObject.rotation);
+      tempCtx.scale(photoObject.scale, photoObject.scale);
+      tempCtx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
+      tempCtx.restore();
+
+      // 2. デコレーションを描画
+      decorationObjects.forEach(obj => {
+        tempCtx.save();
+        tempCtx.translate(obj.x, obj.y);
+        tempCtx.rotate(obj.rotation);
+        tempCtx.scale(obj.scale, obj.scale);
         if (obj.type === 'text') {
-          combinedCtx.font = `${obj.fontSize}px ${obj.font}`;
-          combinedCtx.fillStyle = obj.color;
-          combinedCtx.textAlign = 'center';
-          combinedCtx.textBaseline = 'middle';
-          combinedCtx.fillText(obj.text, 0, 0);
+          tempCtx.fillStyle = obj.color;
+          tempCtx.font = `${obj.fontSize}px ${obj.fontFamily}`;
+          tempCtx.textAlign = 'center';
+          tempCtx.textBaseline = 'middle';
+          tempCtx.fillText(obj.content, 0, 0);
         } else if (obj.type === 'image') {
-          if (obj.img && obj.img.complete) {
-            combinedCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
-          }
+          tempCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
         }
-        combinedCtx.restore();
+        tempCtx.restore();
       });
 
-      // テンプレート画像を最後に描画（最前面に表示）
-      if (templateImg.complete) {
-        combinedCtx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
-      }
-      
-      combinedCanvas.toBlob(blob => {
-        const errorTexts = {
-          ja: '画像作成に失敗しました。もう一度お試しください。',
-          en: 'Failed to create image. Please try again.',
-          zh: '生成图像失败。请再试一次。',
-          ko: '이미지 생성에 실패했습니다. 다시 시도해주세요。',
-          vi: 'Tạo hình ảnh thất bại. Vui lòng thử lại。'
-        };
-        if (!blob) {
-          noticeEl.textContent = errorTexts[currentLang] || errorTexts['ja'];
-          noticeEl.style.color = 'red';
-          return;
-        }
-        if (window._lastPreviewURL) {
-          try { URL.revokeObjectURL(window._lastPreviewURL); } catch (e) {}
-          window._lastPreviewURL = null;
-        }
-        const url = URL.createObjectURL(blob);
-        window._lastPreviewURL = url;
-        const previewWrapper = document.getElementById('previewWrapper');
-        const previewImg = document.getElementById('previewImage');
-        previewImg.src = url;
+      // 3. 高解像度うちわテンプレートを重ねる
+      const templateHighRes = new Image();
+      templateHighRes.onload = () => {
+        tempCtx.drawImage(templateHighRes, 0, 0, tempCanvas.width, tempCanvas.height);
+        previewImage.src = tempCanvas.toDataURL('image/png');
         previewWrapper.style.display = 'block';
-        const previewNotice = document.getElementById('previewNotice');
-        const previewNoticeTexts = {
-          ja: `iPhone：画像を👆長押しして「“写真”に追加」を選んで保存してください。<br><br>Android：画像を👆長押しして「画像を保存」を選択してください。<br><br>保存できたら下の「注文フォームへ進む」ボタンから申込へお進みください。`,
-          en: `iPhone: Press and hold 👆 the image, then select "Add to Photos" to save.<br><br>Android: Press and hold 👆 the image, then select "Save Image".<br><br>After saving, proceed to the order form below.`,
-          zh: `iPhone：长按👆图片，然后选择“添加到照片”进行保存。<br><br>Android：长按👆图片，然后选择“保存图片”。<br><br>保存后，请点击下面的“前往订单表单”。`,
-          ko: `iPhone: 이미지를 👆 길게 눌러 "사진에 추가"를 선택하세요。<br><br>Android: 이미지를 👆 길게 눌러 "이미지 저장"을 선택하세요。<br><br>저장 후 아래의 "주문 양식으로 이동" ボタンを 눌러 진행하세요。`,
-          vi: `iPhone: Nhấn và giữ 👆 hình, chọn "Thêm vào Ảnh" để lưu.<br><br>Android: Nhấn và giữ 👆 hình, chọn "Lưu hình ảnh".<br><br>Sau khi lưu, hãy bấm nút "Đi tới Form đặt hàng" bên dưới。`
-        };
-        previewNotice.innerHTML = previewNoticeTexts[currentLang] || previewNoticeTexts['ja'];
+        goToOrderFormBtn.style.display = 'block';
+        previewNotice.innerHTML = `iPhone：画像を👆長押しして「“写真”に追加」を選んで保存してください。<br>Android：画像を👆長押しして「画像を保存」を選択してください。`;
         previewWrapper.scrollIntoView({ behavior: 'smooth' });
-      }, 'image/png');
+      };
+      templateHighRes.src = templateSelector.value;
     });
 
-    // 言語設定関数
-    function setLanguage(lang) {
-      currentLang = lang;
-      document.querySelectorAll('[data-ja]').forEach(el => {
-        if (el.dataset[lang]) {
-          if (el.tagName === "OPTION" || el.tagName === "BUTTON" || el.tagName === "LABEL") {
-            el.textContent = el.dataset[lang];
-          } else {
-            el.innerHTML = el.dataset[lang];
-          }
-        }
-      });
+    // --- Object Addition Functions ---
+    function addTextToOverlay() {
+      const text = customText.value.trim();
+      if (!text) return;
+      const newText = {
+        id: Date.now(),
+        type: 'text',
+        content: text,
+        x: mainCanvas.width / 2,
+        y: mainCanvas.height / 2,
+        scale: 1,
+        rotation: 0,
+        color: colorPicker.value,
+        fontFamily: fontPicker.value,
+        fontSize: 150
+      };
+      decorationObjects.push(newText);
+      selectedObject = newText;
+      drawAll();
+      saveState();
     }
 
-    // 注文フォームへ進むボタン
-    document.getElementById('go-to-form').addEventListener('click', function () {
-        window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform";
-        setTimeout(() => { document.getElementById('manual-link').style.display = 'block'; }, 5000);
-    });
-    
-    // ページロード時の初期化処理
-    window.addEventListener('load', () => {
-      const userLang = navigator.language || navigator.userLanguage;
-      if (userLang.startsWith('en')) setLanguage('en');
-      else if (userLang.startsWith('zh')) setLanguage('zh');
-      else if (userLang.startsWith('ko')) setLanguage('ko');
-      else if (userLang.startsWith('vi')) setLanguage('vi');
-      else setLanguage('ja');
-      
-      // 初期状態ではデコレーションコントロールを無効化し、写真確定ボタンを非表示
-      setDecorationControlsEnabled(false); 
-      confirmPhotoBtn.style.display = 'none'; 
-      reEditPhotoBtn.style.display = 'none'; // 写真再編集ボタンも最初は非表示
-      
-      // 初期状態の履歴を保存（写真がまだロードされていない状態）
-      // decoHistoryは初期状態では空
-      // saveDecoState(); // 初期ロード時は写真が確定されていないため呼び出さない
+    const stampImages = {};
+    const pngStickers = ['01loveu.png', '02ntwithFace.png', '03eyestome.png', '04getmyheart.png'];
+    pngStickers.forEach(src => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        stampImages[src] = img;
+      };
     });
 
-    // 「使い方」モーダルの表示
-    document.getElementById('howToBtn').addEventListener('click', () => {
-      document.getElementById('howToModal').style.display = 'flex';
+    function addStamp(content) {
+      let newStamp;
+      if (content.endsWith('.png')) {
+        const img = stampImages[content];
+        if (!img) return;
+        newStamp = {
+          id: Date.now(),
+          type: 'image',
+          img: img,
+          x: mainCanvas.width / 2,
+          y: mainCanvas.height / 2,
+          scale: 1,
+          rotation: 0,
+          width: img.naturalWidth,
+          height: img.naturalHeight
+        };
+        // スタンプのサイズを調整
+        const maxDim = Math.max(newStamp.width, newStamp.height);
+        const scaleFactor = 200 / maxDim;
+        newStamp.width *= scaleFactor;
+        newStamp.height *= scaleFactor;
+      } else {
+        newStamp = {
+          id: Date.now(),
+          type: 'text', // 絵文字はテキストとして扱う
+          content: content,
+          x: mainCanvas.width / 2,
+          y: mainCanvas.height / 2,
+          scale: 1,
+          rotation: 0,
+          color: 'black',
+          fontFamily: 'sans-serif',
+          fontSize: 200
+        };
+      }
+      decorationObjects.push(newStamp);
+      selectedObject = newStamp;
+      drawAll();
+      saveState();
+    }
+
+    // --- Decoration Object Control ---
+    document.getElementById('selectBtn').addEventListener('click', () => {
+      const currentIndex = decorationObjects.indexOf(selectedObject);
+      const nextIndex = (currentIndex + 1) % decorationObjects.length;
+      selectedObject = decorationObjects[nextIndex];
+      drawAll();
     });
+    document.getElementById('undoBtn').addEventListener('click', undo);
+    document.getElementById('redoBtn').addEventListener('click', redo);
+    document.getElementById('deleteBtn').addEventListener('click', () => {
+      if (!selectedObject) return;
+      decorationObjects = decorationObjects.filter(obj => obj !== selectedObject);
+      selectedObject = null;
+      drawAll();
+      saveState();
+    });
+    document.getElementById('duplicateBtn').addEventListener('click', () => {
+      if (!selectedObject) return;
+      const newObj = { ...selectedObject };
+      newObj.id = Date.now();
+      newObj.x += 20;
+      newObj.y += 20;
+      decorationObjects.push(newObj);
+      selectedObject = newObj;
+      drawAll();
+      saveState();
+    });
+    document.getElementById('sendBackwardBtn').addEventListener('click', () => {
+      const index = decorationObjects.indexOf(selectedObject);
+      if (index > 0) {
+        const obj = decorationObjects.splice(index, 1)[0];
+        decorationObjects.splice(index - 1, 0, obj);
+        drawAll();
+        saveState();
+      }
+    });
+    document.getElementById('bringForwardBtn').addEventListener('click', () => {
+      const index = decorationObjects.indexOf(selectedObject);
+      if (index < decorationObjects.length - 1) {
+        const obj = decorationObjects.splice(index, 1)[0];
+        decorationObjects.splice(index + 1, 0, obj);
+        drawAll();
+        saveState();
+      }
+    });
+
+    // --- On-time Decoration Property Update ---
+    customText.addEventListener('input', () => {
+      if (selectedObject && selectedObject.type === 'text') {
+        selectedObject.content = customText.value;
+        drawAll();
+      }
+    });
+    colorPicker.addEventListener('input', () => {
+      if (selectedObject && selectedObject.type === 'text') {
+        selectedObject.color = colorPicker.value;
+        drawAll();
+      }
+    });
+    fontPicker.addEventListener('change', () => {
+      if (selectedObject && selectedObject.type === 'text') {
+        selectedObject.fontFamily = fontPicker.value;
+        drawAll();
+      }
+    });
+
+    // --- Hammer.js for Touch/Mouse Gestures ---
+    const hammertime = new Hammer(mainCanvas);
+    hammertime.get('pinch').set({ enable: true });
+    hammertime.get('rotate').set({ enable: true });
+
+    let lastPhotoCenter = { x: 0, y: 0 };
+    let lastDecorationCenter = { x: 0, y: 0 };
+    
+    // Tap to select decoration
+    hammertime.on('tap', function(e) {
+      if (isPhotoLocked) {
+        const p = getRelativePosition(e.srcEvent);
+        let found = false;
+        // Check in reverse order (topmost first)
+        for (let i = decorationObjects.length - 1; i >= 0; i--) {
+          const obj = decorationObjects[i];
+          if (isPointInObject(p, obj)) {
+            selectedObject = obj;
+            drawAll();
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          selectedObject = null;
+          drawAll();
+        }
+      }
+    });
+
+    // Pan for movement
+    hammertime.on('panstart', function(e) {
+      if (!isPhotoLocked) {
+        lastPhotoCenter = { x: photoObject.x, y: photoObject.y };
+      } else if (selectedObject) {
+        lastDecorationCenter = { x: selectedObject.x, y: selectedObject.y };
+      }
+    });
+    hammertime.on('pan', function(e) {
+      if (!isPhotoLocked) {
+        photoObject.x = lastPhotoCenter.x + e.deltaX * (mainCanvas.width / mainCanvas.getBoundingClientRect().width);
+        photoObject.y = lastPhotoCenter.y + e.deltaY * (mainCanvas.height / mainCanvas.getBoundingClientRect().height);
+        drawAll();
+      } else if (selectedObject) {
+        selectedObject.x = lastDecorationCenter.x + e.deltaX * (mainCanvas.width / mainCanvas.getBoundingClientRect().width);
+        selectedObject.y = lastDecorationCenter.y + e.deltaY * (mainCanvas.height / mainCanvas.getBoundingClientRect().height);
+        drawAll();
+      }
+    });
+
+    // Pinch for scaling
+    hammertime.on('pinchstart', function(e) {
+      if (!isPhotoLocked) {
+        photoObject.initialScale = photoObject.scale;
+      } else if (selectedObject) {
+        selectedObject.initialScale = selectedObject.scale;
+      }
+    });
+    hammertime.on('pinch', function(e) {
+      if (!isPhotoLocked) {
+        photoObject.scale = photoObject.initialScale * e.scale;
+        drawAll();
+      } else if (selectedObject) {
+        selectedObject.scale = selectedObject.initialScale * e.scale;
+        drawAll();
+      }
+    });
+
+    // Rotate
+    hammertime.on('rotatestart', function(e) {
+      if (!isPhotoLocked) {
+        photoObject.initialRotation = photoObject.rotation;
+      } else if (selectedObject) {
+        selectedObject.initialRotation = selectedObject.rotation;
+      }
+    });
+    hammertime.on('rotate', function(e) {
+      if (!isPhotoLocked) {
+        photoObject.rotation = photoObject.initialRotation + e.rotation * Math.PI / 180;
+        drawAll();
+      } else if (selectedObject) {
+        selectedObject.rotation = selectedObject.initialRotation + e.rotation * Math.PI / 180;
+        drawAll();
+      }
+    });
+
+    // Mouse events for PC
+    let isDragging = false;
+    let lastPos = { x: 0, y: 0 };
+    let dragTarget = null; // 'photo' or 'decoration'
+
+    mainCanvas.addEventListener('mousedown', function(e) {
+      const p = getRelativePosition(e);
+      isDragging = true;
+      lastPos = { x: e.clientX, y: e.clientY };
+
+      if (!isPhotoLocked) {
+        dragTarget = 'photo';
+      } else {
+        selectedObject = null;
+        for (let i = decorationObjects.length - 1; i >= 0; i--) {
+          const obj = decorationObjects[i];
+          if (isPointInObject(p, obj)) {
+            selectedObject = obj;
+            dragTarget = 'decoration';
+            break;
+          }
+        }
+        if (!selectedObject) {
+          dragTarget = null;
+        }
+      }
+      drawAll();
+    });
+
+    mainCanvas.addEventListener('mousemove', function(e) {
+      if (!isDragging || !dragTarget) return;
+
+      const dx = (e.clientX - lastPos.x) * (mainCanvas.width / mainCanvas.getBoundingClientRect().width);
+      const dy = (e.clientY - lastPos.y) * (mainCanvas.height / mainCanvas.getBoundingClientRect().height);
+
+      if (dragTarget === 'photo') {
+        photoObject.x += dx;
+        photoObject.y += dy;
+      } else if (dragTarget === 'decoration' && selectedObject) {
+        selectedObject.x += dx;
+        selectedObject.y += dy;
+      }
+
+      lastPos = { x: e.clientX, y: e.clientY };
+      drawAll();
+    });
+
+    mainCanvas.addEventListener('mouseup', function(e) {
+      isDragging = false;
+      dragTarget = null;
+      if(isPhotoLocked) saveState();
+    });
+
+    mainCanvas.addEventListener('mouseleave', function() {
+      isDragging = false;
+      dragTarget = null;
+    });
+
+    // PC回転：右クリックドラッグ
+    mainCanvas.addEventListener('contextmenu', e => e.preventDefault());
+    mainCanvas.addEventListener('mousedown', e => {
+      if (e.button === 2) {
+        if (!isPhotoLocked) {
+          dragTarget = 'rotate-photo';
+          lastPos = { x: e.clientX, y: e.clientY };
+        } else if (selectedObject) {
+          dragTarget = 'rotate-decoration';
+          lastPos = { x: e.clientX, y: e.clientY };
+        }
+      }
+    });
+    mainCanvas.addEventListener('mousemove', e => {
+      if (e.buttons === 2) {
+        const dx = e.clientX - lastPos.x;
+        const dy = e.clientY - lastPos.y;
+        const angleChange = dx * 0.005;
+        if (dragTarget === 'rotate-photo') {
+          photoObject.rotation += angleChange;
+        } else if (dragTarget === 'rotate-decoration' && selectedObject) {
+          selectedObject.rotation += angleChange;
+        }
+        lastPos = { x: e.clientX, y: e.clientY };
+        drawAll();
+      }
+    });
+    
   </script>
-  <script src="https://www.line-website.com/social-plugins/js/thirdparty/loader.min.js"></script>
 </body>
 </html>
