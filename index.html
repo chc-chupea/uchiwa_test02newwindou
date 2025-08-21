@@ -422,29 +422,43 @@
      * @returns {boolean} 点がオブジェクト内にあるか
      */
     function isPointInObject(p, obj) {
-      // 点とオブジェクトの中心との相対座標
-      const dx = p.x - obj.x;
-      const dy = p.y - obj.y;
+      // 1. 点をオブジェクトのローカル座標系に変換する (逆変換)
+      // まずオブジェクトの中心を原点に移動
+      const translatedX = p.x - obj.x;
+      const translatedY = p.y - obj.y;
 
-      // オブジェクトの回転を考慮して点を逆回転
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const angle = Math.atan2(dy, dx) - obj.rotation;
-      const rotatedX = dist * Math.cos(angle);
-      const rotatedY = dist * Math.sin(angle);
+      // 回転を元に戻す
+      const cos = Math.cos(-obj.rotation);
+      const sin = Math.sin(-obj.rotation);
+      const rotatedX = translatedX * cos - translatedY * sin;
+      const rotatedY = translatedX * sin + translatedY * cos;
 
-      // テキスト描画時に使うフォントサイズを一時的に設定してmeasureTextを使う
-      ctx.save();
-      ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
-      const actualWidth = obj.type === 'text' ? ctx.measureText(obj.content).width : obj.width;
-      const actualHeight = obj.type === 'text' ? obj.fontSize * 1.2 : obj.height; // テキストの高さはfontSizeから計算
-      ctx.restore();
+      // スケールを元に戻す
+      const scaledX = rotatedX / obj.scale;
+      const scaledY = rotatedY / obj.scale;
 
-      const scaledHalfWidth = actualWidth * obj.scale / 2;
-      const scaledHalfHeight = actualHeight * obj.scale / 2;
+      // 2. オブジェクトのローカル座標系での幅と高さを計算
+      let objWidth, objHeight;
+      if (obj.type === 'text') {
+        // テキストの場合、現在のフォント設定でテキストの実際の幅を測定
+        ctx.save();
+        ctx.font = `${obj.fontSize}px ${obj.fontFamily}`; // オリジナルのフォントサイズで測定
+        objWidth = ctx.measureText(obj.content).width;
+        objHeight = obj.fontSize * 1.2; // テキストの高さは行高を考慮
+        ctx.restore();
+      } else if (obj.type === 'image') {
+        objWidth = obj.width;
+        objHeight = obj.height;
+      } else {
+          return false; // 未知のタイプ
+      }
 
-      // 境界判定
-      return rotatedX >= -scaledHalfWidth && rotatedX <= scaledHalfWidth &&
-             rotatedY >= -scaledHalfHeight && rotatedY <= scaledHalfHeight;
+      const halfObjWidth = objWidth / 2;
+      const halfObjHeight = objHeight / 2;
+
+      // 3. 変換された点が、オブジェクトのローカル境界ボックス内にあるか判定
+      return scaledX >= -halfObjWidth && scaledX <= halfObjWidth &&
+             scaledY >= -halfObjHeight && scaledY <= halfObjHeight;
     }
 
     // --- イベントリスナー ---
@@ -637,7 +651,7 @@
         };
         // スタンプの初期サイズを調整（大きすぎる場合を考慮）
         const maxDim = Math.max(newStamp.width, newStamp.height);
-        const targetSize = 400; // ★ 変更: PNGステッカーの初期サイズ目標を400に
+        const targetSize = 400; // PNGステッカーの初期サイズ目標
         if (maxDim > targetSize) {
             const scaleFactor = targetSize / maxDim;
             newStamp.width *= scaleFactor;
@@ -654,7 +668,7 @@
           rotation: 0,
           color: 'black', // 絵文字は基本黒色
           fontFamily: 'sans-serif', // 絵文字表示に適したフォント
-          fontSize: 300 // ★ 変更: 絵文字の初期フォントサイズを300に
+          fontSize: 300 // 絵文字の初期フォントサイズ
         };
       }
       decorationObjects.push(newStamp); // 配列に追加
