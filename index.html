@@ -171,7 +171,7 @@
     <label id="templateLabel">うちわのデザインを選んでね👉</label>
     <select id="templateSelector">
       <option value="fan1-highres.png" data-lowres="fan1-lowres.png">無地</option>
-      <option value="fan2-highres.png" data-lowres="fan2-lowres.png">夏祭り①</option>
+      <option value="fan2-highres.png" data-lowres="fan2-highres.png">夏祭り①</option>
       <option value="fan3-highres.png" data-lowres="fan3-highres.png">夏祭り②</option>
     </select>
     <label for="imageLoader" id="customFileLabel">写真を撮る／ライブラリから選ぶ</label>
@@ -432,10 +432,6 @@
       const rotatedX = dist * Math.cos(angle);
       const rotatedY = dist * Math.sin(angle);
 
-      // オブジェクトのスケールを考慮した半幅/半高
-      const halfWidth = (obj.type === 'text' ? ctx.measureText(obj.content).width * (obj.fontSize / (obj.fontSize / obj.scale)) : obj.width) / 2;
-      const halfHeight = (obj.type === 'text' ? obj.fontSize * 1.2 : obj.height) / 2; // テキストの高さはfontSizeから計算
-      
       // テキスト描画時に使うフォントサイズを一時的に設定してmeasureTextを使う
       ctx.save();
       ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
@@ -641,7 +637,7 @@
         };
         // スタンプの初期サイズを調整（大きすぎる場合を考慮）
         const maxDim = Math.max(newStamp.width, newStamp.height);
-        const targetSize = 300; // キャンバス内の表示サイズ
+        const targetSize = 400; // ★ 変更: PNGステッカーの初期サイズ目標を400に
         if (maxDim > targetSize) {
             const scaleFactor = targetSize / maxDim;
             newStamp.width *= scaleFactor;
@@ -658,7 +654,7 @@
           rotation: 0,
           color: 'black', // 絵文字は基本黒色
           fontFamily: 'sans-serif', // 絵文字表示に適したフォント
-          fontSize: 200 // 初期フォントサイズ
+          fontSize: 300 // ★ 変更: 絵文字の初期フォントサイズを300に
         };
       }
       decorationObjects.push(newStamp); // 配列に追加
