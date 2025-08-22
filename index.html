@@ -367,6 +367,17 @@
     // 追加: 背景色ピッカーの取得
     const backgroundColorPicker = document.getElementById('backgroundColorPicker');
 
+    // ★★★ ここに以下のコードを追加してください ★★★
+    // フォントピッカーのオプションに視覚的なフォントスタイルを適用
+    document.addEventListener('DOMContentLoaded', () => {
+      const options = fontPicker.options;
+      for (let i = 0; i < options.length; i++) {
+        const option = options[i];
+        option.style.fontFamily = option.value;
+      }
+    });
+    // ★★★ ここまで ★★★
+
     // 状態変数
     let uploadedImg = null;
     let photoObject = null;
