@@ -278,14 +278,12 @@
     <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
     <div style="display: flex; gap: 5px; margin-bottom: 10px;">
       <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
-      <select id="fontPicker" style="flex: 1;">
-        <option value="Arial, sans-serif">Arial</option>
-        <option value="'DotGothic16', sans-serif">ドットゴシック</option>
-        <option value="'Train One', cursive">Train One</option>
-        <option value="'Cherry Bomb One', cursive">手書き風</option>
-        <option value="'Kaisei Tokumin', serif">丸文字</option>
-      </select>
+      <div style="display: flex; flex-direction: column; align-items: stretch; flex: 1;">
+        <select id="fontPicker" style="flex: 1;"></select>
+        <span id="fontPreview" style="font-size: 20px; text-align: center; margin-top: 5px; padding: 5px; border: 1px dashed #ccc; border-radius: 8px;">文字のプレビュー</span>
+      </div>
     </div>
+
     <button onclick="addTextToOverlay()">テキスト追加</button>
 
     <!-- スタンプ（絵文字・PNG）エリア -->
@@ -347,6 +345,15 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
   <script>
     // DOM要素の取得
+
+    const fontOptions = [
+        { value: 'Arial, sans-serif', text: 'Arial' },
+        { value: "'DotGothic16', sans-serif", text: 'ドットゴシック' },
+        { value: "'Train One', cursive", text: 'Train One' },
+        { value: "'Cherry Bomb One', cursive", text: '手書き風' },
+        { value: "'Kaisei Tokumin', serif", text: '丸文字' }
+    ];
+    
     const mainCanvas = document.getElementById('mainCanvas');
     const ctx = mainCanvas.getContext('2d');
     const templateOverlay = document.getElementById('templateOverlay');
@@ -359,6 +366,7 @@
     const customText = document.getElementById('customText');
     const colorPicker = document.getElementById('colorPicker');
     const fontPicker = document.getElementById('fontPicker');
+    const fontPreview = document.getElementById('fontPreview'); // ★この行を追加
     const previewWrapper = document.getElementById('previewWrapper');
     const previewImage = document.getElementById('previewImage');
     const previewNotice = document.getElementById('previewNotice');
@@ -366,17 +374,6 @@
     const areaResult = document.getElementById('area-result');
     // 追加: 背景色ピッカーの取得
     const backgroundColorPicker = document.getElementById('backgroundColorPicker');
-
-    // ★★★ ここに以下のコードを追加してください ★★★
-    // フォントピッカーのオプションに視覚的なフォントスタイルを適用
-    document.addEventListener('DOMContentLoaded', () => {
-      const options = fontPicker.options;
-      for (let i = 0; i < options.length; i++) {
-        const option = options[i];
-        option.style.fontFamily = option.value;
-      }
-    });
-    // ★★★ ここまで ★★★
 
     // 状態変数
     let uploadedImg = null;
@@ -394,6 +391,45 @@
     var initialTouchCenterX, initialTouchCenterY;
     // オブジェクトの中心からタッチ中心への初期ベクトル（キャンバス座標系）
     var initialVecOffsetX, initialVecOffsetY; 
+
+    // ★ ステップ3: 初期化関数を追加
+      function initializeFontPicker() {
+        fontPicker.innerHTML = '';
+        fontOptions.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option.value;
+            optionElement.textContent = option.text;
+            fontPicker.appendChild(optionElement);
+        });
+        updateFontPreview();
+      }
+
+      // ★ ステップ4: プレビュー更新関数を追加
+      function updateFontPreview() {
+        const selectedValue = fontPicker.value;
+        const selectedText = fontPicker.options[fontPicker.selectedIndex].textContent;
+        fontPreview.style.fontFamily = selectedValue;
+        fontPreview.textContent = `文字のプレビュー：${selectedText}`;
+        if (selectedObject && selectedObject.type === 'text') {
+          selectedObject.fontFamily = selectedValue;
+          drawAll();
+        }
+      }
+
+      // ★ ステップ5: 新しいイベントリスナーを追加
+      fontPicker.addEventListener('change', updateFontPreview);
+      window.addEventListener('load', initializeFontPicker);
+  
+      // ... (他のイベントリスナーや既存のコード) ...
+      // colorPickerのイベントリスナーはそのまま残す
+      colorPicker.addEventListener('input', (e) => {
+        e.target.style.backgroundColor = e.target.value;
+        if (selectedObject && selectedObject.type === 'text') {
+          selectedObject.color = colorPicker.value;
+          drawAll(); 
+        }
+      });
+
 
     // --- 履歴管理機能 ---
     /**
@@ -1134,5 +1170,4 @@
     drawAll();
   </script>
 </body>
-
 </html>
