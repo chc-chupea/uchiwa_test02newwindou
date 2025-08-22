@@ -233,6 +233,31 @@
         border: none;
         outline: none;
     }
+
+    /* ▼見本つきフォントメニュー（かんたんモーダル） */
+    .font-menu {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.4);
+      display: none;               /* 最初は非表示 */
+      align-items: center; justify-content: center;
+      z-index: 9999;
+    }
+    .font-menu .panel{
+      background: #fff; width: 92%; max-width: 600px;
+      max-height: 70vh; overflow: auto;
+      border-radius: 16px; padding: 12px;
+    }
+    .font-item{
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px; border-radius: 12px; border: 1px solid #eee;
+      margin-bottom: 8px; width: 100%; text-align: left;
+    }
+    .font-item .sample{
+      width: 48px; height: 48px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      background: #f8fafc; font-size: 34px;
+    }
+    .font-item .name{ font-size: 14px; color: #555; }
   </style>
 </head>
 <body>
@@ -278,13 +303,26 @@
     <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
     <div style="display: flex; gap: 5px; margin-bottom: 10px;">
       <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
-      <div style="display: flex; flex-direction: column; align-items: stretch; flex: 1;">
-        <select id="fontPicker" style="flex: 1;"></select>
-        <span id="fontPreview" style="font-size: 20px; text-align: center; margin-top: 5px; padding: 5px; border: 1px dashed #ccc; border-radius: 8px;">文字のプレビュー</span>
+      <select id="fontPicker" style="flex: 1;">
+        <option value="Arial, sans-serif">Arial</option>
+        <option value="'DotGothic16', sans-serif">ドットゴシック</option>
+        <option value="'Train One', cursive">Train One</option>
+        <option value="'Cherry Bomb One', cursive">手書き風</option>
+        <option value="'Kaisei Tokumin', serif">丸文字</option>
+      </select>
+      <button id="openFontMenu" type="button" style="flex:0 0 auto;">フォント一覧</button>
+    </div>
+    <button onclick="addTextToOverlay()">テキスト追加</button>
+
+    <!-- ▼見本つきフォントメニュー -->
+    <div id="fontMenu" class="font-menu" aria-hidden="true">
+      <div class="panel">
+        <h3 style="margin-top:0">フォントを選ぶ</h3>
+        <div id="fontList"></div>
+        <button id="closeFontMenu" type="button" style="margin-top:8px;">閉じる</button>
       </div>
     </div>
 
-    <button onclick="addTextToOverlay()">テキスト追加</button>
 
     <!-- スタンプ（絵文字・PNG）エリア -->
     <h3>スタンプ</h3>
@@ -345,15 +383,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
   <script>
     // DOM要素の取得
-
-    const fontOptions = [
-        { value: 'Arial, sans-serif', text: 'Arial' },
-        { value: "'DotGothic16', sans-serif", text: 'ドットゴシック' },
-        { value: "'Train One', cursive", text: 'Train One' },
-        { value: "'Cherry Bomb One', cursive", text: '手書き風' },
-        { value: "'Kaisei Tokumin', serif", text: '丸文字' }
-    ];
-    
     const mainCanvas = document.getElementById('mainCanvas');
     const ctx = mainCanvas.getContext('2d');
     const templateOverlay = document.getElementById('templateOverlay');
@@ -366,7 +395,6 @@
     const customText = document.getElementById('customText');
     const colorPicker = document.getElementById('colorPicker');
     const fontPicker = document.getElementById('fontPicker');
-    const fontPreview = document.getElementById('fontPreview'); // ★この行を追加
     const previewWrapper = document.getElementById('previewWrapper');
     const previewImage = document.getElementById('previewImage');
     const previewNotice = document.getElementById('previewNotice');
@@ -374,6 +402,10 @@
     const areaResult = document.getElementById('area-result');
     // 追加: 背景色ピッカーの取得
     const backgroundColorPicker = document.getElementById('backgroundColorPicker');
+    const openFontMenuBtn = document.getElementById('openFontMenu');
+    const fontMenu = document.getElementById('fontMenu');
+    const fontList = document.getElementById('fontList');
+    const closeFontMenu = document.getElementById('closeFontMenu');
 
     // 状態変数
     let uploadedImg = null;
@@ -391,45 +423,6 @@
     var initialTouchCenterX, initialTouchCenterY;
     // オブジェクトの中心からタッチ中心への初期ベクトル（キャンバス座標系）
     var initialVecOffsetX, initialVecOffsetY; 
-
-    // ★ ステップ3: 初期化関数を追加
-      function initializeFontPicker() {
-        fontPicker.innerHTML = '';
-        fontOptions.forEach(option => {
-            const optionElement = document.createElement('option');
-            optionElement.value = option.value;
-            optionElement.textContent = option.text;
-            fontPicker.appendChild(optionElement);
-        });
-        updateFontPreview();
-      }
-
-      // ★ ステップ4: プレビュー更新関数を追加
-      function updateFontPreview() {
-        const selectedValue = fontPicker.value;
-        const selectedText = fontPicker.options[fontPicker.selectedIndex].textContent;
-        fontPreview.style.fontFamily = selectedValue;
-        fontPreview.textContent = `文字のプレビュー：${selectedText}`;
-        if (selectedObject && selectedObject.type === 'text') {
-          selectedObject.fontFamily = selectedValue;
-          drawAll();
-        }
-      }
-
-      // ★ ステップ5: 新しいイベントリスナーを追加
-      fontPicker.addEventListener('change', updateFontPreview);
-      window.addEventListener('load', initializeFontPicker);
-  
-      // ... (他のイベントリスナーや既存のコード) ...
-      // colorPickerのイベントリスナーはそのまま残す
-      colorPicker.addEventListener('input', (e) => {
-        e.target.style.backgroundColor = e.target.value;
-        if (selectedObject && selectedObject.type === 'text') {
-          selectedObject.color = colorPicker.value;
-          drawAll(); 
-        }
-      });
-
 
     // --- 履歴管理機能 ---
     /**
@@ -536,6 +529,58 @@
       // 3. デコレーションを描画
       drawDecorations();
     }
+
+
+    // ▼セレクト内のフォント一覧を読み取って、同じ内容で見本つきリストを作る
+    const fontOptions = Array.from(fontPicker.options).map(opt => ({
+      label: opt.textContent,
+      value: opt.value
+    }));
+
+    function buildFontMenu(){
+      fontList.innerHTML = '';
+      fontOptions.forEach(f => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'font-item';
+        item.innerHTML = `
+          <div class="sample" style="font-family:${f.value}">推しへのメッセージ♡</div>
+          <div>
+            <div class="name">${f.label}</div>
+            <div style="font-family:${f.value}; font-size:20px;">サンプル：推し活うちわ</div>
+          </div>`;
+        item.addEventListener('click', () => {
+          // セレクトとキャンバスの両方に反映
+          fontPicker.value = f.value;                    // UIと同期
+          if (selectedObject && selectedObject.type === 'text') {
+            selectedObject.fontFamily = f.value;         // 選択中テキストに反映
+            drawAll();
+          }
+          // メニューを閉じる
+          fontMenu.style.display = 'none';
+          fontMenu.setAttribute('aria-hidden', 'true');
+        });
+        fontList.appendChild(item);
+      });
+    }
+
+    // 開く・閉じるのイベント
+    openFontMenuBtn.addEventListener('click', () => {
+      buildFontMenu();
+      fontMenu.style.display = 'flex';
+      fontMenu.setAttribute('aria-hidden', 'false');
+    });
+    closeFontMenu.addEventListener('click', () => {
+      fontMenu.style.display = 'none';
+      fontMenu.setAttribute('aria-hidden', 'true');
+    });
+/    / 背景（半透明のところ）をタップしても閉じる
+    fontMenu.addEventListener('click', (e) => {
+      if (e.target === fontMenu) {
+        fontMenu.style.display = 'none';
+        fontMenu.setAttribute('aria-hidden', 'true');
+      }
+    });
 
     /**
      * マウス/タッチイベントのクライアント座標をキャンバス内の論理座標に変換します。
@@ -1170,4 +1215,5 @@
     drawAll();
   </script>
 </body>
+
 </html>
