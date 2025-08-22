@@ -601,7 +601,9 @@
 
     // 新規追加: 背景色ピッカーの変更イベント
     backgroundColorPicker.addEventListener('input', (e) => {
-        backgroundColor = e.target.value;
+        backgroundColor = e.target.value; 
+        // メンバーカラーピッカーの背景色を、選択された色にリアルタイムで更新
+        e.target.style.backgroundColor = e.target.value; 
         uploadedImg = null; 
         photoObject = null;
         isPhotoLocked = true;
@@ -863,7 +865,11 @@
         drawAll(); // 全体を再描画
       }
     });
-    colorPicker.addEventListener('input', () => {
+
+    colorPicker.addEventListener('input', (e) => {
+      // 自由テキスト用カラーピッカーの背景色を、選択された色にリアルタイムで更新
+      e.target.style.backgroundColor = e.target.value;
+
       if (selectedObject && selectedObject.type === 'text') {
         selectedObject.color = colorPicker.value; // 色を更新
         drawAll(); // 全体を再描画
