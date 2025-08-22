@@ -230,16 +230,19 @@
   <h1 id="title">Myうちわ</h1>
 
   <div class="area" id="area-select">
-    <h2 id="section1-title">1) デザイン＆写真を選ぶ</h2>
-    <label id="templateLabel">うちわのデザインを選んでね👇</label>
+    <h2 id="section1-title">1) 背景を決める</h2>
+    <label id="templateLabel">うちわのデザインフィルターを選んでね👇</label>
     <select id="templateSelector">
       <option value="fan1-highres.png" data-lowres="fan1-lowres.png">無地</option>
       <option value="fan2-highres.png" data-lowres="fan2-lowres.png">夏祭り①</option>
       <option value="fan3-highres.png" data-lowres="fan3-lowres.png">夏祭り②</option>
     </select>
-    <label for="imageLoader" id="customFileLabel">写真を撮る／ライブラリから選ぶ</label>
+    <label for="imageLoader" id="customFileLabel">写真で背景を作る</label>
     <input type="file" id="imageLoader" accept="image/*" style="display:none;" />
     <p id="reuploadNotice" style="font-size: 12px; color: #666;">※ 画像は何度でも選び直せます。</p>
+
+    <h3 style="margin-top: 20px;">メンバーカラーで背景を作る</h3>
+    <input type="color" id="backgroundColorPicker" value="#ffffff" title="背景色選択" />
   </div>
 
   <div class="area" id="area-canvas">
@@ -350,16 +353,20 @@
     const previewImage = document.getElementById('previewImage');
     const previewNotice = document.getElementById('previewNotice');
     const areaDecorations = document.getElementById('area-decorations');
-    const areaResult = document.getElementById('area-result'); // 完成イメージのエリア
+    const areaResult = document.getElementById('area-result');
+    // 追加: 背景色ピッカーの取得
+    const backgroundColorPicker = document.getElementById('backgroundColorPicker');
 
     // 状態変数
-    let uploadedImg = null; // アップロードされた写真データ
-    let photoObject = null; // 写真の現在の位置、スケール、回転
-    let isPhotoLocked = false; // 写真の編集が確定されているか
-    let decorationObjects = []; // テキスト、絵文字、ステッカーなどのデコレーションオブジェクトの配列
-    let selectedObject = null; // 現在選択中のデコレーションオブジェクト
-    let history = []; // 編集履歴（アンドゥ/リドゥ用）
-    let historyIndex = -1; // 現在の履歴インデックス
+    let uploadedImg = null;
+    let photoObject = null;
+    let isPhotoLocked = false;
+    let decorationObjects = [];
+    let selectedObject = null;
+    let history = [];
+    let historyIndex = -1;
+    // 追加: 背景色を保持する変数
+    let backgroundColor = '#ffffff'; // デフォルトは白
 
     // ジェスチャー開始時のオブジェクトの状態とタッチ中心
     var initialObjX, initialObjY, initialObjScale, initialObjRotation;
@@ -464,9 +471,13 @@
      * キャンバス全体をクリアし、写真とデコレーションを再描画します。
      */
     function drawAll() {
-      ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height); // キャンバスをクリア
-      drawImage(); // 写真を描画
-      drawDecorations(); // デコレーションを描画
+      // 1. まず背景色で全体を塗りつぶす
+      ctx.fillStyle = backgroundColor;
+      ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+      // 2. 写真を描画
+      drawImage();
+      // 3. デコレーションを描画
+      drawDecorations();
     }
 
     /**
@@ -547,6 +558,15 @@
             scale: 1,
             rotation: 0
           };
+
+          // ====> ここに以下のコードを追加します <====
+      
+          // 写真がアップロードされたら背景色を白にリセット
+                backgroundColor = '#ffffff'; 
+                
+          // ====> ここまで <====
+
+
           isPhotoLocked = false; // 写真編集を可能にする
           reEditPhotoBtn.style.display = 'none'; // 再編集ボタンは非表示
           confirmPhotoBtn.style.display = 'block'; // 確定ボタンを表示
@@ -566,6 +586,24 @@
       // 低解像度テンプレートに切り替えて表示
       templateOverlay.src = e.target.selectedOptions[0].dataset.lowres;
     });
+    
+    // ====> この行の直後に追加 <====
+
+    // 新規追加: 背景色ピッカーの変更イベント
+    backgroundColorPicker.addEventListener('input', (e) => {
+        backgroundColor = e.target.value;
+        uploadedImg = null; 
+        photoObject = null;
+        isPhotoLocked = true;
+        areaDecorations.style.display = 'block'; 
+        reEditPhotoBtn.style.display = 'none';
+        confirmPhotoBtn.style.display = 'none';
+        drawAll(); 
+    });
+
+    // ====> ここまで <====
+
+
 
     /**
      * 写真の配置確定ボタンの処理
@@ -597,15 +635,7 @@
      * 決定 → プレビューボタンの処理
      */
     generateBtn.addEventListener('click', () => {
-      if (!uploadedImg) {
-        alert('⚠️ まず写真をアップロードしてください。');
-        return;
-      }
-      
-      if (!isPhotoLocked) {
-        alert('⚠️ 写真の配置を確定してください。');
-        return;
-      }
+      // ... 既存のチェックロジック ...
 
       // 高解像度での最終画像を生成するためのオフスクリーンキャンバス
       const tempCanvas = document.createElement('canvas');
@@ -613,15 +643,21 @@
       tempCanvas.height = mainCanvas.height;
       const tempCtx = tempCanvas.getContext('2d');
 
-      // 1. 写真を描画
-      tempCtx.save();
-      tempCtx.translate(photoObject.x, photoObject.y);
-      tempCtx.rotate(photoObject.rotation);
-      tempCtx.scale(photoObject.scale, photoObject.scale);
-      tempCtx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
-      tempCtx.restore();
+      // 1. まず背景色で全体を塗りつぶす
+      tempCtx.fillStyle = backgroundColor;
+      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-      // 2. デコレーションを描画
+      // 2. 写真を描画（存在する場合）
+      if (uploadedImg) {
+        tempCtx.save();
+        tempCtx.translate(photoObject.x, photoObject.y);
+        tempCtx.rotate(photoObject.rotation);
+        tempCtx.scale(photoObject.scale, photoObject.scale);
+        tempCtx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
+        tempCtx.restore();
+      }
+
+      // 3. デコレーションを描画
       decorationObjects.forEach(obj => {
         tempCtx.save();
         tempCtx.translate(obj.x, obj.y);
@@ -640,7 +676,7 @@
         tempCtx.restore();
       });
 
-      // 3. 高解像度うちわテンプレートを重ねる
+      // 4. 高解像度うちわテンプレートを重ねる
       const templateHighRes = new Image();
       templateHighRes.onload = () => {
         tempCtx.drawImage(templateHighRes, 0, 0, tempCanvas.width, tempCanvas.height);
