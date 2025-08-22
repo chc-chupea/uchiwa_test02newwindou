@@ -25,736 +25,1050 @@
     }
     .area {
       background: #fff; /* 白い背景のカード */
-      border-radius: 20px;
-      padding: 20px;
-      margin: 10px auto;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      max-width: 600px;
-      animation: fadeIn 1s ease-in-out;
+      border-radius: 20px; /* 角丸 */
+      padding: 16px;
+      margin-bottom: 16px; /* 間隔を少し詰める */
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* 影 */
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    h2 {
-      font-family: 'Cherry Bomb One', cursive; /* 推し活フォントを適用 */
-      font-size: 24px;
-      color: #d81b60;
-      margin-top: 0;
-      border-bottom: 2px solid #ffcdd2;
-      padding-bottom: 10px;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-    }
-    canvas {
-      border: 3px solid #ff80ab;
-      border-radius: 50%;
-      background: #fdf0f4;
-      box-shadow: 0 0 20px rgba(255, 105, 180, 0.3);
-      cursor: grab;
-      touch-action: none;
-      width: 100%;
-      max-width: 400px;
-    }
-    
-    /* フォーム要素のスタイル */
-    select, button, input[type="file"] + label, input[type="color"] {
+    .area h2 {
       font-size: 16px;
-      padding: 12px 20px;
-      border-radius: 10px;
-      border: 2px solid #ff80ab;
-      background: #fff;
-      color: #ff80ab;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin: 5px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    button:hover, input[type="file"] + label:hover {
-      background: #ff80ab;
-      color: #fff;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 10px rgba(0,0,0,0.2);
-    }
-    button:active, input[type="file"] + label:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    #customFileLabel {
-      display: inline-block;
+      margin-top: 0;
+      margin-bottom: 12px;
+      color: #1565c0;
     }
 
-    /* デコレーションエリアのスタイル */
-    #decorationButtons {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 15px;
-    }
-    #decorationButtons img {
-      width: 50px;
-      height: 50px;
-      cursor: pointer;
-      padding: 5px;
-      border: 2px solid transparent;
-      border-radius: 10px;
-      transition: all 0.2s ease;
-    }
-    #decorationButtons img:hover {
-      border-color: #ff80ab;
-      transform: scale(1.1);
-    }
-    
-    /* テキスト入力関連のスタイル */
-    #textInputArea input {
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      margin: 5px;
-    }
-    #textInputArea button {
-      margin-left: 10px;
-    }
-
-    /* プレビューエリア */
-    #previewWrapper {
-      border: 3px solid #ff80ab;
-      border-radius: 20px;
-      padding: 10px;
-      background: #fff;
-      margin: 20px auto;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      max-width: 450px;
-      display: none;
-    }
-    #previewImage {
+    /* エディタ（キャンバス）のラッパー */
+    #editorWrapper {
+      position: relative;
       width: 100%;
-      height: auto;
-      border-radius: 15px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 900px; /* 最大幅 */
+      aspect-ratio: 4 / 3; /* アスペクト比を固定 */
+      margin: 0 auto;
+      background-color: #f9f9f9;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    /* メインキャンバスとオーバーレイキャンバス */
+    #mainCanvas, #overlayCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none; /* タッチイベントのデフォルト動作を無効化 */
+    }
+    /* うちわテンプレート画像（低解像度版） */
+    #templateOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* クリックイベントを透過 */
+      object-fit: contain; /* アスペクト比を保ちつつ要素内に収める */
     }
 
-    /* ボタンの調整 */
-    .button-group {
+    /* フォーム要素の共通スタイル */
+    select, input[type="text"], input[type="color"], button, label {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      background: #fff;
+      box-sizing: border-box;
+    }
+    /* ボタンの共通スタイル */
+    button {
+      background: #4cafef;
+      color: white;
+      font-size: 16px;
+      padding: 12px 24px;
+      border-radius: 30px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s, background 0.3s; /* ホバー時のアニメーション */
+    }
+    button:hover {
+      background: #2196f3;
+      transform: translateY(-2px);
+    }
+    /* ファイル選択ボタンのカスタムスタイル */
+    #customFileLabel {
+      background: linear-gradient(135deg, #4cafef, #2196f3);
+      color: #fff;
+      border-radius: 30px;
+      padding: 14px 26px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+      display: inline-block; /* ボタンのように表示 */
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+    }
+    #customFileLabel:hover {
+      background: linear-gradient(135deg, #42a5f5, #1e88e5);
+      transform: scale(1.05);
+    }
+    /* フォームへ進むボタンのスタイル */
+    .form-button {
+      background: linear-gradient(135deg, #2196f3, #1976d2);
+      color: white;
+      padding: 12px 24px;
+      margin-top: 20px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 18px;
+      border-radius: 30px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      display: block;
+      width: auto; /* コンテンツに合わせて幅を調整 */
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .form-button:hover {
+      background: linear-gradient(135deg, #1976d2, #0d47a1);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+    }
+    /* プレビュー画像のスタイル */
+    #previewWrapper img {
+      max-width: 100%;
+      border: 6px solid #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      margin-top: 12px;
+    }
+    /* 選択中のオブジェクトの枠線 */
+    .active-object-outline {
+      outline: 2px dashed #42a5f5; /* 点線で表示 */
+      outline-offset: 5px; /* 要素からのオフセット */
+    }
+    /* エディタの初期背景（うちわの形状）*/
+    #editorWrapper::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url(fan1-lowres.png) no-repeat center center / contain; /* デフォルトうちわの形 */
+      pointer-events: none;
+      opacity: 0.5; /* 半透明 */
+    }
+
+    /* スタンプボタン専用スタイル */
+    .stamp-buttons-container {
       display: flex;
       flex-wrap: wrap;
+      gap: 5px; /* ボタン間の隙間を均一に */
       justify-content: center;
-      gap: 10px;
-      margin-top: 10px;
+      margin-top: 8px; /* スタンプエリアの上マージンを調整 */
+      margin-bottom: 8px; /* スタンプエリアの下マージンを調整 */
     }
-    .button-group button {
-      flex: 1 1 auto;
-      min-width: 150px;
+    .stamp-buttons-container .stamp-button {
+      width: auto; /* コンテンツに合わせて幅を調整 */
+      min-width: 45px; /* 最低幅を確保し、タッチしやすくする */
+      padding: 8px 12px; /* パディングを調整 */
+      font-size: 24px; /* 絵文字のサイズを大きく */
+      display: inline-flex; /* flexアイテムとして表示し、中央揃え */
+      align-items: center;
+      justify-content: center;
+      height: 45px; /* ボタンの高さを固定 */
+      margin: 0; /* flex containerでgapを指定するため、個別のmarginをリセット */
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15); /* 影を少し控えめに */
     }
 
-    /* ツールチップ/ガイドのスタイル */
-    .tooltip {
-      position: absolute;
-      background-color: rgba(0, 0, 0, 0.7);
-      color: #fff;
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-size: 12px;
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s;
+    .stamp-buttons-container .stamp-button img {
+        height: 30px; /* 画像スタンプのサイズを調整 */
+        vertical-align: middle; /* 垂直方向中央揃え */
     }
-    
-    /* ホバーでツールチップ表示 */
-    canvas:hover .tooltip {
-      opacity: 1;
+
+    /* 編集ツールボタンのレイアウト調整 */
+    .edit-tools-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px; /* ボタン間の隙間をさらに詰める */
+      justify-content: center;
+      margin-top: 8px; /* 編集ツールエリアの上マージンを維持 */
     }
-    
-    /* 選択中のデコレーションの枠線 */
-    .decoration-selected {
-      border-color: #ff1493 !important; /* 強調表示 */
-      border-style: dashed !important;
+    .edit-tools-container button {
+        flex: 0 0 auto; /* 固定幅にせず、内容に合わせて伸縮 */
+        padding: 6px 10px; /* パディングをさらに小さく */
+        font-size: 13px; /* フォントサイズをさらに小さく */
+        margin: 0; /* flex containerでgapを指定するため、個別のmarginをリセット */
+        min-width: 60px; /* 最低幅を調整 */
+    }
+
+    /* 自由テキスト入力エリア内の要素の間隔調整 */
+    #customText {
+      margin-bottom: 8px; /* 自由テキスト入力の下マージン */
+      padding: 10px; /* パディングも少し小さく */
+    }
+    #area-decorations > h3:nth-of-type(1) + input[type="text"] + div { /* 自由テキストのカラーピッカーとフォントピッカーを含むdiv */
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+    #area-decorations button[onclick="addTextToOverlay()"] {
+      margin-top: 8px; /* テキスト追加ボタンの上マージン */
+      margin-bottom: 16px; /* 次のセクションへのマージン */
+    }
+
+    /* うちわのデザイン選択ラベルから縁の線をなくす */
+    #templateLabel {
+        border: none;
+        outline: none;
     }
   </style>
 </head>
 <body>
 
-<h1>Myうちわ</h1>
+  <h1 id="title">Myうちわ</h1>
 
-<div class="area" id="area-select">
-    <h2 id="section1-title">1) 背景を選ぶ</h2>
-    
-    <!-- 追加: 背景色選択エリア -->
-    <div style="margin-bottom: 10px;">
-      <label for="backgroundColorPicker" style="display: block; margin-bottom: 5px;">推しのメンバーカラーを選んでね👇</label>
-      <input type="color" id="backgroundColorPicker" value="#ff69b4" style="width: 100px; padding: 5px; height: 40px; border-radius: 8px; cursor: pointer;">
-    </div>
-    <button id="setBackgroundColorBtn" style="margin-bottom: 15px;">背景に設定する</button>
-
-    <hr style="border: 0; border-top: 1px dashed #ddd; margin: 20px 0;">
-
-    <label id="templateLabel" style="margin-top: 20px;">うちわのデザインを選んでね👇</label>
+  <div class="area" id="area-select">
+    <h2 id="section1-title">1) デザイン＆写真を選ぶ</h2>
+    <label id="templateLabel">うちわのデザインを選んでね👇</label>
     <select id="templateSelector">
-      <option value="https://i.ibb.co/L63vF1m/fan1-highres.png" data-lowres="https://i.ibb.co/3s3B46J/fan1-lowres.png">無地</option>
-      <option value="https://i.ibb.co/q7776fH/fan2-highres.png" data-lowres="https://i.ibb.co/p33sFzG/fan2-lowres.png">夏祭り①</option>
-      <option value="https://i.ibb.co/Jz5T155/fan3-highres.png" data-lowres="https://i.ibb.co/6P6XgC5/fan3-lowres.png">夏祭り②</option>
+      <option value="fan1-highres.png" data-lowres="fan1-lowres.png">無地</option>
+      <option value="fan2-highres.png" data-lowres="fan2-lowres.png">夏祭り①</option>
+      <option value="fan3-highres.png" data-lowres="fan3-lowres.png">夏祭り②</option>
     </select>
-
     <label for="imageLoader" id="customFileLabel">写真を撮る／ライブラリから選ぶ</label>
     <input type="file" id="imageLoader" accept="image/*" style="display:none;" />
-    <p id="reuploadNotice" style="font-size: 12px; color: #666;">※ 背景はいつでも変更できます。</p>
-</div>
-
-<div class="area">
-  <canvas id="mainCanvas" width="800" height="800"></canvas>
-  <img id="templateOverlay" src="" style="display:none;"/>
-  <div class="button-group">
-    <button id="confirmPhotoBtn">写真/背景を確定</button>
-    <button id="reEditPhotoBtn" style="display:none;">写真/背景を編集し直す</button>
+    <p id="reuploadNotice" style="font-size: 12px; color: #666;">※ 画像は何度でも選び直せます。</p>
   </div>
-</div>
 
-<div class="area" id="area-decorations" style="display:none;">
-    <h2>2) デコレーションする</h2>
-    <div id="textInputArea" style="margin-bottom: 10px;">
-        <input type="text" id="customText" placeholder="好きな文字を入力！" maxlength="15" style="width: 60%;"/>
-        <button id="addTextBtn">文字を追加</button>
+  <div class="area" id="area-canvas">
+    <h2 id="section2-title">2) デザイン編集スペース</h2>
+    <div id="editorWrapper">
+      <canvas id="mainCanvas" width="3508" height="2480"></canvas>
+      <img id="templateOverlay" src="fan1-lowres.png" alt="うちわテンプレート">
     </div>
-    <div style="margin-bottom: 10px;">
-        <label for="fontPicker">フォント:</label>
-        <select id="fontPicker">
-          <option value="Kaisei Tokumin, serif">明朝体</option>
-          <option value="Cherry Bomb One, cursive">手書き風</option>
-          <option value="DotGothic16, sans-serif">ドット絵</option>
-          <option value="Train One, cursive">ポップ</option>
-        </select>
-        <label for="colorPicker">色:</label>
-        <input type="color" id="colorPicker" value="#ff69b4">
+    <p id="editNotice" style="font-size: 12px; color: #666; margin-top: 10px;">
+      ※ 画像は1本の指で位置を動かせます。2本の指で大きさや向きを変えることができます。
+    </p>
+    <button id="confirmPhotoBtn" style="margin-top: 10px;">写真の配置を確定</button>
+    <button id="reEditPhotoBtn" style="margin-top: 10px; display: none;">写真の再編集</button>
+  </div>
+
+  <div class="area" id="area-decorations" style="display: none;">
+    <h2 id="section3-title">3) デコレーション</h2>
+    <p id="decorationNotice" style="font-size: 12px; color: #666;">
+      ※ オブジェクトをタップすると選択され、移動・サイズ変更・回転できます。
+    </p>
+
+    <!-- 自由テキスト入力エリア -->
+    <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
+    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+      <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
+      <select id="fontPicker" style="flex: 1;">
+        <option value="Arial, sans-serif">Arial</option>
+        <option value="'DotGothic16', sans-serif">ドットゴシック</option>
+        <option value="'Train One', cursive">Train One</option>
+        <option value="'Cherry Bomb One', cursive">手書き風</option>
+        <option value="'Kaisei Tokumin', serif">丸文字</option>
+      </select>
     </div>
+    <button onclick="addTextToOverlay()">テキスト追加</button>
 
-    <hr style="border: 0; border-top: 1px solid #f2f2f2; margin: 15px 0;">
-
+    <!-- スタンプ（絵文字・PNG）エリア -->
     <h3>スタンプ</h3>
-    <div id="decorationButtons">
-      <img src="https://i.ibb.co/wJv06kF/heart.png" alt="heart" />
-      <img src="https://i.ibb.co/S7qM4yP/star.png" alt="star" />
-      <img src="https://i.ibb.co/y410t1p/ribbon.png" alt="ribbon" />
-      <img src="https://i.ibb.co/YyY1q6b/crown.png" alt="crown" />
-      <img src="https://i.ibb.co/R2t9g8y/cherry.png" alt="cherry" />
-      <img src="https://i.ibb.co/tBf3w1t/flower.png" alt="flower" />
-      <img src="https://i.ibb.co/y4v397C/mic.png" alt="mic" />
-      <img src="https://i.ibb.co/LNxQf82/musicnote.png" alt="music note" />
-      <img src="https://i.ibb.co/tH8yv5X/lightstick.png" alt="lightstick" />
-      <img src="https://i.ibb.co/xL38t1t/bear.png" alt="bear" />
+    <div class="stamp-buttons-container">
+      <button class="stamp-button" onclick="addStamp('❤️')">❤️</button>
+      <button class="stamp-button" onclick="addStamp('⭐')">⭐</button>
+      <button class="stamp-button" onclick="addStamp('🎶')">🎶</button>
+      <button class="stamp-button" onclick="addStamp('01loveu.png')">
+        <img src="01loveu.png" alt="Love You">
+      </button>
+      <button class="stamp-button" onclick="addStamp('02ntwithFace.png')">
+        <img src="02ntwithFace.png" alt="NT with Face">
+      </button>
+      <button class="stamp-button" onclick="addStamp('03eyestome.png')">
+        <img src="03eyestome.png" alt="Eyes to me">
+      </button>
+      <button class="stamp-button" onclick="addStamp('04getmyheart.png')">
+        <img src="04getmyheart.png" alt="Get my heart">
+      </button>
     </div>
     
-    <div class="button-group">
+    <!-- 編集コントロールボタンエリア -->
+    <div class="edit-tools-container">
+      <button id="selectBtn">選択切替</button>
       <button id="undoBtn">戻る</button>
-      <button id="deleteBtn" style="display:none;">選択中のデコを削除</button>
+      <button id="redoBtn">やり直し</button>
+      <button id="duplicateBtn">複製</button>
+      <button id="deleteBtn" style="background: #f44336;">削除</button>
+      <button id="sendBackwardBtn">背面へ</button>
+      <button id="bringForwardBtn">前面へ</button>
     </div>
-</div>
 
-<div class="area" id="area-result" style="display:none;">
-    <h2>3) 完成！</h2>
+    <!-- 「決定 → プレビュー」ボタンをデコレーションエリア内に移動 -->
+    <button id="generateBtn" class="form-button" style="margin-top: 20px;">決定 → プレビュー</button>
+  </div>
+
+  <div class="area" id="area-result" style="display: none;">
+    <h2 id="section4-title">4) 完成イメージ</h2>
     <div id="previewWrapper">
-      <img id="previewImage" src="" alt="うちわプレビュー" />
-      <p id="previewNotice" style="font-size:14px; color:#555; text-align: left;"></p>
+      <img id="previewImage" alt="合成画像プレビュー" />
     </div>
-    <button id="generateBtn">決定 → プレビュー</button>
-    <button id="goToOrderFormBtn" style="display:none;">購入フォームへ進む</button>
-</div>
+    <div id="previewNotice" style="font-size:14px; color:black; margin-top:10px;"></div>
+    <!-- 「注文フォームへ進む」ボタンはここに残し、JavaScriptで表示制御 -->
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform?usp=dialog"
+       target="_blank"
+       class="form-button"
+       id="goToOrderFormBtn"
+       style="display: none;">📝 注文フォームへ進む</a>
+  </div>
 
-<script>
-    window.onload = function() {
-      // キャンバスとコンテキストの取得
-      const mainCanvas = document.getElementById('mainCanvas');
-      const ctx = mainCanvas.getContext('2d');
-      const templateOverlay = document.getElementById('templateOverlay');
-      const imageLoader = document.getElementById('imageLoader');
-      const templateSelector = document.getElementById('templateSelector');
-      const confirmPhotoBtn = document.getElementById('confirmPhotoBtn');
-      const reEditPhotoBtn = document.getElementById('reEditPhotoBtn');
-      const generateBtn = document.getElementById('generateBtn');
-      const goToOrderFormBtn = document.getElementById('goToOrderFormBtn');
-      const customText = document.getElementById('customText');
-      const colorPicker = document.getElementById('colorPicker');
-      const fontPicker = document.getElementById('fontPicker');
-      const previewWrapper = document.getElementById('previewWrapper');
-      const previewImage = document.getElementById('previewImage');
-      const previewNotice = document.getElementById('previewNotice');
-      const areaDecorations = document.getElementById('area-decorations');
-      const areaResult = document.getElementById('area-result');
-      
-      // 追加: 背景色関連のDOM要素と状態変数
-      const backgroundColorPicker = document.getElementById('backgroundColorPicker');
-      const setBackgroundColorBtn = document.getElementById('setBackgroundColorBtn');
-      let backgroundColor = null; // 背景色を保存する変数
+  <footer style="font-size: 6px; color: #888; margin-top: 20px;">
+    © 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br />
+    このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br />
+    ※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。
+  </footer>
 
-      // デコレーションのDOM要素
-      const decorationButtons = document.getElementById('decorationButtons');
-      const addTextBtn = document.getElementById('addTextBtn');
-      const undoBtn = document.getElementById('undoBtn');
-      const deleteBtn = document.getElementById('deleteBtn');
+  <!-- Hammer.jsを読み込み：タッチジェスチャーをよりスムーズにするため -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+  <script>
+    // DOM要素の取得
+    const mainCanvas = document.getElementById('mainCanvas');
+    const ctx = mainCanvas.getContext('2d');
+    const templateOverlay = document.getElementById('templateOverlay');
+    const imageLoader = document.getElementById('imageLoader');
+    const templateSelector = document.getElementById('templateSelector');
+    const confirmPhotoBtn = document.getElementById('confirmPhotoBtn');
+    const reEditPhotoBtn = document.getElementById('reEditPhotoBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const goToOrderFormBtn = document.getElementById('goToOrderFormBtn');
+    const customText = document.getElementById('customText');
+    const colorPicker = document.getElementById('colorPicker');
+    const fontPicker = document.getElementById('fontPicker');
+    const previewWrapper = document.getElementById('previewWrapper');
+    const previewImage = document.getElementById('previewImage');
+    const previewNotice = document.getElementById('previewNotice');
+    const areaDecorations = document.getElementById('area-decorations');
+    const areaResult = document.getElementById('area-result'); // 完成イメージのエリア
 
-      // 状態変数
-      let uploadedImg = null; // アップロードされた写真
-      let photoObject = null; // 写真の座標、スケール、回転を管理
-      let isPhotoLocked = false; // 写真の編集状態
-      let decorationObjects = []; // デコレーションオブジェクトの配列
-      let selectedObject = null; // 現在選択中のデコレーション
-      let isDragging = false; // ドラッグ中かどうか
-      let dragTarget = null; // ドラッグ中の対象 ('photo', 'decoration', 'rotate-photo', 'rotate-decoration')
-      let lastPos = { x: 0, y: 0 }; // 最後にマウスがあった座標
-      let history = []; // 履歴スタック
-      let historyIndex = -1; // 現在の履歴インデックス
+    // 状態変数
+    let uploadedImg = null; // アップロードされた写真データ
+    let photoObject = null; // 写真の現在の位置、スケール、回転
+    let isPhotoLocked = false; // 写真の編集が確定されているか
+    let decorationObjects = []; // テキスト、絵文字、ステッカーなどのデコレーションオブジェクトの配列
+    let selectedObject = null; // 現在選択中のデコレーションオブジェクト
+    let history = []; // 編集履歴（アンドゥ/リドゥ用）
+    let historyIndex = -1; // 現在の履歴インデックス
 
-      // キャンバスのサイズをレスポンシブに調整
-      const fanRatio = 1; // 扇の縦横比
-      function resizeCanvas() {
-        const parentWidth = mainCanvas.parentElement.clientWidth;
-        const size = Math.min(parentWidth, 400); // 最大幅400px
-        mainCanvas.style.width = size + 'px';
-        mainCanvas.style.height = (size * fanRatio) + 'px';
-      }
-      window.addEventListener('resize', resizeCanvas);
-      resizeCanvas();
+    // ジェスチャー開始時のオブジェクトの状態とタッチ中心
+    var initialObjX, initialObjY, initialObjScale, initialObjRotation;
+    var initialTouchCenterX, initialTouchCenterY;
+    // オブジェクトの中心からタッチ中心への初期ベクトル（キャンバス座標系）
+    var initialVecOffsetX, initialVecOffsetY; 
 
-      /**
-       * 描画のメインループ
-       */
-      function drawAll() {
-        // 高解像度での描画を考慮
-        ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height); // キャンバスをクリア
-
-        // 追加: 背景色が設定されていれば、それを塗りつぶす
-        if (backgroundColor) {
-          ctx.fillStyle = backgroundColor;
-          ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
-        }
-        
-        drawImage(); // 写真を描画
-        drawDecorations(); // デコレーションを描画
-      }
-
-      /**
-       * 写真を描画します。
-       */
-      function drawImage() {
-        if (!uploadedImg || !photoObject) return;
-
-        // 写真を中央に配置し、回転とスケールを適用
-        ctx.save();
-        ctx.translate(photoObject.x, photoObject.y);
-        ctx.rotate(photoObject.rotation);
-        ctx.scale(photoObject.scale, photoObject.scale);
-        ctx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
-        ctx.restore();
-
-        if (!isPhotoLocked) {
-          // 編集モードの場合、写真の周りにコントロールを描画
-          ctx.strokeStyle = '#ff69b4';
-          ctx.lineWidth = 4;
-          ctx.setLineDash([10, 10]);
-          const rectWidth = uploadedImg.width * photoObject.scale;
-          const rectHeight = uploadedImg.height * photoObject.scale;
-          ctx.strokeRect(photoObject.x - rectWidth / 2, photoObject.y - rectHeight / 2, rectWidth, rectHeight);
-          ctx.setLineDash([]);
-        }
-      }
-
-      /**
-       * デコレーションを描画します。
-       */
-      function drawDecorations() {
-        decorationObjects.forEach(obj => {
-          ctx.save();
-          ctx.translate(obj.x, obj.y);
-          ctx.rotate(obj.rotation);
-          ctx.scale(obj.scale, obj.scale);
-
-          if (obj.type === 'text') {
-            ctx.font = `${obj.fontSize}px "${obj.fontFamily}"`;
-            ctx.fillStyle = obj.color;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(obj.text, 0, 0);
-          } else if (obj.type === 'image') {
-            // 画像のデコレーションを描画
-            ctx.drawImage(obj.image, -obj.size / 2, -obj.size / 2, obj.size, obj.size);
-          }
-
-          ctx.restore();
-
-          // 選択中のデコレーションに枠線を描画
-          if (selectedObject && selectedObject.id === obj.id) {
-            ctx.strokeStyle = '#ff1493';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]);
-            const size = obj.size * obj.scale;
-            ctx.strokeRect(obj.x - size / 2, obj.y - size / 2, size, size);
-            ctx.setLineDash([]);
-          }
-        });
-      }
-
-      /**
-       * 履歴を保存します。
-       */
-      function saveState() {
-        // 現在の履歴以降をクリア
+    // --- 履歴管理機能 ---
+    /**
+     * 現在のデコレーションオブジェクトの状態を履歴に保存します。
+     */
+    function saveState() {
+      // 現在のインデックス以降の履歴を削除し、新しい状態を追加
+      if (historyIndex < history.length - 1) {
         history = history.slice(0, historyIndex + 1);
-        history.push(JSON.stringify({
-          decorationObjects: decorationObjects,
-          isPhotoLocked: isPhotoLocked
-        }));
+      }
+      history.push(JSON.stringify(decorationObjects)); // オブジェクトのディープコピーを保存
+      historyIndex++;
+    }
+
+    /**
+     * 一つ前の編集状態に戻します（アンドゥ）。
+     */
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        decorationObjects = JSON.parse(history[historyIndex]); // 履歴から状態を復元
+        selectedObject = null; // 選択状態を解除
+        drawAll(); // 全体を再描画
+      }
+    }
+
+    /**
+     * 一つ後の編集状態に進みます（リドゥ）。
+     */
+    function redo() {
+      if (historyIndex < history.length - 1) {
         historyIndex++;
-        updateUndoRedoButtons();
+        decorationObjects = JSON.parse(history[historyIndex]); // 履歴から状態を復元
+        selectedObject = null; // 選択状態を解除
+        drawAll(); // 全体を再描画
       }
+    }
 
-      /**
-       * 履歴ボタンの状態を更新します。
-       */
-      function updateUndoRedoButtons() {
-        undoBtn.disabled = historyIndex <= 0;
-      }
+    // --- 描画機能 ---
+    /**
+     * 写真をキャンバスに描画します。
+     */
+    function drawImage() {
+      if (!photoObject || !uploadedImg) return;
 
-      /**
-       * 座標からデコレーションオブジェクトを特定します。
-       */
-      function getDecorationAtPosition(x, y) {
-        for (let i = decorationObjects.length - 1; i >= 0; i--) {
-          const obj = decorationObjects[i];
-          const size = (obj.type === 'text' ? 150 : obj.size) * obj.scale;
-          const dist = Math.sqrt(Math.pow(x - obj.x, 2) + Math.pow(y - obj.y, 2));
-          if (dist < size / 2) {
-            return obj;
-          }
-        }
-        return null;
-      }
+      ctx.save(); // 現在のキャンバスの状態を保存
+      // 写真の中心を基準に移動、回転、拡大縮小
+      ctx.translate(photoObject.x, photoObject.y);
+      ctx.rotate(photoObject.rotation);
+      ctx.scale(photoObject.scale, photoObject.scale);
+      // 画像を描画（中心座標が0,0になるようにオフセット）
+      ctx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
+      ctx.restore(); // 保存した状態に戻す
+    }
 
-      // --- イベントリスナー ---
+    /**
+     * デコレーションオブジェクト（テキスト、スタンプ）をキャンバスに描画します。
+     */
+    function drawDecorations() {
+      decorationObjects.forEach(obj => {
+        ctx.save();
+        // オブジェクトの中心を基準に移動、回転、拡大縮小
+        ctx.translate(obj.x, obj.y);
+        ctx.rotate(obj.rotation);
+        ctx.scale(obj.scale, obj.scale);
 
-      // うちわテンプレート選択
-      templateSelector.addEventListener('change', () => {
-        // 現在の高解像度テンプレートのパスを保存
-        const templatePath = templateSelector.value;
-        // 低解像度版に切り替え
-        const lowResPath = templateSelector.options[templateSelector.selectedIndex].dataset.lowres;
-        templateOverlay.src = lowResPath;
-        drawAll(); // テンプレートの変更を反映
-      });
-
-      // 写真アップロード
-      imageLoader.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(event) {
-          uploadedImg = new Image();
-          uploadedImg.onload = () => {
-            // 写真をアップロードしたら背景色をリセット
-            backgroundColor = null;
-            photoObject = {
-              x: mainCanvas.width / 2, 
-              y: mainCanvas.height / 2, 
-              scale: 1,
-              rotation: 0
-            };
-            isPhotoLocked = false; 
-            reEditPhotoBtn.style.display = 'none'; 
-            confirmPhotoBtn.style.display = 'block'; 
-            areaDecorations.style.display = 'none'; 
-            areaResult.style.display = 'none';
-            drawAll();
-          };
-          uploadedImg.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-      });
-
-      // 追加: 背景色設定ボタンの処理
-      setBackgroundColorBtn.addEventListener('click', () => {
-        uploadedImg = null; // 写真をリセット
-        photoObject = null; // 写真オブジェクトもリセット
-        backgroundColor = backgroundColorPicker.value; // カラーピッカーの値で背景色を設定
-        isPhotoLocked = true; // 背景色は編集不要なので、デコレーション編集へ移行
-        confirmPhotoBtn.style.display = 'none'; 
-        reEditPhotoBtn.style.display = 'block';
-        areaDecorations.style.display = 'block'; 
-        areaResult.style.display = 'none';
-        document.getElementById('area-decorations').scrollIntoView({ behavior: 'smooth' }); 
-        saveState();
-        drawAll(); // 再描画
-      });
-
-      // 写真/背景を確定
-      confirmPhotoBtn.addEventListener('click', () => {
-        // 写真か背景色が設定されているか確認
-        if (!uploadedImg && !backgroundColor) {
-          alert('⚠️ まず写真または背景色を設定してください。');
-          return;
-        }
-        isPhotoLocked = true;
-        confirmPhotoBtn.style.display = 'none';
-        reEditPhotoBtn.style.display = 'block';
-        areaDecorations.style.display = 'block';
-        document.getElementById('area-decorations').scrollIntoView({ behavior: 'smooth' });
-        saveState();
-      });
-
-      // 写真/背景を編集し直す
-      reEditPhotoBtn.addEventListener('click', () => {
-        isPhotoLocked = false;
-        reEditPhotoBtn.style.display = 'none';
-        confirmPhotoBtn.style.display = 'block';
-        areaDecorations.style.display = 'none';
-        selectedObject = null;
-        deleteBtn.style.display = 'none';
-        areaResult.style.display = 'none';
-        if (backgroundColor) {
-          backgroundColor = null; // 背景色をリセット
-        }
-        drawAll();
-      });
-
-      // 文字追加
-      addTextBtn.addEventListener('click', () => {
-        const text = customText.value;
-        if (text.trim() === '') return;
-
-        const newText = {
-          id: Date.now(),
-          type: 'text',
-          text: text,
-          x: mainCanvas.width / 2,
-          y: mainCanvas.height / 2,
-          color: colorPicker.value,
-          fontFamily: fontPicker.value,
-          fontSize: 60,
-          rotation: 0,
-          scale: 1,
-          size: 150 // ダミーサイズ
-        };
-        decorationObjects.push(newText);
-        selectedObject = newText;
-        deleteBtn.style.display = 'block';
-        customText.value = '';
-        saveState();
-        drawAll();
-      });
-
-      // スタンプ追加
-      decorationButtons.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'IMG') return;
-
-        const newImage = new Image();
-        newImage.onload = () => {
-          const newStamp = {
-            id: Date.now(),
-            type: 'image',
-            image: newImage,
-            x: mainCanvas.width / 2,
-            y: mainCanvas.height / 2,
-            size: 100,
-            rotation: 0,
-            scale: 1
-          };
-          decorationObjects.push(newStamp);
-          selectedObject = newStamp;
-          deleteBtn.style.display = 'block';
-          saveState();
-          drawAll();
-        };
-        newImage.src = e.target.src;
-      });
-
-      // 決定 → プレビュー
-      generateBtn.addEventListener('click', () => {
-        // 写真も背景色も設定されていなければ警告
-        if (!uploadedImg && !backgroundColor) {
-          alert('⚠️ まず写真または背景色を設定してください。');
-          return;
-        }
-        
-        if (!isPhotoLocked) {
-          alert('⚠️ 写真または背景色の設定を確定してください。');
-          return;
+        if (obj.type === 'text') {
+          ctx.fillStyle = obj.color;
+          // フォントサイズはスケーリング前に設定 (px単位)
+          ctx.font = `${obj.fontSize / obj.scale}px ${obj.fontFamily}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(obj.content, 0, 0);
+        } else if (obj.type === 'image') {
+          // 画像を描画（中心座標が0,0になるようにオフセット）
+          ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
         }
 
-        // 高解像度での最終画像を生成するためのオフスクリーンキャンバス
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = 800; // 元の解像度
-        tempCanvas.height = 800;
-        const tempCtx = tempCanvas.getContext('2d');
-
-        // 1. 背景色または写真を描画
-        if (backgroundColor) {
-          tempCtx.fillStyle = backgroundColor;
-          tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        } else if (uploadedImg) {
-          tempCtx.save();
-          tempCtx.translate(photoObject.x, photoObject.y);
-          tempCtx.rotate(photoObject.rotation);
-          tempCtx.scale(photoObject.scale, photoObject.scale);
-          tempCtx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
-          tempCtx.restore();
+        // 選択中のオブジェクトに枠線を表示
+        if (obj === selectedObject) {
+          ctx.strokeStyle = '#42a5f5';
+          ctx.lineWidth = 10 / obj.scale; // スケーリングに合わせて線幅を調整
+          ctx.setLineDash([20 / obj.scale, 10 / obj.scale]); // スケーリングに合わせて点線の間隔を調整
+          // オブジェクトの描画サイズを計算し、枠線を描画
+          const rectWidth = obj.type === 'text' ? ctx.measureText(obj.content).width : obj.width;
+          const rectHeight = obj.type === 'text' ? obj.fontSize * 1.2 / obj.scale : obj.height; // テキストは行高考慮
+          ctx.strokeRect(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
+          ctx.setLineDash([]); // 点線モードをリセット
         }
 
-        // 2. デコレーションを描画
-        decorationObjects.forEach(obj => {
-          tempCtx.save();
-          tempCtx.translate(obj.x, obj.y);
-          tempCtx.rotate(obj.rotation);
-          tempCtx.scale(obj.scale, obj.scale);
-          if (obj.type === 'text') {
-            tempCtx.font = `${obj.fontSize}px "${obj.fontFamily}"`;
-            tempCtx.fillStyle = obj.color;
-            tempCtx.textAlign = 'center';
-            tempCtx.textBaseline = 'middle';
-            tempCtx.fillText(obj.text, 0, 0);
-          } else if (obj.type === 'image') {
-            tempCtx.drawImage(obj.image, -obj.size / 2, -obj.size / 2, obj.size, obj.size);
-          }
-          tempCtx.restore();
-        });
-
-        // 3. 高解像度うちわテンプレートを重ねる
-        const templateHighRes = new Image();
-        templateHighRes.onload = () => {
-          tempCtx.drawImage(templateHighRes, 0, 0, tempCanvas.width, tempCanvas.height);
-          previewImage.src = tempCanvas.toDataURL('image/png');
-          areaResult.style.display = 'block';
-          previewWrapper.style.display = 'block';
-          goToOrderFormBtn.style.display = 'block';
-          previewNotice.innerHTML = `🌟完成！<br>
-          このうちわ画像を長押し（PCは右クリック）で保存できます。<br>
-          <br>
-          ※ このプレビュー画像はあくまでイメージです。印刷時の仕上がりは、ご利用のサービスにより異なります。`;
-          areaResult.scrollIntoView({ behavior: 'smooth' });
-        };
-        templateHighRes.src = templateSelector.value;
-      });
-
-      // 戻るボタン
-      undoBtn.addEventListener('click', () => {
-        if (historyIndex > 0) {
-          historyIndex--;
-          const prevState = JSON.parse(history[historyIndex]);
-          decorationObjects = prevState.decorationObjects;
-          isPhotoLocked = prevState.isPhotoLocked;
-          // 画像デコレーションは再度読み込む必要がある
-          decorationObjects.forEach(obj => {
-            if (obj.type === 'image') {
-              const newImage = new Image();
-              newImage.src = obj.image.src;
-              obj.image = newImage;
-            }
-          });
-          selectedObject = null;
-          deleteBtn.style.display = 'none';
-          drawAll();
-          updateUndoRedoButtons();
-        }
-      });
-
-      // デコレーション削除
-      deleteBtn.addEventListener('click', () => {
-        if (selectedObject) {
-          decorationObjects = decorationObjects.filter(obj => obj.id !== selectedObject.id);
-          selectedObject = null;
-          deleteBtn.style.display = 'none';
-          saveState();
-          drawAll();
-        }
-      });
-
-      // --- ドラッグ＆ドロップ関連 ---
-      mainCanvas.addEventListener('mousedown', function(e) {
-        if (isPhotoLocked) {
-          // デコレーションの操作
-          const rect = mainCanvas.getBoundingClientRect();
-          const x = (e.clientX - rect.left) * (mainCanvas.width / rect.width);
-          const y = (e.clientY - rect.top) * (mainCanvas.height / rect.height);
-          
-          selectedObject = getDecorationAtPosition(x, y);
-          if (selectedObject) {
-            isDragging = true;
-            dragTarget = 'decoration';
-            lastPos = { x: e.clientX, y: e.clientY };
-            deleteBtn.style.display = 'block';
-          } else {
-            // デコレーションが選択されていない場合は選択を解除
-            selectedObject = null;
-            deleteBtn.style.display = 'none';
-          }
-        } else if (photoObject && uploadedImg) {
-          // 写真の操作
-          const rect = mainCanvas.getBoundingClientRect();
-          const x = (e.clientX - rect.left) * (mainCanvas.width / rect.width);
-          const y = (e.clientY - rect.top) * (mainCanvas.height / rect.height);
-          
-          const rectWidth = uploadedImg.width * photoObject.scale;
-          const rectHeight = uploadedImg.height * photoObject.scale;
-          
-          // 写真の範囲内をクリックしたか判定
-          if (x > photoObject.x - rectWidth / 2 && x < photoObject.x + rectWidth / 2 &&
-              y > photoObject.y - rectHeight / 2 && y < photoObject.y + rectHeight / 2) {
-            isDragging = true;
-            dragTarget = 'photo';
-            lastPos = { x: e.clientX, y: e.clientY };
-          }
-        }
-        drawAll();
-      });
-
-      mainCanvas.addEventListener('mousemove', function(e) {
-        if (!isDragging || !dragTarget) return;
-
-        // 移動量をキャンバスの論理ピクセルに変換
-        const dx_canvas = (e.clientX - lastPos.x) * (mainCanvas.width / mainCanvas.getBoundingClientRect().width);
-        const dy_canvas = (e.clientY - lastPos.y) * (mainCanvas.height / mainCanvas.getBoundingClientRect().height);
-
-        if (dragTarget === 'photo') {
-          photoObject.x += dx_canvas;
-          photoObject.y += dy_canvas;
-        } else if (dragTarget === 'decoration' && selectedObject) {
-          selectedObject.x += dx_canvas;
-          selectedObject.y += dy_canvas;
-        }
-
-        lastPos = { x: e.clientX, y: e.clientY };
-        drawAll();
-      });
-
-      mainCanvas.addEventListener('mouseup', function(e) {
-        if (isDragging) {
-          if (dragTarget === 'decoration' || dragTarget === 'photo') {
-            saveState(); // 操作完了時に履歴を保存
-          }
-        }
-        isDragging = false;
-        dragTarget = null;
-      });
-
-      // スケール変更（ピンチイン/アウト）
-      mainCanvas.addEventListener('wheel', function(e) {
-        if (isPhotoLocked) {
-          // デコレーションのスケール変更
-          if (selectedObject) {
-            e.preventDefault();
-            const scaleFactor = 1 + e.deltaY * -0.001; // ホイールの量に応じて調整
-            selectedObject.scale *= scaleFactor;
-            saveState();
-            drawAll();
-          }
-        } else if (photoObject) {
-          // 写真のスケール変更
-          e.preventDefault();
-          const scaleFactor = 1 + e.deltaY * -0.001; // ホイールの量に応じて調整
-          photoObject.scale *= scaleFactor;
-          drawAll();
-        }
+        ctx.restore();
       });
     }
-</script>
 
+    /**
+     * キャンバス全体をクリアし、写真とデコレーションを再描画します。
+     */
+    function drawAll() {
+      ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height); // キャンバスをクリア
+      drawImage(); // 写真を描画
+      drawDecorations(); // デコレーションを描画
+    }
+
+    /**
+     * マウス/タッチイベントのクライアント座標をキャンバス内の論理座標に変換します。
+     * @param {number} clientX - イベントのclientX座標
+     * @param {number} clientY - イベントのclientY座標
+     * @returns {{x: number, y: number}} キャンバス内の座標
+     */
+    function getCanvasCoords(clientX, clientY) {
+      const rect = mainCanvas.getBoundingClientRect(); // キャンバスの画面上での位置とサイズ
+      const x = (clientX - rect.left) * (mainCanvas.width / rect.width);
+      const y = (clientY - rect.top) * (mainCanvas.height / rect.height);
+      return { x, y };
+    }
+
+    /**
+     * 指定された点がオブジェクトの境界内にあるか判定します。
+     * @param {{x: number, y: number}} p - 判定したい点（キャンバス座標）
+     * @param {object} obj - 判定対象のオブジェクト
+     * @returns {boolean} 点がオブジェクト内にあるか
+     */
+    function isPointInObject(p, obj) {
+      // 1. 点をオブジェクトのローカル座標系に変換する (逆変換)
+      // まずオブジェクトの中心を原点に移動
+      const translatedX = p.x - obj.x;
+      const translatedY = p.y - obj.y;
+
+      // 回転を元に戻す
+      const cos = Math.cos(-obj.rotation);
+      const sin = Math.sin(-obj.rotation);
+      const rotatedX = translatedX * cos - translatedY * sin;
+      const rotatedY = translatedX * sin + translatedY * cos;
+
+      // スケールを元に戻す
+      const scaledX = rotatedX / obj.scale;
+      const scaledY = rotatedY / obj.scale;
+
+      // 2. オブジェクトのローカル座標系での幅と高さを計算
+      let objWidth, objHeight;
+      if (obj.type === 'text') {
+        // テキストの場合、現在のフォント設定でテキストの実際の幅を測定
+        ctx.save();
+        ctx.font = `${obj.fontSize}px ${obj.fontFamily}`; // オリジナルのフォントサイズで測定
+        objWidth = ctx.measureText(obj.content).width;
+        objHeight = obj.fontSize * 1.2; // テキストの高さは行高を考慮
+        ctx.restore();
+      } else if (obj.type === 'image') {
+        objWidth = obj.width;
+        objHeight = obj.height;
+      } else {
+          return false; // 未知のタイプ
+      }
+
+      const halfObjWidth = objWidth / 2;
+      const halfObjHeight = objHeight / 2;
+
+      // 3. 変換された点が、オブジェクトのローカル境界ボックス内にあるか判定
+      return scaledX >= -halfObjWidth && scaledX <= halfObjWidth &&
+             scaledY >= -halfObjHeight && scaledY <= halfObjHeight;
+    }
+
+    // --- イベントリスナー ---
+    /**
+     * 画像ファイルの読み込み処理
+     */
+    imageLoader.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        uploadedImg = new Image();
+        uploadedImg.onload = () => {
+          // 写真オブジェクトの初期位置、スケール、回転を設定
+          photoObject = {
+            x: mainCanvas.width / 2, // キャンバス中央
+            y: mainCanvas.height / 2, // キャンバス中央
+            scale: 1,
+            rotation: 0
+          };
+          isPhotoLocked = false; // 写真編集を可能にする
+          reEditPhotoBtn.style.display = 'none'; // 再編集ボタンは非表示
+          confirmPhotoBtn.style.display = 'block'; // 確定ボタンを表示
+          areaDecorations.style.display = 'none'; // デコレーションエリアを非表示
+          areaResult.style.display = 'none'; // 完成イメージエリアも非表示にリセット
+          drawAll(); // 全体を再描画
+        };
+        uploadedImg.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    /**
+     * うちわテンプレートの選択変更処理
+     */
+    templateSelector.addEventListener('change', e => {
+      // 低解像度テンプレートに切り替えて表示
+      templateOverlay.src = e.target.selectedOptions[0].dataset.lowres;
+    });
+
+    /**
+     * 写真の配置確定ボタンの処理
+     */
+    confirmPhotoBtn.addEventListener('click', () => {
+      if (!uploadedImg) return; // 写真がアップロードされていなければ何もしない
+      isPhotoLocked = true; // 写真をロック
+      confirmPhotoBtn.style.display = 'none'; // 確定ボタンを非表示
+      reEditPhotoBtn.style.display = 'block'; // 再編集ボタンを表示
+      areaDecorations.style.display = 'block'; // デコレーションエリアを表示
+      document.getElementById('area-decorations').scrollIntoView({ behavior: 'smooth' }); // デコレーションエリアへスクロール
+      saveState(); // 最初のデコレーション状態を保存
+    });
+
+    /**
+     * 写真の再編集ボタンの処理
+     */
+    reEditPhotoBtn.addEventListener('click', () => {
+      isPhotoLocked = false; // 写真のロックを解除
+      reEditPhotoBtn.style.display = 'none'; // 再編集ボタンを非表示
+      confirmPhotoBtn.style.display = 'block'; // 確定ボタンを表示
+      areaDecorations.style.display = 'none'; // デコレーションエリアを非表示
+      selectedObject = null; // 選択中のデコレーションオブジェクトを解除
+      areaResult.style.display = 'none'; // 完成イメージエリアも非表示にリセット
+      drawAll(); // 全体を再描画
+    });
+
+    /**
+     * 決定 → プレビューボタンの処理
+     */
+    generateBtn.addEventListener('click', () => {
+      if (!uploadedImg) {
+        alert('⚠️ まず写真をアップロードしてください。');
+        return;
+      }
+      
+      if (!isPhotoLocked) {
+        alert('⚠️ 写真の配置を確定してください。');
+        return;
+      }
+
+      // 高解像度での最終画像を生成するためのオフスクリーンキャンバス
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = mainCanvas.width;
+      tempCanvas.height = mainCanvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+
+      // 1. 写真を描画
+      tempCtx.save();
+      tempCtx.translate(photoObject.x, photoObject.y);
+      tempCtx.rotate(photoObject.rotation);
+      tempCtx.scale(photoObject.scale, photoObject.scale);
+      tempCtx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
+      tempCtx.restore();
+
+      // 2. デコレーションを描画
+      decorationObjects.forEach(obj => {
+        tempCtx.save();
+        tempCtx.translate(obj.x, obj.y);
+        tempCtx.rotate(obj.rotation);
+        tempCtx.scale(obj.scale, obj.scale);
+        if (obj.type === 'text') {
+          tempCtx.fillStyle = obj.color;
+          // フォントサイズはスケーリング前に設定 (px単位)
+          tempCtx.font = `${obj.fontSize / obj.scale}px ${obj.fontFamily}`;
+          tempCtx.textAlign = 'center';
+          tempCtx.textBaseline = 'middle';
+          tempCtx.fillText(obj.content, 0, 0);
+        } else if (obj.type === 'image') {
+          tempCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+        }
+        tempCtx.restore();
+      });
+
+      // 3. 高解像度うちわテンプレートを重ねる
+      const templateHighRes = new Image();
+      templateHighRes.onload = () => {
+        tempCtx.drawImage(templateHighRes, 0, 0, tempCanvas.width, tempCanvas.height);
+        previewImage.src = tempCanvas.toDataURL('image/png'); // 完成イメージをDataURLとして設定
+
+        areaResult.style.display = 'block'; // ★ 完成イメージエリア全体を表示
+        previewWrapper.style.display = 'block'; // プレビュー表示エリアを表示
+        goToOrderFormBtn.style.display = 'block'; // 注文フォームボタンを表示
+
+        // 保存案内メッセージ
+        previewNotice.innerHTML = `iPhone：画像を👆長押しして「“写真”に追加」を選んで保存してください。<br>Android：画像を👆長押しして「画像を保存」を選択してください。`;
+        areaResult.scrollIntoView({ behavior: 'smooth' }); // 完成イメージエリアへスクロール
+      };
+      templateHighRes.src = templateSelector.value; // 選択された高解像度テンプレートを読み込む
+    });
+
+    // --- デコレーションオブジェクト追加機能 ---
+    /**
+     * 自由テキストをデコレーションとして追加します。
+     */
+    function addTextToOverlay() {
+      const text = customText.value.trim();
+      if (!text) return; // テキストが空なら何もしない
+      const newText = {
+        id: Date.now(), // 一意なID
+        type: 'text',
+        content: text,
+        x: mainCanvas.width / 2, // キャンバス中央に配置
+        y: mainCanvas.height / 2,
+        scale: 1,
+        rotation: 0,
+        color: colorPicker.value,
+        fontFamily: fontPicker.value,
+        fontSize: 500 // 初期フォントサイズ
+      };
+      decorationObjects.push(newText); // 配列に追加
+      selectedObject = newText; // 追加したものを選択状態にする
+      drawAll(); // 全体を再描画
+      saveState(); // 状態を履歴に保存
+    }
+
+    // PNGステッカー画像を事前に読み込む
+    const stampImages = {};
+    const pngStickers = ['01loveu.png', '02ntwithFace.png', '03eyestome.png', '04getmyheart.png'];
+    pngStickers.forEach(src => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        stampImages[src] = img; // 読み込み完了後、オブジェクトに格納
+      };
+    });
+
+    /**
+     * スタンプ（絵文字またはPNG画像）をデコレーションとして追加します。
+     * @param {string} content - 絵文字文字列またはPNG画像ファイル名
+     */
+    function addStamp(content) {
+      let newStamp;
+      if (content.endsWith('.png')) {
+        const img = stampImages[content];
+        if (!img) {
+          alert('画像をまだ読み込んでいません。数秒待ってからもう一度お試しください。');
+          return; // 画像がまだロードされていなければ処理しない
+        }
+        newStamp = {
+          id: Date.now(),
+          type: 'image',
+          img: img,
+          x: mainCanvas.width / 2,
+          y: mainCanvas.height / 2,
+          scale: 1,
+          rotation: 0,
+          width: img.naturalWidth,
+          height: img.naturalHeight
+        };
+        // スタンプの初期サイズを調整（大きすぎる場合を考慮）
+        const maxDim = Math.max(newStamp.width, newStamp.height);
+        const targetSize = 400; // PNGステッカーの初期サイズ目標
+        if (maxDim > targetSize) {
+            const scaleFactor = targetSize / maxDim;
+            newStamp.width *= scaleFactor;
+            newStamp.height *= scaleFactor;
+        }
+      } else {
+        newStamp = {
+          id: Date.now(),
+          type: 'text', // 絵文字はテキストとして扱う
+          content: content,
+          x: mainCanvas.width / 2,
+          y: mainCanvas.height / 2,
+          scale: 1,
+          rotation: 0,
+          color: 'black', // 絵文字は基本黒色
+          fontFamily: 'sans-serif', // 絵文字表示に適したフォント
+          fontSize: 500 // 絵文字の初期フォントサイズ
+        };
+      }
+      decorationObjects.push(newStamp); // 配列に追加
+      selectedObject = newStamp; // 追加したものを選択状態にする
+      drawAll(); // 全体を再描画
+      saveState(); // 状態を履歴に保存
+    }
+
+    // --- デコレーションオブジェクトの編集コントロール ---
+    /**
+     * デコレーションオブジェクトの選択を切り替えます。
+     */
+    document.getElementById('selectBtn').addEventListener('click', () => {
+      if (decorationObjects.length === 0) return;
+      const currentIndex = decorationObjects.indexOf(selectedObject);
+      const nextIndex = (currentIndex + 1) % decorationObjects.length;
+      selectedObject = decorationObjects[nextIndex]; // 次のオブジェクトを選択
+      drawAll(); // 全体を再描画
+    });
+    document.getElementById('undoBtn').addEventListener('click', undo); // 戻るボタン
+    document.getElementById('redoBtn').addEventListener('click', redo); // やり直しボタン
+
+    /**
+     * 選択中のデコレーションオブジェクトを削除します。
+     */
+    document.getElementById('deleteBtn').addEventListener('click', () => {
+      if (!selectedObject) return;
+      decorationObjects = decorationObjects.filter(obj => obj !== selectedObject); // 選択中のオブジェクトを除外
+      selectedObject = null; // 選択状態を解除
+      drawAll(); // 全体を再描画
+      saveState(); // 状態を履歴に保存
+    });
+
+    /**
+     * 選択中のデコレーションオブジェクトを複製します。
+     */
+    document.getElementById('duplicateBtn').addEventListener('click', () => {
+      if (!selectedObject) return;
+      const newObj = { ...selectedObject }; // オブジェクトをシャローコピー
+      newObj.id = Date.now(); // 新しいIDを割り当てる
+      newObj.x += 20; // 少しずらして配置
+      newObj.y += 20;
+      decorationObjects.push(newObj); // 配列に追加
+      selectedObject = newObj; // 複製したものを選択状態にする
+      drawAll(); // 全体を再描画
+      saveState(); // 状態を履歴に保存
+    });
+
+    /**
+     * 選択中のデコレーションオブジェクトを背面へ移動します。
+     */
+    document.getElementById('sendBackwardBtn').addEventListener('click', () => {
+      const index = decorationObjects.indexOf(selectedObject);
+      if (index > 0) { // 最前面でなければ
+        const obj = decorationObjects.splice(index, 1)[0]; // 選択中のオブジェクトを配列から取り出す
+        decorationObjects.splice(index - 1, 0, obj); // 一つ前の位置に挿入
+        drawAll(); // 全体を再描画
+        saveState(); // 状態を履歴に保存
+      }
+    });
+
+    /**
+     * 選択中のデコレーションオブジェクトを前面へ移動します。
+     */
+    document.getElementById('bringForwardBtn').addEventListener('click', () => {
+      const index = decorationObjects.indexOf(selectedObject);
+      if (index < decorationObjects.length - 1) { // 最背面でなければ
+        const obj = decorationObjects.splice(index, 1)[0]; // 選択中のオブジェクトを配列から取り出す
+        decorationObjects.splice(index + 1, 0, obj); // 一つ後の位置に挿入
+        drawAll(); // 全体を再描画
+        saveState(); // 状態を履歴に保存
+      }
+    });
+
+    // --- テキストデコレーションのリアルタイム更新 ---
+    customText.addEventListener('input', () => {
+      if (selectedObject && selectedObject.type === 'text') {
+        selectedObject.content = customText.value; // テキスト内容を更新
+        drawAll(); // 全体を再描画
+      }
+    });
+    colorPicker.addEventListener('input', () => {
+      if (selectedObject && selectedObject.type === 'text') {
+        selectedObject.color = colorPicker.value; // 色を更新
+        drawAll(); // 全体を再描画
+      }
+    });
+    fontPicker.addEventListener('change', () => {
+      if (selectedObject && selectedObject.type === 'text') {
+        selectedObject.fontFamily = fontPicker.value; // フォントを更新
+        drawAll(); // 全体を再描画
+      }
+    });
+
+    // --- Hammer.js によるタッチ/マウスジェスチャーハンドリング ---
+    const hammertime = new Hammer(mainCanvas);
+    hammertime.get('pinch').set({ enable: true });
+    hammertime.get('rotate').set({ enable: true });
+
+    // 操作対象のオブジェクトを返すヘルパー関数
+    function getActiveObject() {
+        if (!isPhotoLocked) {
+            return photoObject; // 写真編集中は写真がターゲット
+        } else if (selectedObject) {
+            return selectedObject; // デコレーション編集中は選択中のデコレーションがターゲット
+        }
+        return null; // 何も操作対象がない場合
+    }
+
+    // タップでデコレーションを選択
+    hammertime.on('tap', function(e) {
+      if (isPhotoLocked) { // 写真がロックされている場合のみデコレーションを選択
+        const p = getCanvasCoords(e.srcEvent.clientX, e.srcEvent.clientY); // タッチ位置をキャンバス座標に変換
+        let found = false;
+        // Zオーダーを考慮し、配列の最後（最も手前）から逆順に判定
+        for (let i = decorationObjects.length - 1; i >= 0; i--) {
+          const obj = decorationObjects[i];
+          if (isPointInObject(p, obj)) {
+            selectedObject = obj; // オブジェクトを選択状態にする
+            drawAll(); // 全体を再描画
+            found = true;
+            break;
+          }
+        }
+        if (!found) { // どのオブジェクトも選択されなかった場合
+          selectedObject = null; // 選択状態を解除
+          drawAll(); // 全体を再描画
+        }
+      }
+    });
+
+    // パン（移動）ジェスチャー
+    hammertime.on('panstart', function(e) {
+        const activeObj = getActiveObject();
+        if (activeObj) {
+            initialObjX = activeObj.x;
+            initialObjY = activeObj.y;
+            // ジェスチャー開始時のタッチ中心点をキャンバス座標で記録
+            const touchCenter = getCanvasCoords(e.center.x, e.center.y);
+            initialTouchCenterX = touchCenter.x;
+            initialTouchCenterY = touchCenter.y;
+        }
+    });
+    hammertime.on('pan', function(e) {
+        const activeObj = getActiveObject();
+        if (activeObj) {
+            // 現在のタッチ中心点をキャンバス座標で取得
+            const currentTouchCenter = getCanvasCoords(e.center.x, e.center.y);
+            // オブジェクトの新しい位置は、開始時の位置にタッチ中心点の移動量を加算
+            activeObj.x = initialObjX + (currentTouchCenter.x - initialTouchCenterX);
+            activeObj.y = initialObjY + (currentTouchCenter.y - initialTouchCenterY);
+            drawAll();
+        }
+    });
+    hammertime.on('panend', function() {
+        if(isPhotoLocked) saveState(); // デコレーション移動後に履歴保存
+    });
+
+    // ピンチ（拡大縮小）ジェスチャー
+    hammertime.on('pinchstart', function(e) {
+        const activeObj = getActiveObject();
+        if (activeObj) {
+            initialObjX = activeObj.x;
+            initialObjY = activeObj.y;
+            initialObjScale = activeObj.scale;
+            initialObjRotation = activeObj.rotation; // 回転も考慮
+            const touchCenter = getCanvasCoords(e.center.x, e.center.y);
+            initialTouchCenterX = touchCenter.x;
+            initialTouchCenterY = touchCenter.y;
+
+            // オブジェクトの中心からタッチ中心への初期ベクトル (キャンバス座標系)
+            initialVecOffsetX = initialTouchCenterX - initialObjX;
+            initialVecOffsetY = initialTouchCenterY - initialObjY;
+        }
+    });
+    hammertime.on('pinch', function(e) {
+        const activeObj = getActiveObject();
+        if (activeObj) {
+            const currentTouchCenter = getCanvasCoords(e.center.x, e.center.y);
+            const newScale = initialObjScale * e.scale;
+            // newRotationはpinchイベントにもe.rotationがある場合があるので、それを使うかinitialObjRotationを使用
+            // Hammer.jsのe.rotationはジェスチャー開始時からの相対値なので、そのまま利用する
+            const currentRotationDelta = e.rotation * Math.PI / 180; // Hammer.jsは度数法なのでラジアンに変換
+
+            // 初期ベクトルを現在のスケール倍率でスケーリング
+            const scaledOffsetX = initialVecOffsetX * (newScale / initialObjScale);
+            const scaledOffsetY = initialVecOffsetY * (newScale / initialObjScale);
+
+            // スケーリングされたベクトルを回転量の差分で回転
+            const cos_rot_delta = Math.cos(currentRotationDelta);
+            const sin_rot_delta = Math.sin(currentRotationDelta);
+
+            const transformedOffsetX = scaledOffsetX * cos_rot_delta - scaledOffsetY * sin_rot_delta;
+            const transformedOffsetY = scaledOffsetX * sin_rot_delta + scaledOffsetY * cos_rot_delta;
+
+            // 新しいオブジェクトの中心 = 現在のタッチ中心 - (オブジェクトからタッチへの変換済みベクトル)
+            activeObj.x = currentTouchCenter.x - transformedOffsetX;
+            activeObj.y = currentTouchCenter.y - transformedOffsetY;
+            
+            activeObj.scale = newScale; // スケールを更新
+            activeObj.rotation = initialObjRotation + currentRotationDelta; // 回転を更新 (初期回転 + デルタ)
+            drawAll();
+        }
+    });
+    hammertime.on('pinchend', function() {
+        if(isPhotoLocked) saveState(); // デコレーション拡大縮小後に履歴保存
+    });
+
+    // 回転ジェスチャー
+    hammertime.on('rotatestart', function(e) {
+        const activeObj = getActiveObject();
+        if (activeObj) {
+            initialObjX = activeObj.x;
+            initialObjY = activeObj.y;
+            initialObjScale = activeObj.scale; // スケールも考慮
+            initialObjRotation = activeObj.rotation;
+            const touchCenter = getCanvasCoords(e.center.x, e.center.y);
+            initialTouchCenterX = touchCenter.x;
+            initialTouchCenterY = touchCenter.y;
+
+            // オブジェクトの中心からタッチ中心への初期ベクトル（キャンバス座標系）
+            initialVecOffsetX = initialTouchCenterX - initialObjX;
+            initialVecOffsetY = initialTouchCenterY - initialObjY;
+        }
+    });
+    hammertime.on('rotate', function(e) {
+        const activeObj = getActiveObject();
+        if (activeObj) {
+            const currentTouchCenter = getCanvasCoords(e.center.x, e.center.y);
+            const newRotation = initialObjRotation + e.rotation * Math.PI / 180; // 新しい回転角度 (ラジアン)
+            // scaleコンポーネントはrotateイベントにも含まれる場合があるため、それを使用するかinitialObjScaleを使用
+            const currentScale = initialObjScale * (e.scale || 1); // Hammer.jsのe.scaleはジェスチャー開始時からの相対値
+
+            // 初期ベクトルを現在のスケール倍率でスケーリング
+            const scaledOffsetX = initialVecOffsetX * (currentScale / initialObjScale);
+            const scaledOffsetY = initialVecOffsetY * (currentScale / initialObjScale);
+
+            // スケーリングされたベクトルを回転量の差分で回転
+            const rotationDelta = e.rotation * Math.PI / 180; // Hammer.jsのe.rotationはデルタ
+            const cos_rot_delta = Math.cos(rotationDelta);
+            const sin_rot_delta = Math.sin(rotationDelta);
+
+            const transformedOffsetX = scaledOffsetX * cos_rot_delta - scaledOffsetY * sin_rot_delta;
+            const transformedOffsetY = scaledOffsetX * sin_rot_delta + scaledOffsetY * cos_rot_delta;
+
+            // 新しいオブジェクトの中心 = 現在のタッチ中心 - (オブジェクトからタッチへの変換済みベクトル)
+            activeObj.x = currentTouchCenter.x - transformedOffsetX;
+            activeObj.y = currentTouchCenter.y - transformedOffsetY;
+            
+            activeObj.rotation = newRotation; // 回転を更新
+            activeObj.scale = currentScale; // スケールも更新
+            drawAll();
+        }
+    });
+    hammertime.on('rotateend', function() {
+        if(isPhotoLocked) saveState(); // デコレーション回転後に履歴保存
+    });
+
+
+    // --- PC向けマウスイベントハンドリング ---
+    let isDragging = false; // ドラッグ中かどうかのフラグ
+    let lastPos = { x: 0, y: 0 }; // 前回のマウス位置 (クライアント座標)
+    let dragTarget = null; // 'photo', 'decoration', 'rotate-photo', 'rotate-decoration'
+
+    mainCanvas.addEventListener('mousedown', function(e) {
+      const p = getCanvasCoords(e.clientX, e.clientY); // クリック位置をキャンバス座標に変換
+      isDragging = true;
+      lastPos = { x: e.clientX, y: e.clientY }; // クライアント座標を保存
+
+      if (e.button === 0) { // 左クリック（移動）
+        if (!isPhotoLocked) {
+          dragTarget = 'photo';
+        } else {
+          selectedObject = null; // まず選択を解除
+          // デコレーションを逆順で探し、一番手前のものを選択
+          for (let i = decorationObjects.length - 1; i >= 0; i--) {
+            const obj = decorationObjects[i];
+            if (isPointInObject(p, obj)) {
+              selectedObject = obj;
+              dragTarget = 'decoration';
+              break;
+            }
+          }
+        }
+      } else if (e.button === 2) { // 右クリック（回転）
+        if (!isPhotoLocked) {
+          dragTarget = 'rotate-photo';
+        } else if (selectedObject) {
+          dragTarget = 'rotate-decoration';
+        }
+      }
+      drawAll();
+    });
+
+    mainCanvas.addEventListener('mousemove', function(e) {
+      if (!isDragging || !dragTarget) return;
+
+      // 移動量をキャンバスの論理ピクセルに変換
+      const dx_canvas = (e.clientX - lastPos.x) * (mainCanvas.width / mainCanvas.getBoundingClientRect().width);
+      const dy_canvas = (e.clientY - lastPos.y) * (mainCanvas.height / mainCanvas.getBoundingClientRect().height);
+
+      if (dragTarget === 'photo') {
+        photoObject.x += dx_canvas;
+        photoObject.y += dy_canvas;
+      } else if (dragTarget === 'decoration' && selectedObject) {
+        selectedObject.x += dx_canvas;
+        selectedObject.y += dy_canvas;
+      } else if (dragTarget === 'rotate-photo') {
+        photoObject.rotation += dx_canvas * 0.0005; // マウスの横移動量に応じて回転（調整済み）
+      } else if (dragTarget === 'rotate-decoration' && selectedObject) {
+        selectedObject.rotation += dx_canvas * 0.0005; // マウスの横移動量に応じて回転（調整済み）
+      }
+
+      lastPos = { x: e.clientX, y: e.clientY };
+      drawAll();
+    });
+
+    mainCanvas.addEventListener('mouseup', function(e) {
+      isDragging = false;
+      dragTarget = null;
+      if(isPhotoLocked) saveState(); // デコレーション操作後に履歴保存
+    });
+
+    mainCanvas.addEventListener('mouseleave', function() {
+      isDragging = false;
+      dragTarget = null;
+    });
+
+    // 右クリックメニューを無効化
+    mainCanvas.addEventListener('contextmenu', e => e.preventDefault());
+
+    // 初期描画
+    drawAll();
+  </script>
 </body>
 </html>
