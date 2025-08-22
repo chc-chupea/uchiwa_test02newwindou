@@ -339,7 +339,7 @@
       
       <!-- ここが新しい“見たままフォント選択”UI -->
       <div class="font-picker-wrap">
-        <button id="fontPickerBtn" type="button">Aa あア愛 – フォントを選ぶ</button>
+        <button id="fontPickerBtn" type="button">フォントを選ぶ</button>
         <div id="fontDropdown" hidden></div>
       </div>
     </div>
@@ -486,12 +486,8 @@
     // 初期化：リストを組み立てて、現在の<select>の値に合わせてボタン表示
     buildFontDropdown();
     (() => {
-      const currentLabel = (() => {
-        const opt = Array.from(document.querySelectorAll('#fontPicker option'))
-          .find(o => o.value === fontPicker.value);
-        return opt ? 'フォント: ' + opt.textContent : 'フォントを選ぶ';
-      })();
-      setFont(fontPicker.value, currentLabel);
+      // 最初は「フォント」とだけ表示しておくので setFont は呼ばない
+      fontPickerBtn.textContent = 'フォント';
     })();
 
 
