@@ -327,14 +327,16 @@
     <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
     <div style="display: flex; gap: 5px; margin-bottom: 10px;">
       <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
-      <select id="fontPicker" style="flex: 1;">
+
+
+      <select id="fontPicker" class="native-font-select">
         <option value="Arial, sans-serif">Arial</option>
         <option value="'DotGothic16', sans-serif">ドットゴシック</option>
         <option value="'Train One', cursive">Train One</option>
         <option value="'Cherry Bomb One', cursive">手書き風</option>
         <option value="'Kaisei Tokumin', serif">丸文字</option>
       </select>
-
+      
       <!-- ここが新しい“見たままフォント選択”UI -->
       <div class="font-picker-wrap">
         <button id="fontPickerBtn" type="button">Aa あア愛 – フォントを選ぶ</button>
@@ -438,7 +440,7 @@
 
         const sample = document.createElement('div');
         sample.className = 'font-sample';
-        sample.textContent = 'Aa あア愛 推し';
+        sample.textContent = 'Aaあア愛';
         sample.style.fontFamily = f.value;
 
         const name = document.createElement('div');
