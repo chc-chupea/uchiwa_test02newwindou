@@ -489,7 +489,7 @@
       const currentLabel = (() => {
         const opt = Array.from(document.querySelectorAll('#fontPicker option'))
           .find(o => o.value === fontPicker.value);
-        return opt ? opt.textContent : 'フォントを選ぶ';
+        return opt ? 'フォント: ' + opt.textContent : 'フォントを選ぶ';
       })();
       setFont(fontPicker.value, currentLabel);
     })();
