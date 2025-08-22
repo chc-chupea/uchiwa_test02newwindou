@@ -586,8 +586,8 @@
 
         if (obj.type === 'text') {
           ctx.fillStyle = obj.color;
-          // フォントサイズはスケーリング前に設定 (px単位)
-          ctx.font = `${obj.fontSize / obj.scale}px ${obj.fontFamily}`;
+          // ← 相殺をやめる：そのままのフォントサイズで描く
+          ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(obj.content, 0, 0);
@@ -602,8 +602,8 @@
           ctx.lineWidth = 10 / obj.scale; // スケーリングに合わせて線幅を調整
           ctx.setLineDash([20 / obj.scale, 10 / obj.scale]); // スケーリングに合わせて点線の間隔を調整
           // オブジェクトの描画サイズを計算し、枠線を描画
-          const rectWidth = obj.type === 'text' ? ctx.measureText(obj.content).width : obj.width;
-          const rectHeight = obj.type === 'text' ? obj.fontSize * 1.2 / obj.scale : obj.height; // テキストは行高考慮
+          const rectWidth  = obj.type === 'text' ? ctx.measureText(obj.content).width : obj.width;
+          const rectHeight = obj.type === 'text' ? obj.fontSize * 1.2 : obj.height;
           ctx.strokeRect(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
           ctx.setLineDash([]); // 点線モードをリセット
         }
@@ -812,8 +812,7 @@
         tempCtx.scale(obj.scale, obj.scale);
         if (obj.type === 'text') {
           tempCtx.fillStyle = obj.color;
-          // フォントサイズはスケーリング前に設定 (px単位)
-          tempCtx.font = `${obj.fontSize / obj.scale}px ${obj.fontFamily}`;
+          tempCtx.font = `${obj.fontSize}px ${obj.fontFamily}`;
           tempCtx.textAlign = 'center';
           tempCtx.textBaseline = 'middle';
           tempCtx.fillText(obj.content, 0, 0);
@@ -1098,6 +1097,16 @@
             initialVecOffsetY = initialTouchCenterY - initialObjY;
         }
     });
+    
+    // --- ここに追加する ---
+    // スケールの範囲を制限する関数
+    function clampScale(s) {
+      const MIN = 0.1;   // 最小 10%
+      const MAX = 10;    // 最大 10倍
+      return Math.min(MAX, Math.max(MIN, s));
+    }
+    // --- ここまで追加 ---
+
     hammertime.on('pinch', function(e) {
         const activeObj = getActiveObject();
         if (activeObj) {
