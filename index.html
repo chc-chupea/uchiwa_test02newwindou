@@ -321,12 +321,10 @@
 
     <!-- 自由テキスト入力エリア -->
     <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
+
     <div style="display: flex; gap: 5px; margin-bottom: 10px;">
       <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
       <select id="fontPicker" style="flex: 1;">
-      <!-- 追加: フォントの大きな見本と、タイル型ギャラリー -->
-      <div id="fontPreview" class="font-preview" aria-live="polite">見本 Sample / 推し最高</div>
-      <div id="fontGallery" class="font-gallery" role="listbox"></div>
         <option value="Arial, sans-serif">Arial</option>
         <option value="'DotGothic16', sans-serif">ドットゴシック</option>
         <option value="'Train One', cursive">Train One</option>
@@ -334,6 +332,13 @@
         <option value="'Kaisei Tokumin', serif">丸文字</option>
       </select>
     </div>
+
+      <!-- 追加: フォントの大きな見本と、タイル型ギャラリー -->
+      <div id="fontPreview" class="font-preview" aria-live="polite">見本 Sample / 推し最高</div>
+      <div id="fontGallery" class="font-gallery" role="listbox"></div>
+
+
+    
     <button onclick="addTextToOverlay()">テキスト追加</button>
 
     <!-- スタンプ（絵文字・PNG）エリア -->
