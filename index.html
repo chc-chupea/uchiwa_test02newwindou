@@ -246,6 +246,7 @@
       font-size: 16px;
       cursor: pointer;
       text-align: left;
+      color: #000;  /* ← これを追加 */
     }
 
     #fontDropdown {
@@ -483,11 +484,11 @@
       if (wrap && !wrap.contains(e.target)) fontDropdown.hidden = true;
     });
 
-    // 初期化：リストを組み立てて、現在の<select>の値に合わせてボタン表示
+    // 初期化：リストを組み立てて、最初は「フォントを選ぶ」と表示だけする
     buildFontDropdown();
     (() => {
-      // 最初は「フォント」とだけ表示しておくので setFont は呼ばない
-      fontPickerBtn.textContent = 'フォント';
+      fontPickerBtn.textContent = 'フォントを選ぶ';
+      fontPickerBtn.style.fontFamily = 'Arial, sans-serif'; // ← フォントを指定しておくと見やすい！
     })();
 
 
