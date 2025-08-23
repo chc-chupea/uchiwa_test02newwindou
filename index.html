@@ -366,13 +366,22 @@
       <button class="stamp-button" onclick="addStamp('04getmyheart.png')">
         <img src="04getmyheart.png" alt="Get my heart">
       </button>
+      <button class="stamp-button" onclick="addStamp('05angel.png')">
+        <img src="05angel.png" alt="Get my heart">
+      </button>
+      <button class="stamp-button" onclick="addStamp('06god.png')">
+        <img src="06god.png" alt="Get my heart">
+      </button>
+      <button class="stamp-button" onclick="addStamp('07precious.png')">
+        <img src="07precious.png" alt="Get my heart">
+      </button>
     </div>
     
     <!-- 編集コントロールボタンエリア -->
     <div class="edit-tools-container">
       <!-- <button id="selectBtn">選択切替</button> -->
-      <button id="undoBtn">↶</button>
-      <button id="redoBtn">⤵</button>
+      <button id="undoBtn">戻る</button>
+      <button id="redoBtn">やり直し</button>
       <button id="duplicateBtn">複製</button>
       <button id="deleteBtn" style="background: #f44336;">削除</button>
       <button id="sendBackwardBtn">背面へ</button>
@@ -866,7 +875,7 @@
 
     // PNGステッカー画像を事前に読み込む
     const stampImages = {};
-    const pngStickers = ['01loveu.png', '02ntwithFace.png', '03eyestome.png', '04getmyheart.png'];
+    const pngStickers = ['01loveu.png', '02ntwithFace.png', '03eyestome.png', '04getmyheart.png',  '05angel.png', '06god.png', '07precious.png'];
     pngStickers.forEach(src => {
       const img = new Image();
       img.src = src;
