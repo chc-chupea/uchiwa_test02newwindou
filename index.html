@@ -380,7 +380,7 @@
         <!-- <span class="icon">↩ ↪</span> --><span class="label">↩ ↪</span>
       </button>
       <button class="cc-item" data-target="panel-layer">
-        <!-- <span class="icon">⬆︎⬇︎</span> --><span class="label">⬆︎⬇︎</span>
+        <!-- <span class="icon">⬆︎⬇︎</span> --><span class="label">レイヤー</span>
       </button>
     </div>
 
@@ -624,8 +624,94 @@
       if (historyIndex < history.length - 1) {
         history = history.slice(0, historyIndex + 1);
       }
-      history.push(JSON.stringify(decorationObjects)); // オブジェクトのディープコピーを保存
+
+      // decorationObjects を「JSONにできる形」に変換する（img は src に置き換える）
+      const snapshot = decorationObjects.map(obj => {
+        if (obj.type === 'image') {
+          return {
+            id: obj.id,
+            type: 'image',
+            src: obj.src || (obj.img && obj.img.src) || '',
+            x: obj.x,
+            y: obj.y,
+            scale: obj.scale,
+            rotation: obj.rotation,
+            width: obj.width,
+            height: obj.height
+          };
+        } else {
+          // text 等
+          return {
+            id: obj.id,
+            type: obj.type,
+            content: obj.content,
+            x: obj.x,
+            y: obj.y,
+            scale: obj.scale,
+            rotation: obj.rotation,
+            color: obj.color,
+            fontFamily: obj.fontFamily,
+            fontSize: obj.fontSize
+          };
+        }
+      });
+
+      history.push(JSON.stringify(snapshot));
       historyIndex++;
+    }
+
+
+    function restoreDecorationsFromSnapshot(snapshotStr) {
+      if (!snapshotStr) {
+        decorationObjects = [];
+        selectedObject = null;
+        drawAll();
+        return;
+      }
+      const arr = JSON.parse(snapshotStr);
+      decorationObjects = arr.map(item => {
+        if (item.type === 'image') {
+          // 事前読み込み済みの stampImages があれば使い、なければ新しい Image を作る
+          let img = (typeof stampImages !== 'undefined' && stampImages[item.src]) ? stampImages[item.src] : new Image();
+          // stampImages にない場合は src をセットして読み込み開始
+          if (!stampImages || !stampImages[item.src]) {
+            img.src = item.src;
+          }
+          // 画像がまだ読み込み中でも、読み込み完了時に再描画するようにする
+          if (!img.complete) {
+            img.onload = () => { drawAll(); };
+          }
+          return {
+            id: item.id,
+            type: 'image',
+            src: item.src,
+            img: img,
+            x: item.x,
+            y: item.y,
+            scale: item.scale,
+            rotation: item.rotation,
+            width: item.width,
+            height: item.height
+          };
+        } else {
+          // text 等はそのまま戻す
+          return {
+            id: item.id,
+            type: item.type,
+            content: item.content,
+            x: item.x,
+            y: item.y,
+            scale: item.scale,
+            rotation: item.rotation,
+            color: item.color,
+            fontFamily: item.fontFamily,
+            fontSize: item.fontSize
+          };
+        }
+      });
+
+      selectedObject = null;
+      drawAll();
     }
 
     /**
@@ -633,22 +719,15 @@
      */
     function undo() {
       if (historyIndex > 0) {
-        historyIndex--;
-        decorationObjects = JSON.parse(history[historyIndex]); // 履歴から状態を復元
-        selectedObject = null; // 選択状態を解除
-        drawAll(); // 全体を再描画
+    historyIndex--;
+        restoreDecorationsFromSnapshot(history[historyIndex]);
       }
     }
 
-    /**
-     * 一つ後の編集状態に進みます（リドゥ）。
-     */
     function redo() {
       if (historyIndex < history.length - 1) {
         historyIndex++;
-        decorationObjects = JSON.parse(history[historyIndex]); // 履歴から状態を復元
-        selectedObject = null; // 選択状態を解除
-        drawAll(); // 全体を再描画
+        restoreDecorationsFromSnapshot(history[historyIndex]);
       }
     }
 
@@ -983,9 +1062,12 @@
           alert('画像をまだ読み込んでいません。数秒待ってからもう一度お試しください。');
           return; // 画像がまだロードされていなければ処理しない
         }
+
+
         newStamp = {
           id: Date.now(),
           type: 'image',
+          src: content,            // ★ここを追加（ファイル名を保持）
           img: img,
           x: mainCanvas.width / 2,
           y: mainCanvas.height / 2,
@@ -1056,14 +1138,24 @@
      */
     document.getElementById('duplicateBtn').addEventListener('click', () => {
       if (!selectedObject) return;
-      const newObj = { ...selectedObject }; // オブジェクトをシャローコピー
-      newObj.id = Date.now(); // 新しいIDを割り当てる
-      newObj.x += 20; // 少しずらして配置
+      // 選択オブジェクトを一度シリアライズしてから戻す（img は消えるが、後で src から再作成）
+      const plain = JSON.parse(JSON.stringify(selectedObject));
+      const newObj = Object.assign({}, plain);
+      newObj.id = Date.now();
+      newObj.x += 20;
       newObj.y += 20;
-      decorationObjects.push(newObj); // 配列に追加
-      selectedObject = newObj; // 複製したものを選択状態にする
-      drawAll(); // 全体を再描画
-      saveState(); // 状態を履歴に保存
+
+      if (newObj.type === 'image') {
+        // 画像の場合は src から Image を作る/使う
+        const img = (typeof stampImages !== 'undefined' && stampImages[newObj.src]) ? stampImages[newObj.src] : new Image();
+        img.src = newObj.src;
+        newObj.img = img;
+      }
+
+      decorationObjects.push(newObj);
+      selectedObject = newObj;
+      drawAll();
+      saveState();
     });
 
     /**
