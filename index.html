@@ -1054,55 +1054,68 @@
      * スタンプ（絵文字またはPNG画像）をデコレーションとして追加します。
      * @param {string} content - 絵文字文字列またはPNG画像ファイル名
      */
-    function addStamp(content) {
-      let newStamp;
+    function addStamp(content) { 
       if (content.endsWith('.png')) {
-        const img = stampImages[content];
-        if (!img) {
-          alert('画像をまだ読み込んでいません。数秒待ってからもう一度お試しください。');
-          return; // 画像がまだロードされていなければ処理しない
-        }
+        // 画像ステッカーの場合
+        const img = new Image();
+        img.src = content;
 
-
-        newStamp = {
+        const newStamp = {
           id: Date.now(),
           type: 'image',
-          src: content,            // ★ここを追加（ファイル名を保持）
+          src: content,
           img: img,
           x: mainCanvas.width / 2,
           y: mainCanvas.height / 2,
           scale: 1,
           rotation: 0,
-          width: img.naturalWidth,
-          height: img.naturalHeight
+          width: 200,  // 仮のサイズ（読み込み前）
+          height: 200
         };
-        // スタンプの初期サイズを調整（大きすぎる場合を考慮）
-        const maxDim = Math.max(newStamp.width, newStamp.height);
-        const targetSize = 400; // PNGステッカーの初期サイズ目標
-        if (maxDim > targetSize) {
+
+        img.onload = () => {
+          // 本当のサイズをセット
+          newStamp.width = img.naturalWidth;
+          newStamp.height = img.naturalHeight;
+
+          // 大きすぎる場合はリサイズ
+          const maxDim = Math.max(newStamp.width, newStamp.height);
+          const targetSize = 400; // 初期表示サイズの目標
+          if (maxDim > targetSize) {
             const scaleFactor = targetSize / maxDim;
             newStamp.width *= scaleFactor;
             newStamp.height *= scaleFactor;
-        }
+          }
+
+          // 配列に追加・選択・描画
+          decorationObjects.push(newStamp);
+          selectedObject = newStamp;
+          drawAll();
+          saveState();
+        };
+
       } else {
-        newStamp = {
+        // テキストや絵文字の場合
+        const newStamp = {
           id: Date.now(),
-          type: 'text', // 絵文字はテキストとして扱う
+          type: 'text',
           content: content,
           x: mainCanvas.width / 2,
           y: mainCanvas.height / 2,
           scale: 1,
           rotation: 0,
-          color: 'black', // 絵文字は基本黒色
-          fontFamily: 'sans-serif', // 絵文字表示に適したフォント
-          fontSize: 500 // 絵文字の初期フォントサイズ
+          color: 'black',
+          fontFamily: 'sans-serif',
+          fontSize: 500
         };
+
+        decorationObjects.push(newStamp);
+        selectedObject = newStamp;
+        drawAll();
+        saveState();
       }
-      decorationObjects.push(newStamp); // 配列に追加
-      selectedObject = newStamp; // 追加したものを選択状態にする
-      drawAll(); // 全体を再描画
-      saveState(); // 状態を履歴に保存
     }
+
 
     // --- デコレーションオブジェクトの編集コントロール ---
     /**
