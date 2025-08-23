@@ -282,6 +282,47 @@
       left: -9999px !important; /* 画面からよける（フォーム値は残す） */
     }
 
+    /* === CapCut風：横スクロールツールバー === */
+    .cc-toolbar {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 8px 6px;
+      margin: 8px -6px 10px;   /* 端まで広くドラッグできるように少しはみ出させる */
+      border-top: 1px solid #eee;
+      border-bottom: 1px solid #eee;
+      scroll-snap-type: x proximity;
+    }
+    .cc-toolbar::-webkit-scrollbar { display: none; } /* スクロールバーを隠す（スマホ向け） */
+
+    .cc-item {
+      flex: 0 0 auto;          /* 横に並ぶ（折り返さない） */
+      width: 84px;             /* 指で押しやすい幅 */
+      scroll-snap-align: center;
+      border: 1px solid #ddd;
+      border-radius: 14px;
+      background: #fff;
+      padding: 8px 6px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,.06);
+    }
+    .cc-item .icon { font-size: 20px; display: block; line-height: 1.2; }
+    .cc-item .label { font-size: 12px; color: #333; display: block; margin-top: 4px; }
+
+    .cc-item.active {
+      background: linear-gradient(135deg, #e3f2fd, #ffffff);
+      border-color: #90caf9;
+      box-shadow: 0 3px 10px rgba(33,150,243,.15);
+    }
+
+    /* パネル（ツールの中身） */
+    .cc-panels { margin-top: 8px; }
+    .cc-panel[hidden] { display: none; }
+
+    /* 既存のボタン群がぎゅうぎゅうにならないように少し調整 */
+    .cc-panel button { margin: 4px 2px; }
 
   </style>
 </head>
@@ -324,69 +365,82 @@
       ※ オブジェクトをタップすると選択され、移動・サイズ変更・回転できます。
     </p>
 
-    <!-- 自由テキスト入力エリア -->
-    <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
-    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-      <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
-
-
-      <select id="fontPicker" class="native-font-select">
-        <option value="Arial, sans-serif">Arial</option>
-        <option value="'DotGothic16', sans-serif">ドットゴシック</option>
-        <option value="'Train One', cursive">Train One</option>
-        <option value="'Cherry Bomb One', cursive">手書き風</option>
-        <option value="'Kaisei Tokumin', serif">丸文字</option>
-      </select>
-      
-      <!-- ここが新しい“見たままフォント選択”UI -->
-      <div class="font-picker-wrap">
-        <button id="fontPickerBtn" type="button">フォントを選ぶ</button>
-        <div id="fontDropdown" hidden></div>
-      </div>
-    </div>
-
-
-    <button onclick="addTextToOverlay()">テキスト追加</button>
-
-    <!-- スタンプ（絵文字・PNG）エリア -->
-    <h3>スタンプ</h3>
-    <div class="stamp-buttons-container">
-      <button class="stamp-button" onclick="addStamp('❤️')">❤️</button>
-      <button class="stamp-button" onclick="addStamp('⭐')">⭐</button>
-      <!-- <button class="stamp-button" onclick="addStamp('🎶')">🎶</button> -->
-      <button class="stamp-button" onclick="addStamp('01loveu.png')">
-        <img src="01loveu.png" alt="Love You">
+    <!-- ▼▼ ここから “横スライド メニュー” を追加 ▼▼ -->
+    <div class="cc-toolbar" role="tablist">
+      <button class="cc-item active" data-target="panel-text">
+        <span class="icon">T</span><span class="label">テキスト</span>
       </button>
-      <button class="stamp-button" onclick="addStamp('02ntwithFace.png')">
-        <img src="02ntwithFace.png" alt="NT with Face">
+      <button class="cc-item" data-target="panel-stamp">
+        <span class="icon">🌟</span><span class="label">スタンプ</span>
       </button>
-      <button class="stamp-button" onclick="addStamp('03eyestome.png')">
-        <img src="03eyestome.png" alt="Eyes to me">
+      <button class="cc-item" data-target="panel-arrange">
+        <span class="icon">📋</span><span class="label">並べ替え</span>
       </button>
-      <button class="stamp-button" onclick="addStamp('04getmyheart.png')">
-        <img src="04getmyheart.png" alt="Get my heart">
+      <button class="cc-item" data-target="panel-history">
+        <span class="icon">↩︎</span><span class="label">履歴</span>
       </button>
-      <button class="stamp-button" onclick="addStamp('05angel.png')">
-        <img src="05angel.png" alt="Get my heart">
-      </button>
-      <button class="stamp-button" onclick="addStamp('06god.png')">
-        <img src="06god.png" alt="Get my heart">
-      </button>
-      <button class="stamp-button" onclick="addStamp('07precious.png')">
-        <img src="07precious.png" alt="Get my heart">
+      <button class="cc-item" data-target="panel-layer">
+        <span class="icon">⬆︎⬇︎</span><span class="label">レイヤー</span>
       </button>
     </div>
-    
-    <!-- 編集コントロールボタンエリア -->
-    <div class="edit-tools-container">
-      <!-- <button id="selectBtn">選択切替</button> -->
-      <button id="undoBtn">戻る</button>
-      <button id="redoBtn">やり直し</button>
-      <button id="duplicateBtn">複製</button>
-      <button id="deleteBtn" style="background: #f44336;">削除</button>
-      <button id="sendBackwardBtn">背面へ</button>
-      <button id="bringForwardBtn">前面へ</button>
+
+    <div class="cc-panels">
+      <!-- テキスト -->
+      <section id="panel-text" class="cc-panel">
+        <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
+        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+          <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
+          <select id="fontPicker" class="native-font-select">
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="'DotGothic16', sans-serif">ドットゴシック</option>
+            <option value="'Train One', cursive">Train One</option>
+            <option value="'Cherry Bomb One', cursive">手書き風</option>
+            <option value="'Kaisei Tokumin', serif">丸文字</option>
+          </select>
+          <div class="font-picker-wrap">
+            <button id="fontPickerBtn" type="button">フォントを選ぶ</button>
+            <div id="fontDropdown" hidden></div>
+          </div>
+        </div>
+        <button onclick="addTextToOverlay()">テキスト追加</button>
+      </section>
+
+      <!-- スタンプ -->
+      <section id="panel-stamp" class="cc-panel" hidden>
+        <h3 style="margin:6px 0 8px;">スタンプ</h3>
+        <div class="stamp-buttons-container">
+          <button class="stamp-button" onclick="addStamp('❤️')">❤️</button>
+          <button class="stamp-button" onclick="addStamp('⭐')">⭐</button>
+          <button class="stamp-button" onclick="addStamp('🎶')">🎶</button>
+          <button class="stamp-button" onclick="addStamp('01loveu.png')"><img src="01loveu.png" alt="Love You"></button>
+          <button class="stamp-button" onclick="addStamp('02ntwithFace.png')"><img src="02ntwithFace.png" alt="NT with Face"></button>
+          <button class="stamp-button" onclick="addStamp('03eyestome.png')"><img src="03eyestome.png" alt="Eyes to me"></button>
+          <button class="stamp-button" onclick="addStamp('04getmyheart.png')"><img src="04getmyheart.png" alt="Get my heart"></button>
+          <button class="stamp-button" onclick="addStamp('05angel.png')"><img src="05angel.png" alt="Angel"></button>
+          <button class="stamp-button" onclick="addStamp('06god.png')"><img src="06god.png" alt="God"></button>
+          <button class="stamp-button" onclick="addStamp('07precious.png')"><img src="07precious.png" alt="Precious"></button>
+        </div>
+      </section>
+
+      <!-- 並べ替え（複製・削除） -->
+      <section id="panel-arrange" class="cc-panel" hidden>
+        <button id="duplicateBtn">複製</button>
+        <button id="deleteBtn" style="background:#f44336;">削除</button>
+      </section>
+
+      <!-- 履歴（戻る・やり直し） -->
+      <section id="panel-history" class="cc-panel" hidden>
+        <button id="undoBtn">戻る</button>
+        <button id="redoBtn">やり直し</button>
+      </section>
+
+      <!-- レイヤー（前面/背面） -->
+      <section id="panel-layer" class="cc-panel" hidden>
+        <button id="sendBackwardBtn">背面へ</button>
+        <button id="bringForwardBtn">前面へ</button>
+      </section>
     </div>
+    <!-- ▲▲ ここまで “横スライド メニュー” ▲▲ -->
 
     <!-- 「決定 → プレビュー」ボタンをデコレーションエリア内に移動 -->
     <button id="generateBtn" class="form-button" style="margin-top: 20px;">決定 → プレビュー</button>
@@ -431,6 +485,35 @@
 
     const fontPickerBtn = document.getElementById('fontPickerBtn');
     const fontDropdown  = document.getElementById('fontDropdown');
+
+
+    // === CapCut風ツールバーの表示切替 ===
+    const ccToolbar = document.querySelector('.cc-toolbar');
+    const ccItems   = document.querySelectorAll('.cc-item');
+    const ccPanels  = document.querySelectorAll('.cc-panel');
+
+    function showPanel(id) {
+      // パネルの表示/非表示
+      ccPanels.forEach(p => p.hidden = (p.id !== id));
+      // アクティブ表示
+      ccItems.forEach(b => b.classList.toggle('active', b.dataset.target === id));
+      // 押したボタンを中央へ寄せる（横スクロールがスッと動く）
+      const btn = document.querySelector(`.cc-item[data-target="${id}"]`);
+      if (btn) btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+
+    ccToolbar.addEventListener('click', (e) => {
+      const btn = e.target.closest('.cc-item');
+      if (!btn) return;
+      showPanel(btn.dataset.target);
+    });
+
+    // 初期表示は「テキスト」パネル
+    showPanel('panel-text');
+
+
+
+
 
     // この配列の順序／内容は <select id="fontPicker"> と揃えています
     const FONT_CANDIDATES = [
@@ -939,13 +1022,17 @@
     /**
      * デコレーションオブジェクトの選択を切り替えます。
      */
-    document.getElementById('selectBtn').addEventListener('click', () => {
-      if (decorationObjects.length === 0) return;
-      const currentIndex = decorationObjects.indexOf(selectedObject);
-      const nextIndex = (currentIndex + 1) % decorationObjects.length;
-      selectedObject = decorationObjects[nextIndex]; // 次のオブジェクトを選択
-      drawAll(); // 全体を再描画
-    });
+    const _selectBtn = document.getElementById('selectBtn'); // ★追加①：ボタンを変数に入れる
+    if (_selectBtn) {                                        // ★追加②：ボタンがある時だけ中を実行
+      _selectBtn.addEventListener('click', () => {           // ← 元の行を _selectBtn に差し替えて中へ移動
+        if (decorationObjects.length === 0) return;
+        const currentIndex = decorationObjects.indexOf(selectedObject);
+        const nextIndex = (currentIndex + 1) % decorationObjects.length;
+        selectedObject = decorationObjects[nextIndex];
+        drawAll();
+      });
+    } // ← if の閉じカッコ（新規ではないけど、②を開いたのでここで閉じます）
+
     document.getElementById('undoBtn').addEventListener('click', undo); // 戻るボタン
     document.getElementById('redoBtn').addEventListener('click', redo); // やり直しボタン
 
