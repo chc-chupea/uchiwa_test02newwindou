@@ -419,12 +419,12 @@
             </label>
 
             <label style="margin-left:8px;">
-              色：
+              外側の縁の色：
               <input type="color" id="outlineColorPicker" value="#ffffff" title="縁取り色" style="width: 50px;" />
             </label>
 
             <label style="margin-left:8px;">
-              太さ：
+              外側の縁の太さ：
               <input type="range" id="outlineWidthPercent" min="0" max="30" value="12" step="1">
               <span id="outlineWidthValue">12%</span>
             </label>
@@ -827,17 +827,26 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
-          // --- 縁取り（アウトライン） ---
+          // === ２重ふちどり ===
           if (obj.outlineEnabled) {
-            const ratio = obj.outlineWidthRatio || 0.12;
-            ctx.lineWidth = Math.max(1, obj.fontSize * ratio);
-            ctx.strokeStyle = obj.outlineColor || '#ffffff';
-            ctx.lineJoin = 'round';   // 角を丸くする
+            const ratio  = obj.outlineWidthRatio || 0.12;
+            const outerW = Math.max(1, obj.fontSize * ratio);   // 外側（スライダー連動）
+            const innerW = Math.max(1, outerW * 0.5);           // 内側＝外側の半分くらい
+
+            // 1) 外側（選んだ色）
+            ctx.lineJoin   = 'round';
             ctx.miterLimit = 2;
+            ctx.strokeStyle = obj.outlineColor || '#000000';
+            ctx.lineWidth   = outerW;
+            ctx.strokeText(obj.content, 0, 0);
+
+            // 2) 内側（白固定）
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth   = innerW;
             ctx.strokeText(obj.content, 0, 0);
           }
 
-          // --- 本体（塗りつぶし） ---
+          // 3) 本体（塗り）
           ctx.fillStyle = obj.color;
           ctx.fillText(obj.content, 0, 0);
 
@@ -1067,17 +1076,26 @@
           tempCtx.textAlign = 'center';
           tempCtx.textBaseline = 'middle';
 
-          // --- 縁取り（アウトライン） ---
+          // === ２重ふちどり（書き出し用） ===
           if (obj.outlineEnabled) {
-            const ratio = obj.outlineWidthRatio || 0.12;
-            tempCtx.lineWidth = Math.max(1, obj.fontSize * ratio);
-            tempCtx.strokeStyle = obj.outlineColor || '#ffffff';
-            tempCtx.lineJoin = 'round'; // 角を丸くする
+            const ratio  = obj.outlineWidthRatio || 0.12;
+            const outerW = Math.max(1, obj.fontSize * ratio);
+            const innerW = Math.max(1, outerW * 0.5);
+
+            // 外側
+            tempCtx.lineJoin   = 'round';
             tempCtx.miterLimit = 2;
+            tempCtx.strokeStyle = obj.outlineColor || '#000000';
+            tempCtx.lineWidth   = outerW;
+            tempCtx.strokeText(obj.content, 0, 0);
+
+            // 内側（白）
+            tempCtx.strokeStyle = '#ffffff';
+            tempCtx.lineWidth   = innerW;
             tempCtx.strokeText(obj.content, 0, 0);
           }
 
-          // --- 本体（塗りつぶし） ---
+          // 本体（塗り）
           tempCtx.fillStyle = obj.color;
           tempCtx.fillText(obj.content, 0, 0);
 
