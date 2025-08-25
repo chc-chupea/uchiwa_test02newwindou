@@ -503,6 +503,18 @@
   <!-- Hammer.jsを読み込み：タッチジェスチャーをよりスムーズにするため -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
   <script>
+
+    // ← ここに追加！
+      window.addEventListener('DOMContentLoaded', () => {
+        // 初期値をピンクに統一
+        colorPicker.value = "#ff69b4";
+        outlineColorPicker.value = "#ff69b4";
+
+        // 見た目（背景色）も更新
+        colorPicker.style.backgroundColor = "#ff69b4";
+        outlineColorPicker.style.backgroundColor = "#ff69b4";
+      });
+
     // DOM要素の取得
     const mainCanvas = document.getElementById('mainCanvas');
     const ctx = mainCanvas.getContext('2d');
@@ -1283,10 +1295,22 @@
         drawAll(); // 全体を再描画
       }
     });
+
     fontPicker.addEventListener('change', () => {
       if (selectedObject && selectedObject.type === 'text') {
         selectedObject.fontFamily = fontPicker.value; // フォントを更新
         drawAll(); // 全体を再描画
+      }
+    });
+
+    // ← この下に追加！
+    outlineColorPicker.addEventListener('input', (e) => {
+      // 縁取りカラーピッカーの見た目をリアルタイムで更新
+      e.target.style.backgroundColor = e.target.value;
+
+      if (selectedObject && selectedObject.type === 'text') {
+        selectedObject.outlineColor = outlineColorPicker.value;
+        drawAll();
       }
     });
 
