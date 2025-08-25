@@ -1061,15 +1061,30 @@
         tempCtx.translate(obj.x, obj.y);
         tempCtx.rotate(obj.rotation);
         tempCtx.scale(obj.scale, obj.scale);
+
         if (obj.type === 'text') {
-          tempCtx.fillStyle = obj.color;
           tempCtx.font = `${obj.fontSize}px ${obj.fontFamily}`;
           tempCtx.textAlign = 'center';
           tempCtx.textBaseline = 'middle';
+
+          // --- 縁取り（アウトライン） ---
+          if (obj.outlineEnabled) {
+            const ratio = obj.outlineWidthRatio || 0.12;
+            tempCtx.lineWidth = Math.max(1, obj.fontSize * ratio);
+            tempCtx.strokeStyle = obj.outlineColor || '#ffffff';
+            tempCtx.lineJoin = 'round'; // 角を丸くする
+            tempCtx.miterLimit = 2;
+            tempCtx.strokeText(obj.content, 0, 0);
+          }
+
+          // --- 本体（塗りつぶし） ---
+          tempCtx.fillStyle = obj.color;
           tempCtx.fillText(obj.content, 0, 0);
+
         } else if (obj.type === 'image') {
           tempCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
         }
+
         tempCtx.restore();
       });
 
