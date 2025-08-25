@@ -410,6 +410,28 @@
             <div id="fontDropdown" hidden></div>
           </div>
         </div>
+
+        <!-- ▼ 縁取り設定（ここから追加） -->
+          <div id="outlineControls" class="control-row" style="margin-bottom: 10px;">
+            <label>
+              <input type="checkbox" id="outlineToggle" checked>
+              縁取りON/OFF
+            </label>
+
+            <label style="margin-left:8px;">
+              色：
+              <input type="color" id="outlineColorPicker" value="#ffffff" title="縁取り色" style="width: 50px;" />
+            </label>
+
+            <label style="margin-left:8px;">
+              太さ：
+              <input type="range" id="outlineWidthPercent" min="0" max="30" value="12" step="1">
+              <span id="outlineWidthValue">12%</span>
+            </label>
+          </div>
+          <!-- ▲ 縁取り設定（ここまで追加） -->
+
+
         <button onclick="addTextToOverlay()">テキスト追加</button>
       </section>
 
@@ -493,6 +515,17 @@
     const goToOrderFormBtn = document.getElementById('goToOrderFormBtn');
     const customText = document.getElementById('customText');
     const colorPicker = document.getElementById('colorPicker');
+
+    // --- 縁取りコントロールを参照する ---
+    const outlineToggle = document.getElementById('outlineToggle');
+    const outlineColorPicker = document.getElementById('outlineColorPicker');
+    const outlineWidthPercent = document.getElementById('outlineWidthPercent');
+    const outlineWidthValue = document.getElementById('outlineWidthValue');
+
+    // スライダーの数字を表示に反映
+    outlineWidthPercent.addEventListener('input', () => {
+      outlineWidthValue.textContent = outlineWidthPercent.value + '%';
+    });
     const fontPicker = document.getElementById('fontPicker');
 
     const fontPickerBtn = document.getElementById('fontPickerBtn');
@@ -776,11 +809,27 @@
 
         if (obj.type === 'text') {
           ctx.fillStyle = obj.color;
+
           // ← 相殺をやめる：そのままのフォントサイズで描く
           ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
+
+          // --- 縁取り（アウトライン） ---
+          if (obj.outlineEnabled) {
+            const ratio = obj.outlineWidthRatio || 0.12;
+            ctx.lineWidth = Math.max(1, obj.fontSize * ratio);
+            ctx.strokeStyle = obj.outlineColor || '#ffffff';
+            ctx.lineJoin = 'round';   // 角を丸くする
+            ctx.miterLimit = 2;
+            ctx.strokeText(obj.content, 0, 0);
+          }
+
+          // --- 本体（塗りつぶし） ---
+          ctx.fillStyle = obj.color;
           ctx.fillText(obj.content, 0, 0);
+
+
         } else if (obj.type === 'image') {
           // 画像を描画（中心座標が0,0になるようにオフセット）
           ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
@@ -1047,7 +1096,12 @@
         color: colorPicker.value,
         fontFamily: fontPicker.value,
         fontSize: 500 // 初期フォントサイズ
+
+        outlineEnabled: outlineToggle.checked,
+        outlineColor: outlineColorPicker.value,
+        outlineWidthRatio: parseInt(outlineWidthPercent.value, 10) / 100,
       };
+
       decorationObjects.push(newText); // 配列に追加
       selectedObject = newText; // 追加したものを選択状態にする
       drawAll(); // 全体を再描画
@@ -1235,6 +1289,25 @@
         drawAll(); // 全体を再描画
       }
     });
+
+    function updateSelectedTextOutline(updater) {
+      if (selectedObject && selectedObject.type === 'text') {
+        updater(selectedObject);
+        drawAll(); // 再描画（あなたのコードでは drawDecorations() かもしれません）
+      }
+    }
+
+    outlineToggle.addEventListener('change', () => {
+      updateSelectedTextOutline(obj => obj.outlineEnabled = outlineToggle.checked);
+    });
+    outlineColorPicker.addEventListener('input', () => {
+      updateSelectedTextOutline(obj => obj.outlineColor = outlineColorPicker.value);
+    });
+    outlineWidthPercent.addEventListener('input', () => {
+      outlineWidthValue.textContent = outlineWidthPercent.value + '%';
+      updateSelectedTextOutline(obj => obj.outlineWidthRatio = parseInt(outlineWidthPercent.value, 10) / 100);
+    });
+
 
     // --- Hammer.js によるタッチ/マウスジェスチャーハンドリング ---
     const hammertime = new Hammer(mainCanvas);
@@ -1487,6 +1560,4 @@
     drawAll();
   </script>
 </body>
-
-
 </html>
