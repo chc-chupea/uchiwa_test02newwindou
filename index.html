@@ -459,60 +459,6 @@
       <section id="panel-text" class="cc-panel">
 
 
-
-
-          <div class="font-picker-wrap">
-            <button id="fontPickerBtn" type="button">フォントを選ぶ</button>
-            <div id="fontDropdown" hidden></div>
-          </div>
-        </div>
-
-        <!-- ▼ 縁取り設定（ここから追加） -->
-          <div id="outlineControls" class="control-row" style="margin-bottom: 10px;">
-            <label>
-              <input type="checkbox" id="outlineToggle" checked>
-              縁取りON/OFF
-            </label>
-
-            <label style="margin-left:8px;">
-              外側の縁の色：
-              <input type="color" id="outlineColorPicker" value="#ffffff" title="縁取り色" style="width: 50px;" />
-            </label>
-
-            <label style="margin-left:8px;">
-              外側の縁の太さ：
-              <input type="range" id="outlineWidthPercent" min="0" max="30" value="12" step="1">
-              <span id="outlineWidthValue">12%</span>
-            </label>
-          </div>
-          <!-- ▲ 縁取り設定（ここまで追加） -->
-
-          <!-- ▼ アーチ文字（カーブ）設定（ここから追加） -->
-          <div id="arcControls" class="control-row" style="margin: 10px 0;">
-            <label>
-              <input type="checkbox" id="arcToggle">
-              アーチにする
-            </label>
-
-            <label style="margin-left:8px;">
-              カーブ（角度）：
-              <input type="range" id="arcAngle" min="0" max="180" value="60" step="1">
-              <span id="arcAngleValue">60°</span>
-            </label>
-
-            <label style="margin-left:8px;">
-              向き：
-              <select id="arcDirection">
-                <option value="up">上向き（虹型）</option>
-                <option value="down">下向き（スマイル型）</option>
-              </select>
-            </label>
-          </div>
-          <!-- ▲ アーチ文字（カーブ）設定（ここまで追加） -->
-
-        <button onclick="addTextToOverlay()">テキスト追加</button>
-      </section>
-
       <!-- スタンプ -->
       <section id="panel-stamp" class="cc-panel" hidden>
         <h3 style="margin:6px 0 8px;">スタンプ</h3>
@@ -1852,7 +1798,7 @@
       <div id="drawerPanel" class="drawer-panel">
         <div class="drawer-header">
           <div class="drawer-grip" aria-hidden="true"></div>
-          <h3 id="drawerTitle" class="drawer-title">デコレーション編集</h3>
+          <h3 id="drawerTitle" class="drawer-title">デコレーション</h3>
           <button id="drawerClose" type="button" class="drawer-close" aria-label="閉じる">閉じる</button>
         </div>
         <div id="drawerContent" class="drawer-content">
@@ -1874,6 +1820,64 @@
               <option value="'Yomogi', cursive">Yomogi</option>
               <option value="'Hachi Maru Pop', cursive">Hachi Maru Pop</option>
             </select>
+
+
+
+
+          <div class="font-picker-wrap">
+            <button id="fontPickerBtn" type="button">フォントを選ぶ</button>
+            <div id="fontDropdown" hidden></div>
+          </div>
+        </div>
+
+        <!-- ▼ 縁取り設定（ここから追加） -->
+          <div id="outlineControls" class="control-row" style="margin-bottom: 10px;">
+            <label>
+              <input type="checkbox" id="outlineToggle" checked>
+              縁取りON/OFF
+            </label>
+
+            <label style="margin-left:8px;">
+              外側の縁の色：
+              <input type="color" id="outlineColorPicker" value="#ffffff" title="縁取り色" style="width: 50px;" />
+            </label>
+
+            <label style="margin-left:8px;">
+              外側の縁の太さ：
+              <input type="range" id="outlineWidthPercent" min="0" max="30" value="12" step="1">
+              <span id="outlineWidthValue">12%</span>
+            </label>
+          </div>
+          <!-- ▲ 縁取り設定（ここまで追加） -->
+
+          <!-- ▼ アーチ文字（カーブ）設定（ここから追加） -->
+          <div id="arcControls" class="control-row" style="margin: 10px 0;">
+            <label>
+              <input type="checkbox" id="arcToggle">
+              アーチにする
+            </label>
+
+            <label style="margin-left:8px;">
+              カーブ（角度）：
+              <input type="range" id="arcAngle" min="0" max="180" value="60" step="1">
+              <span id="arcAngleValue">60°</span>
+            </label>
+
+            <label style="margin-left:8px;">
+              向き：
+              <select id="arcDirection">
+                <option value="up">上向き（虹型）</option>
+                <option value="down">下向き（スマイル型）</option>
+              </select>
+            </label>
+          </div>
+          <!-- ▲ アーチ文字（カーブ）設定（ここまで追加） -->
+
+        <button onclick="addTextToOverlay()">テキスト追加</button>
+      </section>
+
+
+
           <p style="opacity:.6">ここに編集UIが入ります。</p>
         </div>
       </div>
@@ -1882,7 +1886,7 @@
     <!-- ▼ 取っ手（画面下の細いバー） -->
     <button id="drawerHandle" class="drawer-handle" aria-controls="drawer" aria-expanded="false" type="button">
       <span class="drawer-handle-grip" aria-hidden="true"></span>
-      <span class="drawer-handle-label">編集</span>
+      <span class="drawer-handle-label">デコレーション</span>
     </button>
 
     <script>
