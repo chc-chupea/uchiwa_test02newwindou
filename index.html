@@ -1857,49 +1857,6 @@
     drawAll();
   </script>
 
-
-  <script>
-    (function(){
-      const drawer = document.getElementById('drawer');
-      const backdrop = document.getElementById('drawerBackdrop');
-      const handle = document.getElementById('drawerHandle');
-      const closeBtn = document.getElementById('drawerClose');
-
-      function openDrawer(){
-        drawer.classList.add('open');
-        backdrop.classList.add('open');
-        document.body.classList.add('no-scroll');
-        handle.setAttribute('aria-expanded','true');
-        handle.style.display = 'none';
-        drawer.setAttribute('aria-hidden','false');
-      }
-      function closeDrawer(){
-        drawer.classList.remove('open');
-        backdrop.classList.remove('open');
-        document.body.classList.remove('no-scroll');
-        handle.setAttribute('aria-expanded','false');
-        handle.style.display = 'flex';
-        drawer.setAttribute('aria-hidden','true');
-      }
-
-      handle.addEventListener('click', openDrawer);
-      closeBtn.addEventListener('click', closeDrawer);
-      backdrop.addEventListener('click', closeDrawer);
-      window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeDrawer(); });
-
-      /* 余裕があれば：下スワイプで閉じる（簡易版） */
-      let startY=null;
-      drawer.addEventListener('touchstart', (e)=>{ startY = e.touches[0].clientY; }, {passive:true});
-      drawer.addEventListener('touchmove',  (e)=>{
-        if(startY===null) return;
-        const dy = e.touches[0].clientY - startY;
-        if(dy > 60) { closeDrawer(); startY=null; }
-      }, {passive:true});
-      drawer.addEventListener('touchend', ()=>{ startY=null; });
-    })();
-  </script>
-
-
     <!-- ▼ ドロワーの背景（黒い半透明） -->
     <div id="drawerBackdrop" class="drawer-backdrop" aria-hidden="true"></div>
 
@@ -1923,6 +1880,47 @@
       <span class="drawer-handle-grip" aria-hidden="true"></span>
       <span class="drawer-handle-label">編集</span>
     </button>
+
+    <script>
+      (function(){
+        const drawer = document.getElementById('drawer');
+        const backdrop = document.getElementById('drawerBackdrop');
+        const handle = document.getElementById('drawerHandle');
+        const closeBtn = document.getElementById('drawerClose');
+
+        function openDrawer(){
+          drawer.classList.add('open');
+          backdrop.classList.add('open');
+          document.body.classList.add('no-scroll');
+          handle.setAttribute('aria-expanded','true');
+          handle.style.display = 'none';
+          drawer.setAttribute('aria-hidden','false');
+        }
+        function closeDrawer(){
+          drawer.classList.remove('open');
+          backdrop.classList.remove('open');
+          document.body.classList.remove('no-scroll');
+          handle.setAttribute('aria-expanded','false');
+          handle.style.display = 'flex';
+          drawer.setAttribute('aria-hidden','true');
+        }
+
+        handle.addEventListener('click', openDrawer);
+        closeBtn.addEventListener('click', closeDrawer);
+        backdrop.addEventListener('click', closeDrawer);
+        window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeDrawer(); });
+
+        /* 余裕があれば：下スワイプで閉じる（簡易版） */
+        let startY=null;
+        drawer.addEventListener('touchstart', (e)=>{ startY = e.touches[0].clientY; }, {passive:true});
+        drawer.addEventListener('touchmove',  (e)=>{
+          if(startY===null) return;
+          const dy = e.touches[0].clientY - startY;
+          if(dy > 60) { closeDrawer(); startY=null; }
+        }, {passive:true});
+        drawer.addEventListener('touchend', ()=>{ startY=null; });
+      })();
+    </script>
 
 
 </body>
