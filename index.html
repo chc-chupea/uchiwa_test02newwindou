@@ -435,71 +435,6 @@
       ※ オブジェクトをタップすると選択され、移動・サイズ変更・回転できます。
     </p> -->
 
-    <!-- ▼▼ ここから “横スライド メニュー” を追加 ▼▼ -->
-    <div class="cc-toolbar" role="tablist">
-      <button class="cc-item active" data-target="panel-text">
-        <!-- <span class="icon">T</span> --><span class="label">テキスト</span>
-      </button>
-      <button class="cc-item" data-target="panel-stamp">
-        <!-- <span class="icon">🌟</span> --><span class="label">スタンプ</span>
-      </button>
-      <button class="cc-item" data-target="panel-arrange">
-        <!-- <span class="icon">📋</span> --><span class="label">複製／削除</span>
-      </button>
-      <button class="cc-item" data-target="panel-history">
-        <!-- <span class="icon">↩ ↪</span> --><span class="label">↩ ↪</span>
-      </button>
-      <button class="cc-item" data-target="panel-layer">
-        <!-- <span class="icon">⬆︎⬇︎</span> --><span class="label">レイヤー</span>
-      </button>
-    </div>
-
-    <div class="cc-panels">
-      <!-- テキスト -->
-      <section id="panel-text" class="cc-panel">
-
-
-      <!-- スタンプ -->
-      <section id="panel-stamp" class="cc-panel" hidden>
-        <h3 style="margin:6px 0 8px;">スタンプ</h3>
-        <div class="stamp-buttons-container">
-          <button class="stamp-button" onclick="addStamp('❤️')">❤️</button>
-          <button class="stamp-button" onclick="addStamp('⭐')">⭐</button>
-          <button class="stamp-button" onclick="addStamp('🎶')">🎶</button>
-          <button class="stamp-button" onclick="addStamp('01loveu.png')"><img src="01loveu.png" alt="Love You"></button>
-          <button class="stamp-button" onclick="addStamp('02ntwithFace.png')"><img src="02ntwithFace.png" alt="NT with Face"></button>
-          <button class="stamp-button" onclick="addStamp('03eyestome.png')"><img src="03eyestome.png" alt="Eyes to me"></button>
-          <button class="stamp-button" onclick="addStamp('04getmyheart.png')"><img src="04getmyheart.png" alt="Get my heart"></button>
-          <button class="stamp-button" onclick="addStamp('05angel.png')"><img src="05angel.png" alt="Angel"></button>
-          <button class="stamp-button" onclick="addStamp('06god.png')"><img src="06god.png" alt="God"></button>
-          <button class="stamp-button" onclick="addStamp('07precious.png')"><img src="07precious.png" alt="Precious"></button>
-          <button class="stamp-button" onclick="addStamp('08osi_pink.png')"><img src="08osi_pink.png" alt="Precious"></button>
-          <button class="stamp-button" onclick="addStamp('09osi_yellow.png')"><img src="09osi_yellow.png" alt="Precious"></button>
-          <button class="stamp-button" onclick="addStamp('10osi_lightblue.png')"><img src="10osi_lightblue.png" alt="Precious"></button>
-          <button class="stamp-button" onclick="addStamp('11osi_green.png')"><img src="11osi_green.png" alt="Precious"></button>
-        </div>
-      </section>
-
-      <!-- 並べ替え（複製・削除） -->
-      <section id="panel-arrange" class="cc-panel" hidden>
-        <button id="duplicateBtn">複製</button>
-        <button id="deleteBtn" style="background:#f44336;">削除</button>
-      </section>
-
-      <!-- 履歴（戻る・やり直し） -->
-      <section id="panel-history" class="cc-panel" hidden>
-        <button id="undoBtn">戻る</button>
-        <button id="redoBtn">やり直し</button>
-      </section>
-
-      <!-- レイヤー（前面/背面） -->
-      <section id="panel-layer" class="cc-panel" hidden>
-        <button id="sendBackwardBtn">背面へ</button>
-        <button id="bringForwardBtn">前面へ</button>
-      </section>
-    </div>
-    <!-- ▲▲ ここまで “横スライド メニュー” ▲▲ -->
-
     <!-- 「決定 → プレビュー」ボタンをデコレーションエリア内に移動 -->
     <button id="generateBtn" class="form-button" style="margin-top: 20px;">決定 → プレビュー</button>
   </div>
@@ -1875,6 +1810,71 @@
 
         <button onclick="addTextToOverlay()">テキスト追加</button>
       </section>
+
+      <!-- ▼▼ ここから “横スライド メニュー” を追加 ▼▼ -->
+      <div class="cc-toolbar" role="tablist">
+        <button class="cc-item active" data-target="panel-text">
+          <!-- <span class="icon">T</span> --><span class="label">テキスト</span>
+        </button>
+        <button class="cc-item" data-target="panel-stamp">
+          <!-- <span class="icon">🌟</span> --><span class="label">スタンプ</span>
+        </button>
+        <button class="cc-item" data-target="panel-arrange">
+          <!-- <span class="icon">📋</span> --><span class="label">複製／削除</span>
+        </button>
+        <button class="cc-item" data-target="panel-history">
+          <!-- <span class="icon">↩ ↪</span> --><span class="label">↩ ↪</span>
+        </button>
+        <button class="cc-item" data-target="panel-layer">
+          <!-- <span class="icon">⬆︎⬇︎</span> --><span class="label">レイヤー</span>
+        </button>
+      </div>
+
+      <div class="cc-panels">
+        <!-- テキスト -->
+        <section id="panel-text" class="cc-panel">
+
+
+        <!-- スタンプ -->
+        <section id="panel-stamp" class="cc-panel" hidden>
+          <h3 style="margin:6px 0 8px;">スタンプ</h3>
+          <div class="stamp-buttons-container">
+            <button class="stamp-button" onclick="addStamp('❤️')">❤️</button>
+            <button class="stamp-button" onclick="addStamp('⭐')">⭐</button>
+            <button class="stamp-button" onclick="addStamp('🎶')">🎶</button>
+            <button class="stamp-button" onclick="addStamp('01loveu.png')"><img src="01loveu.png" alt="Love You"></button>
+            <button class="stamp-button" onclick="addStamp('02ntwithFace.png')"><img src="02ntwithFace.png" alt="NT with Face"></button>
+            <button class="stamp-button" onclick="addStamp('03eyestome.png')"><img src="03eyestome.png" alt="Eyes to me"></button>
+            <button class="stamp-button" onclick="addStamp('04getmyheart.png')"><img src="04getmyheart.png" alt="Get my heart"></button>
+            <button class="stamp-button" onclick="addStamp('05angel.png')"><img src="05angel.png" alt="Angel"></button>
+            <button class="stamp-button" onclick="addStamp('06god.png')"><img src="06god.png" alt="God"></button>
+            <button class="stamp-button" onclick="addStamp('07precious.png')"><img src="07precious.png" alt="Precious"></button>
+            <button class="stamp-button" onclick="addStamp('08osi_pink.png')"><img src="08osi_pink.png" alt="Precious"></button>
+            <button class="stamp-button" onclick="addStamp('09osi_yellow.png')"><img src="09osi_yellow.png" alt="Precious"></button>
+            <button class="stamp-button" onclick="addStamp('10osi_lightblue.png')"><img src="10osi_lightblue.png" alt="Precious"></button>
+            <button class="stamp-button" onclick="addStamp('11osi_green.png')"><img src="11osi_green.png" alt="Precious"></button>
+          </div>
+        </section>
+
+        <!-- 並べ替え（複製・削除） -->
+        <section id="panel-arrange" class="cc-panel" hidden>
+          <button id="duplicateBtn">複製</button>
+          <button id="deleteBtn" style="background:#f44336;">削除</button>
+        </section>
+
+        <!-- 履歴（戻る・やり直し） -->
+        <section id="panel-history" class="cc-panel" hidden>
+          <button id="undoBtn">戻る</button>
+          <button id="redoBtn">やり直し</button>
+        </section>
+
+        <!-- レイヤー（前面/背面） -->
+        <section id="panel-layer" class="cc-panel" hidden>
+          <button id="sendBackwardBtn">背面へ</button>
+          <button id="bringForwardBtn">前面へ</button>
+        </section>
+      </div>
+      <!-- ▲▲ ここまで “横スライド メニュー” ▲▲ -->
 
 
 
