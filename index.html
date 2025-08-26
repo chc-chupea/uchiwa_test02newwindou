@@ -431,6 +431,28 @@
           </div>
           <!-- ▲ 縁取り設定（ここまで追加） -->
 
+          <!-- ▼ アーチ文字（カーブ）設定（ここから追加） -->
+          <div id="arcControls" class="control-row" style="margin: 10px 0;">
+            <label>
+              <input type="checkbox" id="arcToggle">
+              アーチにする
+            </label>
+
+            <label style="margin-left:8px;">
+              カーブ（角度）：
+              <input type="range" id="arcAngle" min="0" max="180" value="60" step="1">
+              <span id="arcAngleValue">60°</span>
+            </label>
+
+            <label style="margin-left:8px;">
+              向き：
+              <select id="arcDirection">
+                <option value="up">上向き（虹型）</option>
+                <option value="down">下向き（スマイル型）</option>
+              </select>
+            </label>
+          </div>
+          <!-- ▲ アーチ文字（カーブ）設定（ここまで追加） -->
 
         <button onclick="addTextToOverlay()">テキスト追加</button>
       </section>
@@ -533,6 +555,38 @@
     const outlineColorPicker = document.getElementById('outlineColorPicker');
     const outlineWidthPercent = document.getElementById('outlineWidthPercent');
     const outlineWidthValue = document.getElementById('outlineWidthValue');
+    
+    // --- アーチ（カーブ）コントロールを参照する ---
+    const arcToggle = document.getElementById('arcToggle');
+    const arcAngle = document.getElementById('arcAngle');
+    const arcAngleValue = document.getElementById('arcAngleValue');
+    const arcDirection = document.getElementById('arcDirection');
+
+    // 角度スライダーの数字を表示
+    arcAngle.addEventListener('input', () => {
+      arcAngleValue.textContent = arcAngle.value + '°';
+      if (selectedObject && selectedObject.type === 'text') {
+        selectedObject.arcAngleDeg = parseInt(arcAngle.value, 10);
+        drawAll();
+      }
+    });
+
+    // チェックON/OFFでアーチ切替
+    arcToggle.addEventListener('change', () => {
+      if (selectedObject && selectedObject.type === 'text') {
+        selectedObject.arcEnabled = arcToggle.checked;
+        drawAll();
+      }
+    });
+
+    // 向き変更（上/下）
+    arcDirection.addEventListener('change', () => {
+      if (selectedObject && selectedObject.type === 'text') {
+        selectedObject.arcDirection = arcDirection.value; // 'up' or 'down'
+        drawAll();
+      }
+    });
+
 
     // スライダーの数字を表示に反映
     outlineWidthPercent.addEventListener('input', () => {
@@ -712,6 +766,13 @@
             color: obj.color,
             fontFamily: obj.fontFamily,
             fontSize: obj.fontSize
+
+            outlineEnabled: obj.outlineEnabled,
+            outlineColor: obj.outlineColor,
+            outlineWidthRatio: obj.outlineWidthRatio,
+            arcEnabled: obj.arcEnabled,
+            arcAngleDeg: obj.arcAngleDeg,
+            arcDirection: obj.arcDirection
           };
         }
       });
@@ -766,6 +827,14 @@
             color: item.color,
             fontFamily: item.fontFamily,
             fontSize: item.fontSize
+
+
+            outlineEnabled: item.outlineEnabled,
+            outlineColor: item.outlineColor,
+            outlineWidthRatio: item.outlineWidthRatio,
+            arcEnabled: item.arcEnabled,
+            arcAngleDeg: item.arcAngleDeg,
+            arcDirection: item.arcDirection
           };
         }
       });
@@ -808,7 +877,80 @@
       ctx.restore(); // 保存した状態に戻す
     }
 
-    /**
+    // === アーチ文字（1文字ずつ円弧に沿って描く） ===
+    function drawArchedTextOnContext(context, obj) {
+      const text = obj.content || '';
+      if (!text) return;
+
+      context.save();
+      context.font = `${obj.fontSize}px ${obj.fontFamily}`;
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+
+      // 各文字の幅を測って合計（弧の長さに相当）
+      const widths = [];
+      let totalWidth = 0;
+      for (const ch of text) {
+        const w = context.measureText(ch).width;
+        widths.push(w);
+        totalWidth += w;
+      }
+      const angleDeg = Math.max(0, Math.min(180, obj.arcAngleDeg || 60));
+      if (angleDeg === 0 || totalWidth === 0) {
+        // 角度0なら普通描画
+        if (obj.outlineEnabled) {
+          const ratio = obj.outlineWidthRatio || 0.12;
+          context.lineWidth = Math.max(1, obj.fontSize * ratio);
+          context.strokeStyle = obj.outlineColor || '#ffffff';
+          context.lineJoin = 'round';
+          context.miterLimit = 2;
+          context.strokeText(text, 0, 0);
+        }
+        context.fillStyle = obj.color;
+        context.fillText(text, 0, 0);
+        context.restore();
+        return;
+      }
+
+      const theta = angleDeg * Math.PI / 180; // 弧の中心角
+      const r = totalWidth / theta;           // 半径 r = 弧長 / 中心角
+      const start = -theta / 2;               // 中央揃えで左端から開始
+      let acc = 0;                            // 積み上げ角
+
+      const down = (obj.arcDirection === 'down');
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const w = widths[i];
+        const dAngle = w / r;                 // その文字ぶんの角度
+        const a = start + acc + dAngle / 2;   // 文字の中央角
+
+        context.save();
+        context.rotate(a);
+        context.translate(0, down ? r : -r);  // 上は半径マイナス、下はプラス方向
+        if (down) context.rotate(Math.PI);    // 下向きでも文字は正立させる
+
+        // 1) 縁取り（ある場合）
+        if (obj.outlineEnabled) {
+          const ratio = obj.outlineWidthRatio || 0.12;
+          context.lineWidth = Math.max(1, obj.fontSize * ratio);
+          context.strokeStyle = obj.outlineColor || '#ffffff';
+          context.lineJoin = 'round';
+          context.miterLimit = 2;
+          context.strokeText(ch, 0, 0);
+        }
+        // 2) 本体（塗り）
+        context.fillStyle = obj.color;
+        context.fillText(ch, 0, 0);
+
+        context.restore();
+        acc += dAngle;
+      }
+
+      context.restore();
+    }
+
+     /**
      * デコレーションオブジェクト（テキスト、スタンプ）をキャンバスに描画します。
      */
     function drawDecorations() {
@@ -1076,6 +1218,11 @@
           tempCtx.textAlign = 'center';
           tempCtx.textBaseline = 'middle';
 
+          if (obj.arcEnabled) {
+              // アーチ描画
+              drawArchedTextOnContext(ctx, obj);
+            } else {
+
           // === ２重ふちどり（書き出し用） ===
           if (obj.outlineEnabled) {
             const ratio  = obj.outlineWidthRatio || 0.12;
@@ -1145,6 +1292,12 @@
         outlineEnabled: outlineToggle.checked,
         outlineColor: outlineColorPicker.value,
         outlineWidthRatio: parseInt(outlineWidthPercent.value, 10) / 100,
+
+        // ▼▼ ここからアーチ追加（3行） ▼▼
+        arcEnabled: arcToggle.checked,
+        arcAngleDeg: parseInt(arcAngle.value, 10), // 0〜180
+        arcDirection: arcDirection.value,          // 'up' / 'down'
+        // ▲▲ ここまでアーチ追加 ▲▲
       };
 
       decorationObjects.push(newText); // 配列に追加
