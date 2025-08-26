@@ -1108,7 +1108,6 @@
     }
 
     function isPointInObject(p, obj) {
-      // 1) キャンバス座標 → オブジェクト座標へ逆変換
       const translatedX = p.x - obj.x;
       const translatedY = p.y - obj.y;
 
@@ -1120,21 +1119,18 @@
       const scaledX = rotatedX / obj.scale;
       const scaledY = rotatedY / obj.scale;
 
-      // 2) テキストの場合
       if (obj.type === 'text') {
         const arc = getArcMetrics(obj);
         if (arc) {
-          // ---- 円弧テキストの判定 ----
-          const dist = Math.hypot(scaledX, scaledY); // 中心からの距離
-          if (dist < arc.ri || dist > arc.ro) return false; // 半径の範囲外
+          const dist = Math.hypot(scaledX, scaledY);
+          if (dist < arc.ri || dist > arc.ro) return false;
 
-          const phi = Math.atan2(scaledY, scaledX); // 角度
+          const phi = Math.atan2(scaledY, scaledX);
           let d = phi - arc.centerAngle;
-          d = Math.atan2(Math.sin(d), Math.cos(d)); // -π..π に正規化
+          d = Math.atan2(Math.sin(d), Math.cos(d));
 
-          return Math.abs(d) <= arc.theta / 2 + 0.02; // 角度範囲＋少し余裕
+          return Math.abs(d) <= arc.theta / 2 + 0.02;
         } else {
-          // ---- 直線テキストの矩形判定 ----
           ctx.save();
           ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
           const objWidth = ctx.measureText(obj.content).width;
@@ -1147,10 +1143,7 @@
             scaledY <= objHeight / 2
           );
         }
-      }
-
-      // 3) 画像の場合
-      else if (obj.type === 'image') {
+      } else if (obj.type === 'image') {
         const halfW = obj.width / 2;
         const halfH = obj.height / 2;
         return (
