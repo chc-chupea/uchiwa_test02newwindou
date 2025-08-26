@@ -962,39 +962,6 @@
       context.restore();
     }
 
-    // ===== ここから追加してください =====
-    /** アーチ文字のジオメトリ（半径や角度）を計算して返す */
-    function getArcMetrics(obj) {
-      const angleDeg = Math.max(0, Math.min(180, obj.arcAngleDeg || 0));
-      if (!obj.arcEnabled || angleDeg === 0 || !obj.content) return null;
-
-      // 文字列の合計幅（＝弧の長さ）を現在のフォント設定で測る
-      ctx.save();
-      ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
-      let totalWidth = 0;
-      for (const ch of obj.content) totalWidth += ctx.measureText(ch).width;
-      ctx.restore();
-      if (totalWidth <= 0) return null;
-
-      const theta = angleDeg * Math.PI / 180; // 中心角（ラジアン）
-      const r = totalWidth / theta;           // 半径 r = 弧長 / 角度
-
-      const thickness = obj.fontSize * 1.0;   // 文字帯の厚み
-      const ri = Math.max(0, r - thickness / 2);
-      const ro = r + thickness / 2;
-
-      const centerAngle = (obj.arcDirection === 'down') ? Math.PI/2 : -Math.PI/2;
-      const start = centerAngle - theta / 2;
-      const end   = centerAngle + theta / 2;
-
-      return { totalWidth, theta, r, thickness, ri, ro, centerAngle, start, end };
-    }
-    // ===== 追加はここまで =====
-
-
-
-
-
 
 
 
@@ -1045,33 +1012,14 @@
           ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
         }
 
+        // 選択枠など（あなたの元コード）…
         if (obj === selectedObject) {
           ctx.strokeStyle = '#42a5f5';
-          ctx.lineWidth = 2 / obj.scale;                  // 枠線は細め
+          ctx.lineWidth = 10 / obj.scale;
           ctx.setLineDash([20 / obj.scale, 10 / obj.scale]);
-
-          if (obj.type === 'text') {
-            const arc = getArcMetrics(obj);
-            if (arc) {
-              // 円弧テキスト → 内周と外周に枠を描く
-              ctx.beginPath();
-              ctx.arc(0, 0, arc.ro, arc.start, arc.end);
-              ctx.stroke();
-
-              ctx.beginPath();
-              ctx.arc(0, 0, arc.ri, arc.start, arc.end);
-              ctx.stroke();
-            } else {
-              // 直線テキスト → 従来どおり矩形
-              const rectWidth  = ctx.measureText(obj.content).width;
-              const rectHeight = obj.fontSize * 1.2;
-              ctx.strokeRect(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
-            }
-          } else if (obj.type === 'image') {
-            // 画像は従来どおり矩形
-            ctx.strokeRect(-obj.width / 2, -obj.height / 2, obj.width, obj.height);
-          }
-
+          const rectWidth  = obj.type === 'text' ? ctx.measureText(obj.content).width : obj.width;
+          const rectHeight = obj.type === 'text' ? obj.fontSize * 1.2 : obj.height;
+          ctx.strokeRect(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
           ctx.setLineDash([]);
         }
 
@@ -1107,62 +1055,43 @@
       return { x, y };
     }
 
+    /**
+     * 指定された点がオブジェクトの境界内にあるか判定します。
+     * @param {{x: number, y: number}} p - 判定したい点（キャンバス座標）
+     * @param {object} obj - 判定対象のオブジェクト
+     * @returns {boolean} 点がオブジェクト内にあるか
+     */
     function isPointInObject(p, obj) {
+      // 1. 点をオブジェクトのローカル座標系に変換する (逆変換)
+      // まずオブジェクトの中心を原点に移動
       const translatedX = p.x - obj.x;
       const translatedY = p.y - obj.y;
 
+      // 回転を元に戻す
       const cos = Math.cos(-obj.rotation);
       const sin = Math.sin(-obj.rotation);
       const rotatedX = translatedX * cos - translatedY * sin;
       const rotatedY = translatedX * sin + translatedY * cos;
 
+      // スケールを元に戻す
       const scaledX = rotatedX / obj.scale;
       const scaledY = rotatedY / obj.scale;
 
+      // 2. オブジェクトのローカル座標系での幅と高さを計算
+      let objWidth, objHeight;
       if (obj.type === 'text') {
-        const arc = getArcMetrics(obj);
-        if (arc) {
-          const dist = Math.hypot(scaledX, scaledY);
-          if (dist < arc.ri || dist > arc.ro) return false;
-
-          const phi = Math.atan2(scaledY, scaledX);
-          let d = phi - arc.centerAngle;
-          d = Math.atan2(Math.sin(d), Math.cos(d));
-
-          return Math.abs(d) <= arc.theta / 2 + 0.02;
-        } else {
-          ctx.save();
-          ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
-          const objWidth = ctx.measureText(obj.content).width;
-          ctx.restore();
-          const objHeight = obj.fontSize * 1.2;
-          return (
-            scaledX >= -objWidth / 2 &&
-            scaledX <= objWidth / 2 &&
-            scaledY >= -objHeight / 2 &&
-            scaledY <= objHeight / 2
-          );
-        }
+        // テキストの場合、現在のフォント設定でテキストの実際の幅を測定
+        ctx.save();
+        ctx.font = `${obj.fontSize}px ${obj.fontFamily}`; // オリジナルのフォントサイズで測定
+        objWidth = ctx.measureText(obj.content).width;
+        objHeight = obj.fontSize * 1.2; // テキストの高さは行高を考慮
+        ctx.restore();
       } else if (obj.type === 'image') {
-        const halfW = obj.width / 2;
-        const halfH = obj.height / 2;
-        return (
-          scaledX >= -halfW &&
-          scaledX <= halfW &&
-          scaledY >= -halfH &&
-          scaledY <= halfH
-        );
+        objWidth = obj.width;
+        objHeight = obj.height;
+      } else {
+          return false; // 未知のタイプ
       }
-
-      return false;
-    }
-
-
-
-
-
-
-
 
       const halfObjWidth = objWidth / 2;
       const halfObjHeight = objHeight / 2;
