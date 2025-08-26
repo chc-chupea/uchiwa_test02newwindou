@@ -325,75 +325,6 @@
     /* 既存のボタン群がぎゅうぎゅうにならないように少し調整 */
     .cc-panel button { margin: 4px 2px; }
 
-    :root{
-      --drawer-height: 70vh; /* ドロワーの高さ。大きすぎたら 60vh にしてOK */
-    }
-
-    /* 取っ手 */
-    .drawer-handle{
-      position: fixed; left: 0; right: 0;
-      bottom: max(8px, env(safe-area-inset-bottom));
-      margin: 0 auto; width: min(560px, 92%);
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 10px 14px; border: 0; border-radius: 14px;
-      background: #1976d2; color: #fff; font-size: 16px; font-weight: 600;
-      box-shadow: 0 6px 18px rgba(0,0,0,.15);
-      z-index: 9999; cursor: pointer;
-    }
-    .drawer-handle-grip{
-      width: 28px; height: 4px; border-radius: 999px; background: #fff; opacity: .9;
-    }
-    .drawer-handle-label{ letter-spacing:.05em; }
-
-    /* 背景の黒い幕 */
-    .drawer-backdrop{
-      position: fixed; inset: 0; background: rgba(0,0,0,.25);
-      opacity: 0; pointer-events: none; transition: opacity .2s ease;
-      z-index: 9997;
-    }
-    .drawer-backdrop.open{ opacity: 1; pointer-events: auto; }
-
-    /* ドロワー本体 */
-    .drawer{
-      position: fixed; left: 0; right: 0; bottom: 0;
-      transform: translateY(100%); /* 初期は画面外 */
-      transition: transform .3s ease;
-      z-index: 9998;
-    }
-    .drawer.open{ transform: translateY(0); }
-
-    .drawer-panel{
-      height: var(--drawer-height);
-      border-radius: 16px 16px 0 0; background: #fff;
-      box-shadow: 0 -8px 24px rgba(0,0,0,.18);
-      display: flex; flex-direction: column;
-      padding-bottom: max(8px, env(safe-area-inset-bottom));
-    }
-
-    /* ヘッダー */
-    .drawer-header{
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 8px; padding: 10px 12px; border-bottom: 1px solid #e9e9e9;
-    }
-    .drawer-grip{
-      width: 40px; height: 5px; border-radius: 999px; background: #ddd; margin: 0 auto;
-      position: absolute; left: 0; right: 0; top: 8px;
-    }
-    .drawer-title{ margin: 0 auto; font-size: 16px; font-weight: 700; }
-    .drawer-close{
-      border: 0; background: transparent; padding: 6px 10px; font-size: 14px; color: #1976d2;
-    }
-
-    /* コンテンツ（中身は縦スクロール可） */
-    .drawer-content{
-      flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-      padding: 12px 14px;
-    }
-
-    /* ドロワーを開いている間は背景スクロールを止める */
-    body.no-scroll{ overflow: hidden; }
-
-
   </style>
 </head>
 <body>
@@ -434,6 +365,138 @@
     <!-- <p id="decorationNotice" style="font-size: 12px; color: #666;">
       ※ オブジェクトをタップすると選択され、移動・サイズ変更・回転できます。
     </p> -->
+
+    <!-- ▼▼ ここから “横スライド メニュー” を追加 ▼▼ -->
+    <div class="cc-toolbar" role="tablist">
+      <button class="cc-item active" data-target="panel-text">
+        <!-- <span class="icon">T</span> --><span class="label">テキスト</span>
+      </button>
+      <button class="cc-item" data-target="panel-stamp">
+        <!-- <span class="icon">🌟</span> --><span class="label">スタンプ</span>
+      </button>
+      <button class="cc-item" data-target="panel-arrange">
+        <!-- <span class="icon">📋</span> --><span class="label">複製／削除</span>
+      </button>
+      <button class="cc-item" data-target="panel-history">
+        <!-- <span class="icon">↩ ↪</span> --><span class="label">↩ ↪</span>
+      </button>
+      <button class="cc-item" data-target="panel-layer">
+        <!-- <span class="icon">⬆︎⬇︎</span> --><span class="label">レイヤー</span>
+      </button>
+    </div>
+
+    <div class="cc-panels">
+      <!-- テキスト -->
+      <section id="panel-text" class="cc-panel">
+        <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
+        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+          <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
+          <select id="fontPicker" class="native-font-select">
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="'DotGothic16', sans-serif">ドットゴシック</option>
+            <option value="'Train One', cursive">Train One</option>
+            <option value="'Cherry Bomb One', cursive">手書き風</option>
+            <option value="'Kaisei Tokumin', serif">丸文字</option>
+            <option value="'M PLUS Rounded 1c', sans-serif">M PLUS Rounded 太字</option>
+            <option value="'M PLUS 1p', sans-serif">M PLUS 1p 太字</option>
+            <option value="'Kosugi Maru', sans-serif">Kosugi Maru</option>
+            <option value="'Reggae One', cursive">Reggae One</option>
+            <option value="'RocknRoll One', sans-serif">RocknRoll One</option>
+            <option value="'Yomogi', cursive">Yomogi</option>
+            <option value="'Hachi Maru Pop', cursive">Hachi Maru Pop</option>
+          </select>
+          <div class="font-picker-wrap">
+            <button id="fontPickerBtn" type="button">フォントを選ぶ</button>
+            <div id="fontDropdown" hidden></div>
+          </div>
+        </div>
+
+        <!-- ▼ 縁取り設定（ここから追加） -->
+          <div id="outlineControls" class="control-row" style="margin-bottom: 10px;">
+            <label>
+              <input type="checkbox" id="outlineToggle" checked>
+              縁取りON/OFF
+            </label>
+
+            <label style="margin-left:8px;">
+              外側の縁の色：
+              <input type="color" id="outlineColorPicker" value="#ffffff" title="縁取り色" style="width: 50px;" />
+            </label>
+
+            <label style="margin-left:8px;">
+              外側の縁の太さ：
+              <input type="range" id="outlineWidthPercent" min="0" max="30" value="12" step="1">
+              <span id="outlineWidthValue">12%</span>
+            </label>
+          </div>
+          <!-- ▲ 縁取り設定（ここまで追加） -->
+
+          <!-- ▼ アーチ文字（カーブ）設定（ここから追加） -->
+          <div id="arcControls" class="control-row" style="margin: 10px 0;">
+            <label>
+              <input type="checkbox" id="arcToggle">
+              アーチにする
+            </label>
+
+            <label style="margin-left:8px;">
+              カーブ（角度）：
+              <input type="range" id="arcAngle" min="0" max="180" value="60" step="1">
+              <span id="arcAngleValue">60°</span>
+            </label>
+
+            <label style="margin-left:8px;">
+              向き：
+              <select id="arcDirection">
+                <option value="up">上向き（虹型）</option>
+                <option value="down">下向き（スマイル型）</option>
+              </select>
+            </label>
+          </div>
+          <!-- ▲ アーチ文字（カーブ）設定（ここまで追加） -->
+
+        <button onclick="addTextToOverlay()">テキスト追加</button>
+      </section>
+
+      <!-- スタンプ -->
+      <section id="panel-stamp" class="cc-panel" hidden>
+        <h3 style="margin:6px 0 8px;">スタンプ</h3>
+        <div class="stamp-buttons-container">
+          <button class="stamp-button" onclick="addStamp('❤️')">❤️</button>
+          <button class="stamp-button" onclick="addStamp('⭐')">⭐</button>
+          <button class="stamp-button" onclick="addStamp('🎶')">🎶</button>
+          <button class="stamp-button" onclick="addStamp('01loveu.png')"><img src="01loveu.png" alt="Love You"></button>
+          <button class="stamp-button" onclick="addStamp('02ntwithFace.png')"><img src="02ntwithFace.png" alt="NT with Face"></button>
+          <button class="stamp-button" onclick="addStamp('03eyestome.png')"><img src="03eyestome.png" alt="Eyes to me"></button>
+          <button class="stamp-button" onclick="addStamp('04getmyheart.png')"><img src="04getmyheart.png" alt="Get my heart"></button>
+          <button class="stamp-button" onclick="addStamp('05angel.png')"><img src="05angel.png" alt="Angel"></button>
+          <button class="stamp-button" onclick="addStamp('06god.png')"><img src="06god.png" alt="God"></button>
+          <button class="stamp-button" onclick="addStamp('07precious.png')"><img src="07precious.png" alt="Precious"></button>
+          <button class="stamp-button" onclick="addStamp('08osi_pink.png')"><img src="08osi_pink.png" alt="Precious"></button>
+          <button class="stamp-button" onclick="addStamp('09osi_yellow.png')"><img src="09osi_yellow.png" alt="Precious"></button>
+          <button class="stamp-button" onclick="addStamp('10osi_lightblue.png')"><img src="10osi_lightblue.png" alt="Precious"></button>
+          <button class="stamp-button" onclick="addStamp('11osi_green.png')"><img src="11osi_green.png" alt="Precious"></button>
+        </div>
+      </section>
+
+      <!-- 並べ替え（複製・削除） -->
+      <section id="panel-arrange" class="cc-panel" hidden>
+        <button id="duplicateBtn">複製</button>
+        <button id="deleteBtn" style="background:#f44336;">削除</button>
+      </section>
+
+      <!-- 履歴（戻る・やり直し） -->
+      <section id="panel-history" class="cc-panel" hidden>
+        <button id="undoBtn">戻る</button>
+        <button id="redoBtn">やり直し</button>
+      </section>
+
+      <!-- レイヤー（前面/背面） -->
+      <section id="panel-layer" class="cc-panel" hidden>
+        <button id="sendBackwardBtn">背面へ</button>
+        <button id="bringForwardBtn">前面へ</button>
+      </section>
+    </div>
+    <!-- ▲▲ ここまで “横スライド メニュー” ▲▲ -->
 
     <!-- 「決定 → プレビュー」ボタンをデコレーションエリア内に移動 -->
     <button id="generateBtn" class="form-button" style="margin-top: 20px;">決定 → プレビュー</button>
@@ -1724,212 +1787,5 @@
     // 初期描画
     drawAll();
   </script>
-
-    <!-- ▼ ドロワーの背景（黒い半透明） -->
-    <div id="drawerBackdrop" class="drawer-backdrop" aria-hidden="true"></div>
-
-    <!-- ▼ ドロワー本体 -->
-    <div id="drawer" class="drawer" aria-hidden="true" role="dialog" aria-labelledby="drawerTitle">
-      <div id="drawerPanel" class="drawer-panel">
-        <div class="drawer-header">
-          <div class="drawer-grip" aria-hidden="true"></div>
-          <h3 id="drawerTitle" class="drawer-title">デコレーション</h3>
-          <button id="drawerClose" type="button" class="drawer-close" aria-label="閉じる">閉じる</button>
-        </div>
-        <div id="drawerContent" class="drawer-content">
-          <!-- ← ここに後で「3) デコレーション」の中身をお引っ越しします -->
-
-           <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
-                   <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-           <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />              <select id="fontPicker" class="native-font-select">
-              <option value="Arial, sans-serif">Arial</option>
-              <option value="'DotGothic16', sans-serif">ドットゴシック</option>
-              <option value="'Train One', cursive">Train One</option>
-              <option value="'Cherry Bomb One', cursive">手書き風</option>
-              <option value="'Kaisei Tokumin', serif">丸文字</option>
-              <option value="'M PLUS Rounded 1c', sans-serif">M PLUS Rounded 太字</option>
-              <option value="'M PLUS 1p', sans-serif">M PLUS 1p 太字</option>
-              <option value="'Kosugi Maru', sans-serif">Kosugi Maru</option>
-              <option value="'Reggae One', cursive">Reggae One</option>
-              <option value="'RocknRoll One', sans-serif">RocknRoll One</option>
-              <option value="'Yomogi', cursive">Yomogi</option>
-              <option value="'Hachi Maru Pop', cursive">Hachi Maru Pop</option>
-            </select>
-
-
-
-
-          <div class="font-picker-wrap">
-            <button id="fontPickerBtn" type="button">フォントを選ぶ</button>
-            <div id="fontDropdown" hidden></div>
-          </div>
-        </div>
-
-        <!-- ▼ 縁取り設定（ここから追加） -->
-          <div id="outlineControls" class="control-row" style="margin-bottom: 10px;">
-            <label>
-              <input type="checkbox" id="outlineToggle" checked>
-              縁取りON/OFF
-            </label>
-
-            <label style="margin-left:8px;">
-              外側の縁の色：
-              <input type="color" id="outlineColorPicker" value="#ffffff" title="縁取り色" style="width: 50px;" />
-            </label>
-
-            <label style="margin-left:8px;">
-              外側の縁の太さ：
-              <input type="range" id="outlineWidthPercent" min="0" max="30" value="12" step="1">
-              <span id="outlineWidthValue">12%</span>
-            </label>
-          </div>
-          <!-- ▲ 縁取り設定（ここまで追加） -->
-
-          <!-- ▼ アーチ文字（カーブ）設定（ここから追加） -->
-          <div id="arcControls" class="control-row" style="margin: 10px 0;">
-            <label>
-              <input type="checkbox" id="arcToggle">
-              アーチにする
-            </label>
-
-            <label style="margin-left:8px;">
-              カーブ（角度）：
-              <input type="range" id="arcAngle" min="0" max="180" value="60" step="1">
-              <span id="arcAngleValue">60°</span>
-            </label>
-
-            <label style="margin-left:8px;">
-              向き：
-              <select id="arcDirection">
-                <option value="up">上向き（虹型）</option>
-                <option value="down">下向き（スマイル型）</option>
-              </select>
-            </label>
-          </div>
-          <!-- ▲ アーチ文字（カーブ）設定（ここまで追加） -->
-
-        <button onclick="addTextToOverlay()">テキスト追加</button>
-      </section>
-
-      <!-- ▼▼ ここから “横スライド メニュー” を追加 ▼▼ -->
-      <div class="cc-toolbar" role="tablist">
-        <button class="cc-item active" data-target="panel-text">
-          <!-- <span class="icon">T</span> --><span class="label">テキスト</span>
-        </button>
-        <button class="cc-item" data-target="panel-stamp">
-          <!-- <span class="icon">🌟</span> --><span class="label">スタンプ</span>
-        </button>
-        <button class="cc-item" data-target="panel-arrange">
-          <!-- <span class="icon">📋</span> --><span class="label">複製／削除</span>
-        </button>
-        <button class="cc-item" data-target="panel-history">
-          <!-- <span class="icon">↩ ↪</span> --><span class="label">↩ ↪</span>
-        </button>
-        <button class="cc-item" data-target="panel-layer">
-          <!-- <span class="icon">⬆︎⬇︎</span> --><span class="label">レイヤー</span>
-        </button>
-      </div>
-
-      <div class="cc-panels">
-        <!-- テキスト -->
-        <section id="panel-text" class="cc-panel">
-
-
-        <!-- スタンプ -->
-        <section id="panel-stamp" class="cc-panel" hidden>
-          <h3 style="margin:6px 0 8px;">スタンプ</h3>
-          <div class="stamp-buttons-container">
-            <button class="stamp-button" onclick="addStamp('❤️')">❤️</button>
-            <button class="stamp-button" onclick="addStamp('⭐')">⭐</button>
-            <button class="stamp-button" onclick="addStamp('🎶')">🎶</button>
-            <button class="stamp-button" onclick="addStamp('01loveu.png')"><img src="01loveu.png" alt="Love You"></button>
-            <button class="stamp-button" onclick="addStamp('02ntwithFace.png')"><img src="02ntwithFace.png" alt="NT with Face"></button>
-            <button class="stamp-button" onclick="addStamp('03eyestome.png')"><img src="03eyestome.png" alt="Eyes to me"></button>
-            <button class="stamp-button" onclick="addStamp('04getmyheart.png')"><img src="04getmyheart.png" alt="Get my heart"></button>
-            <button class="stamp-button" onclick="addStamp('05angel.png')"><img src="05angel.png" alt="Angel"></button>
-            <button class="stamp-button" onclick="addStamp('06god.png')"><img src="06god.png" alt="God"></button>
-            <button class="stamp-button" onclick="addStamp('07precious.png')"><img src="07precious.png" alt="Precious"></button>
-            <button class="stamp-button" onclick="addStamp('08osi_pink.png')"><img src="08osi_pink.png" alt="Precious"></button>
-            <button class="stamp-button" onclick="addStamp('09osi_yellow.png')"><img src="09osi_yellow.png" alt="Precious"></button>
-            <button class="stamp-button" onclick="addStamp('10osi_lightblue.png')"><img src="10osi_lightblue.png" alt="Precious"></button>
-            <button class="stamp-button" onclick="addStamp('11osi_green.png')"><img src="11osi_green.png" alt="Precious"></button>
-          </div>
-        </section>
-
-        <!-- 並べ替え（複製・削除） -->
-        <section id="panel-arrange" class="cc-panel" hidden>
-          <button id="duplicateBtn">複製</button>
-          <button id="deleteBtn" style="background:#f44336;">削除</button>
-        </section>
-
-        <!-- 履歴（戻る・やり直し） -->
-        <section id="panel-history" class="cc-panel" hidden>
-          <button id="undoBtn">戻る</button>
-          <button id="redoBtn">やり直し</button>
-        </section>
-
-        <!-- レイヤー（前面/背面） -->
-        <section id="panel-layer" class="cc-panel" hidden>
-          <button id="sendBackwardBtn">背面へ</button>
-          <button id="bringForwardBtn">前面へ</button>
-        </section>
-      </div>
-      <!-- ▲▲ ここまで “横スライド メニュー” ▲▲ -->
-
-
-
-          <p style="opacity:.6">ここに編集UIが入ります。</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- ▼ 取っ手（画面下の細いバー） -->
-    <button id="drawerHandle" class="drawer-handle" aria-controls="drawer" aria-expanded="false" type="button">
-      <span class="drawer-handle-grip" aria-hidden="true"></span>
-      <span class="drawer-handle-label">デコレーション</span>
-    </button>
-
-    <script>
-      (function(){
-        const drawer = document.getElementById('drawer');
-        const backdrop = document.getElementById('drawerBackdrop');
-        const handle = document.getElementById('drawerHandle');
-        const closeBtn = document.getElementById('drawerClose');
-
-        function openDrawer(){
-          drawer.classList.add('open');
-          backdrop.classList.add('open');
-          document.body.classList.add('no-scroll');
-          handle.setAttribute('aria-expanded','true');
-          handle.style.display = 'none';
-          drawer.setAttribute('aria-hidden','false');
-        }
-        function closeDrawer(){
-          drawer.classList.remove('open');
-          backdrop.classList.remove('open');
-          document.body.classList.remove('no-scroll');
-          handle.setAttribute('aria-expanded','false');
-          handle.style.display = 'flex';
-          drawer.setAttribute('aria-hidden','true');
-        }
-
-        handle.addEventListener('click', openDrawer);
-        closeBtn.addEventListener('click', closeDrawer);
-        backdrop.addEventListener('click', closeDrawer);
-        window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeDrawer(); });
-
-        /* 余裕があれば：下スワイプで閉じる（簡易版） */
-        let startY=null;
-        drawer.addEventListener('touchstart', (e)=>{ startY = e.touches[0].clientY; }, {passive:true});
-        drawer.addEventListener('touchmove',  (e)=>{
-          if(startY===null) return;
-          const dy = e.touches[0].clientY - startY;
-          if(dy > 60) { closeDrawer(); startY=null; }
-        }, {passive:true});
-        drawer.addEventListener('touchend', ()=>{ startY=null; });
-      })();
-    </script>
-
-
 </body>
 </html>
