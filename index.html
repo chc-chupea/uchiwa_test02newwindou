@@ -1017,11 +1017,30 @@
           ctx.strokeStyle = '#42a5f5';
           ctx.lineWidth = 10 / obj.scale;
           ctx.setLineDash([20 / obj.scale, 10 / obj.scale]);
-          const rectWidth  = obj.type === 'text' ? ctx.measureText(obj.content).width : obj.width;
-          const rectHeight = obj.type === 'text' ? obj.fontSize * 1.2 : obj.height;
-          ctx.strokeRect(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
+          // 変更後（置き換え）
+          if (obj.type === 'text' && obj.arcEnabled && (obj.arcAngleDeg || 0) > 0) {
+            // カーブ文字の選択枠：弦の長さを幅に、文字高さを高さにし、
+            // 弧の中心（0, ±r）へオフセットして描く
+            ctx.save();
+            ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
+            const totalWidth = ctx.measureText(obj.content).width;
+            const angleDeg = Math.max(0, Math.min(180, obj.arcAngleDeg || 60));
+            const theta = angleDeg * Math.PI / 180;
+            const r = totalWidth / Math.max(theta, 1e-6);         // r = 弧長 / 角度
+            const chord = 2 * r * Math.sin(theta / 2);            // 弦の長さ
+            const rectH = obj.fontSize * 1.2;                     // おおよその文字高さ
+            const cy = (obj.arcDirection === 'down') ? r : -r;    // 弧の中心位置（上下）
+
+            ctx.translate(0, cy);
+            ctx.strokeRect(-chord / 2, -rectH / 2, chord, rectH);
+            ctx.restore();
+          } else {
+            // 直線テキスト／画像は従来どおり
+            const rectWidth  = obj.type === 'text' ? ctx.measureText(obj.content).width : obj.width;
+            const rectHeight = obj.type === 'text' ? obj.fontSize * 1.2 : obj.height;
+            ctx.strokeRect(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
+          }
           ctx.setLineDash([]);
-        }
 
         ctx.restore();
       });
@@ -1077,28 +1096,42 @@
       const scaledX = rotatedX / obj.scale;
       const scaledY = rotatedY / obj.scale;
 
-      // 2. オブジェクトのローカル座標系での幅と高さを計算
-      let objWidth, objHeight;
+      // 2. オブジェクトのローカル座標系での当たり判定
       if (obj.type === 'text') {
-        // テキストの場合、現在のフォント設定でテキストの実際の幅を測定
         ctx.save();
-        ctx.font = `${obj.fontSize}px ${obj.fontFamily}`; // オリジナルのフォントサイズで測定
-        objWidth = ctx.measureText(obj.content).width;
-        objHeight = obj.fontSize * 1.2; // テキストの高さは行高を考慮
+        ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
+        const totalWidth = ctx.measureText(obj.content).width;
         ctx.restore();
+
+        // カーブ文字なら、選択枠と同じく「弦の長さ × 文字高さ」の矩形を
+        // 原点(0,0)から (0, ±r) へオフセットした領域で判定する
+        if (obj.arcEnabled && (obj.arcAngleDeg || 0) > 0) {
+          const angleDeg = Math.max(0, Math.min(180, obj.arcAngleDeg || 60));
+          const theta = angleDeg * Math.PI / 180;
+          const r = totalWidth / Math.max(theta, 1e-6);
+          const chord = 2 * r * Math.sin(theta / 2);
+          const rectH = obj.fontSize * 1.2;
+          const cy = (obj.arcDirection === 'down') ? r : -r;
+
+          return (scaledX >= -chord / 2 && scaledX <= chord / 2) &&
+                 (scaledY >= (cy - rectH / 2) && scaledY <= (cy + rectH / 2));
+        }
+
+        // 直線テキストは従来どおり中央基準の長方形
+        const w2 = totalWidth / 2;
+        const h2 = (obj.fontSize * 1.2) / 2;
+        return (scaledX >= -w2 && scaledX <= w2) &&
+               (scaledY >= -h2 && scaledY <= h2);
+
       } else if (obj.type === 'image') {
-        objWidth = obj.width;
-        objHeight = obj.height;
-      } else {
-          return false; // 未知のタイプ
+        const w2 = obj.width / 2;
+        const h2 = obj.height / 2;
+        return (scaledX >= -w2 && scaledX <= w2) &&
+         (scaledY >= -h2 && scaledY <= h2);
       }
 
-      const halfObjWidth = objWidth / 2;
-      const halfObjHeight = objHeight / 2;
-
-      // 3. 変換された点が、オブジェクトのローカル境界ボックス内にあるか判定
-      return scaledX >= -halfObjWidth && scaledX <= halfObjWidth &&
-             scaledY >= -halfObjHeight && scaledY <= halfObjHeight;
+      // 未知タイプ
+      return false;
     }
 
     // --- イベントリスナー ---
