@@ -935,7 +935,7 @@
         context.translate(0, down ? r : -r); // 上: -r / 下: +r
         // 180度くるり は やめて、
         // 上向きは +90度、下向きは -90度 に“ちょい回し”に変える
-        context.rotate(down ? -Math.PI / 2 : Math.PI / 2);
+        context.rotate(down ? Math.PI / 2 : -Math.PI / 2);
 
         // ２重ふちどり
         if (obj.outlineEnabled) {
