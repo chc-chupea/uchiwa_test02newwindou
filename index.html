@@ -722,6 +722,9 @@
     let historyIndex = -1;
     // 追加: 背景色を保持する変数
     let backgroundColor = '#ffffff'; // デフォルトは白
+    // ここから（追加）
+    let currentFilter = 'none'; // 画像フィルター（将来UIで 'grayscale(1)' 等を入れる想定）
+    // ここまで
 
     // ジェスチャー開始時のオブジェクトの状態とタッチ中心
     var initialObjX, initialObjY, initialObjScale, initialObjRotation;
@@ -1012,37 +1015,50 @@
           ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
         }
 
-        // 選択枠など（あなたの元コード）…
+        // ここから（置き換え）
         if (obj === selectedObject) {
+          // 選択枠（共通）
+          ctx.save(); // 選択枠用に一時的に保存
           ctx.strokeStyle = '#42a5f5';
-          ctx.lineWidth = 10 / obj.scale;
-          ctx.setLineDash([20 / obj.scale, 10 / obj.scale]);
-          // 変更後（置き換え）
+          ctx.lineWidth = 10 / (obj.scale || 1);
+          ctx.setLineDash([20 / (obj.scale || 1), 10 / (obj.scale || 1)]);
+
+          // テキストでかつアーチが有効な場合（正しいローカル座標系内で描く）
           if (obj.type === 'text' && obj.arcEnabled && (obj.arcAngleDeg || 0) > 0) {
-            // カーブ文字の選択枠：弦の長さを幅に、文字高さを高さにし、
-            // 弧の中心（0, ±r）へオフセットして描く
-            ctx.save();
+            // 同じフォント設定で幅を測る（現在の transform のままで測る）
             ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
             const totalWidth = ctx.measureText(obj.content).width;
-            const angleDeg = Math.max(0, Math.min(180, obj.arcAngleDeg || 60));
-            const theta = angleDeg * Math.PI / 180;
-            const r = totalWidth / Math.max(theta, 1e-6);         // r = 弧長 / 角度
-            const chord = 2 * r * Math.sin(theta / 2);            // 弦の長さ
-            const rectH = obj.fontSize * 1.2;                     // おおよその文字高さ
-            const cy = (obj.arcDirection === 'down') ? r : -r;    // 弧の中心位置（上下）
 
-            ctx.translate(0, cy);
-            ctx.strokeRect(-chord / 2, -rectH / 2, chord, rectH);
-            ctx.restore();
+            const angleDeg = Math.max(0, Math.min(180, obj.arcAngleDeg || 60));
+            // 角度が極端に小さいと半径が大きくなるので保護
+            if (angleDeg > 0.5) {
+              const theta = angleDeg * Math.PI / 180;
+              const r = totalWidth / theta; // 弧長 / 角度 = 半径
+              const chord = 2 * r * Math.sin(theta / 2);
+              const rectH = obj.fontSize * 1.2;
+              const cy = (obj.arcDirection === 'down') ? r : -r;
+
+              // アーチ文字の中心（0, ±r）に対して矩形を描く
+              ctx.save();
+              ctx.translate(0, cy);
+              ctx.strokeRect(-chord / 2, -rectH / 2, chord, rectH);
+              ctx.restore();
+            } else {
+              // 角度がほとんど無い場合は「直線」扱いでフォールバック
+              const rectW = ctx.measureText(obj.content).width;
+              const rectH = obj.fontSize * 1.2;
+              ctx.strokeRect(-rectW / 2, -rectH / 2, rectW, rectH);
+            }
           } else {
-            // 直線テキスト／画像は従来どおり
-            const rectWidth  = obj.type === 'text' ? ctx.measureText(obj.content).width : obj.width;
-            const rectHeight = obj.type === 'text' ? obj.fontSize * 1.2 : obj.height;
+            // 直線テキストまたは画像の既存処理（ローカル座標内で）
+            const rectWidth  = obj.type === 'text' ? ctx.measureText(obj.content).width : (obj.width || 100);
+            const rectHeight = obj.type === 'text' ? obj.fontSize * 1.2 : (obj.height || 100);
             ctx.strokeRect(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
           }
-          ctx.setLineDash([]);
 
-        ctx.restore();
+          ctx.setLineDash([]);
+          ctx.restore(); // 選択枠用の保存を戻す
+        }
       });
     }
 
@@ -1665,7 +1681,10 @@
         const activeObj = getActiveObject();
         if (activeObj) {
             const currentTouchCenter = getCanvasCoords(e.center.x, e.center.y);
-            const newScale = initialObjScale * e.scale;
+            // ここから（置き換え）
+            let newScale = initialObjScale * e.scale;
+            newScale = clampScale(newScale); // clampScale が近くに定義済みであること
+            // ここまで（置き換え）
             // newRotationはpinchイベントにもe.rotationがある場合があるので、それを使うかinitialObjRotationを使用
             // Hammer.jsのe.rotationはジェスチャー開始時からの相対値なので、そのまま利用する
             const currentRotationDelta = e.rotation * Math.PI / 180; // Hammer.jsは度数法なのでラジアンに変換
