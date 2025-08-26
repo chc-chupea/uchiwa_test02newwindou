@@ -831,7 +831,7 @@
           if (obj.outlineEnabled) {
             const ratio  = obj.outlineWidthRatio || 0.12;
             const outerW = Math.max(1, obj.fontSize * ratio);   // 外側（スライダー連動）
-            const innerW = Math.max(1, outerW * 0.4);           // 内側＝外側の半分くらい
+            const innerW = Math.max(1, outerW * 0.35);           // 内側＝外側の半分くらい
 
             // 1) 外側（選んだ色）
             ctx.lineJoin   = 'round';
