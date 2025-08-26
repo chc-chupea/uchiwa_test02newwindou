@@ -987,7 +987,8 @@
           if (obj.arcEnabled) {
             // ← アーチ描画
             drawArchedTextOnContext(ctx, obj);
-          } else {
+          } else { 
+
             // ← まっすぐ描画（２重ふちどり→塗り）
             if (obj.outlineEnabled) {
               const ratio  = obj.outlineWidthRatio || 0.12;
@@ -1200,29 +1201,35 @@
      * 決定 → プレビューボタンの処理
      */
     generateBtn.addEventListener('click', () => {
-      // ... 既存のチェックロジック ...
-
-      // 高解像度での最終画像を生成するためのオフスクリーンキャンバス
+      // オフスクリーン（高解像度）キャンバス
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = mainCanvas.width;
       tempCanvas.height = mainCanvas.height;
       const tempCtx = tempCanvas.getContext('2d');
 
-      // 1. まず背景色で全体を塗りつぶす
+      // 1) 背景
       tempCtx.fillStyle = backgroundColor;
       tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-      // 2. 写真を描画（存在する場合）
+      // 2) 写真
       if (uploadedImg) {
         tempCtx.save();
         tempCtx.translate(photoObject.x, photoObject.y);
         tempCtx.rotate(photoObject.rotation);
         tempCtx.scale(photoObject.scale, photoObject.scale);
+
+        // ← フィルターを適用
+        if (currentFilter && currentFilter !== 'none') {
+          tempCtx.filter = currentFilter;
+        } else {
+          tempCtx.filter = 'none';
+        }
+
         tempCtx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
         tempCtx.restore();
       }
 
-      // 3. デコレーションを描画
+      // 3) デコ（テキスト＆画像）
       decorationObjects.forEach(obj => {
         tempCtx.save();
         tempCtx.translate(obj.x, obj.y);
@@ -1235,46 +1242,40 @@
           tempCtx.textBaseline = 'middle';
 
           if (obj.arcEnabled) {
-              // アーチ描画
-              drawArchedTextOnContext(tempCtx, obj);
-            } else {
+            // アーチ文字
+            drawArchedTextOnContext(tempCtx, obj);
+          } else {
+            // まっすぐ文字（２重ふちどり＋塗り）
+            if (obj.outlineEnabled) {
+              const ratio  = obj.outlineWidthRatio || 0.12;
+              const outerW = Math.max(1, obj.fontSize * ratio);
+              const innerW = Math.max(1, outerW * 0.35);
+              tempCtx.lineJoin = 'round';
+              tempCtx.miterLimit = 2;
 
-          // === ２重ふちどり（書き出し用） ===
-          if (obj.outlineEnabled) {
-            const ratio  = obj.outlineWidthRatio || 0.12;
-            const outerW = Math.max(1, obj.fontSize * ratio);
-            const innerW = Math.max(1, outerW * 0.35);
+              tempCtx.strokeStyle = obj.outlineColor || '#000000'; // 外側
+              tempCtx.lineWidth = outerW;
+              tempCtx.strokeText(obj.content, 0, 0);
 
-            // 外側
-            tempCtx.lineJoin   = 'round';
-            tempCtx.miterLimit = 2;
-            tempCtx.strokeStyle = obj.outlineColor || '#000000';
-            tempCtx.lineWidth   = outerW;
-            tempCtx.strokeText(obj.content, 0, 0);
-
-            // 内側（白）
-            tempCtx.strokeStyle = '#ffffff';
-            tempCtx.lineWidth   = innerW;
-            tempCtx.strokeText(obj.content, 0, 0);
+              tempCtx.strokeStyle = '#ffffff'; // 内側（白）
+              tempCtx.lineWidth = innerW;
+              tempCtx.strokeText(obj.content, 0, 0);
+            }
+            tempCtx.fillStyle = obj.color;
+            tempCtx.fillText(obj.content, 0, 0);
           }
-
-          // 本体（塗り）
-          tempCtx.fillStyle = obj.color;
-          tempCtx.fillText(obj.content, 0, 0);
-         }
-
-       } else if (obj.type === 'image') {
+        } else if (obj.type === 'image') {
           tempCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
-       }
+        }
 
-      tempCtx.restore();
-    });
+        tempCtx.restore();
+      });
 
-      // 4. 高解像度うちわテンプレートを重ねる
+    // 4) 高解像度テンプレを重ねてプレビュー表示
     const templateHighRes = new Image();
     templateHighRes.onload = () => {
       tempCtx.drawImage(templateHighRes, 0, 0, tempCanvas.width, tempCanvas.height);
-      previewImage.src = tempCanvas.toDataURL('image/png'); // 完成イメージをDataURLとして設定
+      previewImage.src = tempCanvas.toDataURL('image/png');
 
       areaResult.style.display = 'block'; // ★ 完成イメージエリア全体を表示
       previewWrapper.style.display = 'block'; // プレビュー表示エリアを表示
