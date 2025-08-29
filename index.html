@@ -511,6 +511,12 @@
       <img id="previewImage" alt="合成画像プレビュー" />
     </div>
     <div id="previewNotice" style="font-size:14px; color:black; margin-top:10px;"></div>
+
+    <!-- 表面モードのときだけ表示する -->
+    <button id="makeBackBtn" class="form-button" style="display:none;">
+      裏面も作る
+    </button>
+
     <!-- 「注文フォームへ進む」ボタンはここに残し、JavaScriptで表示制御 -->
     <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform?usp=dialog"
        target="_blank"
@@ -690,9 +696,11 @@
     const areaResult = document.getElementById('area-result');
     // 追加: 背景色ピッカーの取得
     const backgroundColorPicker = document.getElementById('backgroundColorPicker');
+    const makeBackBtn = document.getElementById('makeBackBtn'); // ★裏面ボタン
 
     // 状態変数
     let uploadedImg = null;
+    let mode = "front"; // ★ 最初は表
     let photoObject = null;
     let isPhotoLocked = false;
     let decorationObjects = [];
@@ -1179,12 +1187,31 @@
         previewWrapper.style.display = 'block'; // プレビュー表示エリアを表示
         goToOrderFormBtn.style.display = 'block'; // 注文フォームボタンを表示
 
+        // ★ここに追記
+        if (mode === "front") {
+          makeBackBtn.style.display = 'block';   // 表のときは「裏面も作る」を表示
+        } else {
+          makeBackBtn.style.display = 'none';    // 裏のときは非表示
+        }
+        // ★ここまで追記
+
+
+
         // 保存案内メッセージ
         previewNotice.innerHTML = `iPhone：画像を👆長押しして「“写真”に追加」を選んで保存してください。<br>Android：画像を👆長押しして「画像を保存」を選択してください。`;
         areaResult.scrollIntoView({ behavior: 'smooth' }); // 完成イメージエリアへスクロール
       };
       templateHighRes.src = templateSelector.value; // 選択された高解像度テンプレートを読み込む
     });
+
+
+    // ★ここから追加
+    makeBackBtn.addEventListener('click', () => {
+      mode = "back"; // 裏モードに切り替え
+      ...
+      document.getElementById('area-canvas').scrollIntoView({ behavior: 'smooth' });
+    });
+    // ★ここまで追加
 
     // --- デコレーションオブジェクト追加機能 ---
     /**
