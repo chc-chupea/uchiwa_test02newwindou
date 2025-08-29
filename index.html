@@ -895,7 +895,8 @@
       const theta   = Math.max(0.001, MAX_RAD * (amount / 100)); // 全体角度
 
       const R = totalWidth / theta; // 弧長 = R * θ
-      const dir = (obj.archStyle === 'smile') ? +1 : -1; // smile=∪(下にふくらむ), rainbow=∩(上にふくらむ)
+      // ← ここを入れ替えます（虹型=rainbow を U ＝下に膨らむにする）
+      const dir = (obj.archStyle === 'rainbow') ? +1 : -1; // rainbow=U(下にふくらむ), smile=∩(上にふくらむ)
 
       let angle = -theta / 2; // 左端スタート
       for (let i = 0; i < chars.length; i++) {
