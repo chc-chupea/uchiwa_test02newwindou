@@ -432,31 +432,6 @@
           <!-- ▲ 縁取り設定（ここまで追加） -->
 
 
-          <!-- ▼ カーブ配置（アーチ）設定：直線／虹型／スマイル -->
-          <div id="curveControls" class="control-row" style="margin:10px 0;">
-            <label style="margin-right:8px;">
-              配置：
-              <select id="textCurveMode">
-                <option value="straight">横書き（直線）</option>
-                <option value="archUp">虹型（上に凸／左→右）</option>
-                <option value="archDown">スマイル型（下に凸／左→右）</option>
-              </select>
-            </label>
-
-            <label style="margin-right:8px;">
-              半径：
-              <input type="range" id="textCurveRadius" min="100" max="2000" value="800" step="10">
-              <span id="textCurveRadiusValue">800px</span>
-            </label>
-
-            <label>
-              文字間隔：
-              <input type="range" id="textLetterSpacing" min="-0.20" max="0.50" value="0.05" step="0.01">
-              <span id="textLetterSpacingValue">0.05em</span>
-            </label>
-          </div>
-          <!-- ▲ カーブ配置（アーチ）設定ここまで -->
-
         <button onclick="addTextToOverlay()">テキスト追加</button>
       </section>
 
@@ -558,15 +533,6 @@
     const outlineColorPicker = document.getElementById('outlineColorPicker');
     const outlineWidthPercent = document.getElementById('outlineWidthPercent');
     const outlineWidthValue = document.getElementById('outlineWidthValue');
-
-
-
-    // --- カーブ配置UIの参照 ---
-    const textCurveMode        = document.getElementById('textCurveMode');
-    const textCurveRadius      = document.getElementById('textCurveRadius');
-    const textCurveRadiusValue = document.getElementById('textCurveRadiusValue');
-    const textLetterSpacing    = document.getElementById('textLetterSpacing');
-    const textLetterSpacingValue = document.getElementById('textLetterSpacingValue');
 
     // スライダーの数字を表示に反映
     outlineWidthPercent.addEventListener('input', () => {
@@ -842,89 +808,6 @@
       ctx.restore(); // 保存した状態に戻す
     }
 
-
-    // 直線／アーチに対応したテキスト描画（ふちどり込み）
-    function drawTextWithOutline(anyCtx, obj) {
-      // 共通セットアップ
-      anyCtx.font = `${obj.fontSize}px ${obj.fontFamily}`;
-      anyCtx.textAlign = 'center';
-      anyCtx.textBaseline = 'middle';
-
-      const drawOne = (text) => {
-        if (obj.outlineEnabled) {
-          const ratio  = obj.outlineWidthRatio || 0.12;
-          const outerW = Math.max(1, obj.fontSize * ratio);
-          const innerW = Math.max(1, outerW * 0.35);
-
-          anyCtx.lineJoin   = 'round';
-          anyCtx.miterLimit = 2;
-          anyCtx.strokeStyle = obj.outlineColor || '#000000';
-          anyCtx.lineWidth   = outerW;
-          anyCtx.strokeText(text, 0, 0);
-
-          anyCtx.strokeStyle = '#ffffff';
-          anyCtx.lineWidth   = innerW;
-          anyCtx.strokeText(text, 0, 0);
-        }
-        anyCtx.fillStyle = obj.color;
-        anyCtx.fillText(text, 0, 0);
-      };
-
-      const shape = obj.textShape || 'straight';
-      if (shape === 'straight') {
-        // 直線：従来どおり一括描画
-        drawOne(obj.content);
-        return;
-      }
-
-      // --- ここからアーチ配置 ---
-      const R = Math.max(10, parseInt(obj.curveRadius || 800, 10));
-      const s = (shape === 'archDown') ? -1 : 1; // 上凸=+1（虹型）／下凸=-1（スマイル）
-      const letterSpacingEm = (obj.letterSpacingEm != null) ? obj.letterSpacingEm : 0.05;
-      const letterSpacingPx = letterSpacingEm * obj.fontSize;
-
-      // 文字ごとの幅を測り、全体角度を求める
-      const parts = [];
-      let totalAdvance = 0;
-      for (const ch of obj.content) {
-        const w = anyCtx.measureText(ch).width;
-        const adv = w + letterSpacingPx;
-        parts.push({ch, w, adv});
-        totalAdvance += adv;
-      }
-      const totalAngle = totalAdvance / R;
-
-      // 文字を左→右で配置
-      let current = -totalAngle / 2;
-      for (const p of parts) {
-        const dTheta = p.adv / R;
-        const theta  = current + dTheta / 2;
-
-        const x = s * R * Math.sin(theta);
-        const y = -s * R * Math.cos(theta);
-
-        anyCtx.save();
-        anyCtx.translate(x, y);
-        // アーチの接線方向へ回す。スマイル（下凸）は上下が反転するのでπを足す
-        anyCtx.rotate(theta + (s === -1 ? Math.PI : 0));
-        drawOne(p.ch);
-        anyCtx.restore();
-
-        current += dTheta;
-      }
-    }
-
-    // --- 選択されたオブジェクトの値をUIに反映する ---
-    function syncCurveUIFromSelected() {
-      if (selectedObject && selectedObject.type === 'text') {
-        textCurveMode.value = selectedObject.textShape || 'straight';
-        textCurveRadius.value = selectedObject.curveRadius || 800;
-        textCurveRadiusValue.textContent = textCurveRadius.value + 'px';
-        textLetterSpacing.value = (selectedObject.letterSpacingEm != null) ? selectedObject.letterSpacingEm : 0.05;
-        textLetterSpacingValue.textContent = textLetterSpacing.value + 'em';
-      }
-    }
-
     /**
      * デコレーションオブジェクト（テキスト、スタンプ）をキャンバスに描画します。
      */
@@ -937,11 +820,37 @@
         ctx.scale(obj.scale, obj.scale);
 
         if (obj.type === 'text') {
-          // 共通関数でカーブ描画（tempCtx を渡す）
-          drawTextWithOutline(tempCtx, obj);
+          ctx.fillStyle = obj.color;
 
-        } else if (obj.type === 'image') {
-          tempCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+          // ← 相殺をやめる：そのままのフォントサイズで描く
+          ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          // === ２重ふちどり ===
+          if (obj.outlineEnabled) {
+            const ratio  = obj.outlineWidthRatio || 0.12;
+            const outerW = Math.max(1, obj.fontSize * ratio);   // 外側（スライダー連動）
+            const innerW = Math.max(1, outerW * 0.35);           // 内側＝外側の半分くらい
+
+            // 1) 外側（選んだ色）
+            ctx.lineJoin   = 'round';
+            ctx.miterLimit = 2;
+            ctx.strokeStyle = obj.outlineColor || '#000000';
+            ctx.lineWidth   = outerW;
+            ctx.strokeText(obj.content, 0, 0);
+
+            // 2) 内側（白固定）
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth   = innerW;
+            ctx.strokeText(obj.content, 0, 0);
+          }
+
+          // 3) 本体（塗り）
+          ctx.fillStyle = obj.color;
+          ctx.fillText(obj.content, 0, 0);
+
+
         } else if (obj.type === 'image') {
           // 画像を描画（中心座標が0,0になるようにオフセット）
           ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
@@ -1014,12 +923,12 @@
       // 2. オブジェクトのローカル座標系での幅と高さを計算
       let objWidth, objHeight;
       if (obj.type === 'text') {
-        // ← アーチ対応の共通描画
-        drawTextWithOutline(ctx, obj);
-
-      } else if (obj.type === 'image') {
-        // 画像（既存のまま）
-        ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+        // テキストの場合、現在のフォント設定でテキストの実際の幅を測定
+        ctx.save();
+        ctx.font = `${obj.fontSize}px ${obj.fontFamily}`; // オリジナルのフォントサイズで測定
+        objWidth = ctx.measureText(obj.content).width;
+        objHeight = obj.fontSize * 1.2; // テキストの高さは行高を考慮
+        ctx.restore();
       } else if (obj.type === 'image') {
         objWidth = obj.width;
         objHeight = obj.height;
@@ -1163,12 +1072,33 @@
         tempCtx.scale(obj.scale, obj.scale);
 
         if (obj.type === 'text') {
-          // ← アーチ対応の共通描画
-          drawTextWithOutline(ctx, obj);
+          tempCtx.font = `${obj.fontSize}px ${obj.fontFamily}`;
+          tempCtx.textAlign = 'center';
+          tempCtx.textBaseline = 'middle';
 
-        } else if (obj.type === 'image') {
-          // 画像（既存のまま）
-          ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+          // === ２重ふちどり（書き出し用） ===
+          if (obj.outlineEnabled) {
+            const ratio  = obj.outlineWidthRatio || 0.12;
+            const outerW = Math.max(1, obj.fontSize * ratio);
+            const innerW = Math.max(1, outerW * 0.5);
+
+            // 外側
+            tempCtx.lineJoin   = 'round';
+            tempCtx.miterLimit = 2;
+            tempCtx.strokeStyle = obj.outlineColor || '#000000';
+            tempCtx.lineWidth   = outerW;
+            tempCtx.strokeText(obj.content, 0, 0);
+
+            // 内側（白）
+            tempCtx.strokeStyle = '#ffffff';
+            tempCtx.lineWidth   = innerW;
+            tempCtx.strokeText(obj.content, 0, 0);
+          }
+
+          // 本体（塗り）
+          tempCtx.fillStyle = obj.color;
+          tempCtx.fillText(obj.content, 0, 0);
+
         } else if (obj.type === 'image') {
           tempCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
         }
@@ -1201,26 +1131,20 @@
       const text = customText.value.trim();
       if (!text) return; // テキストが空なら何もしない
       const newText = {
-        id: Date.now(),
+        id: Date.now(), // 一意なID
         type: 'text',
         content: text,
-        x: mainCanvas.width / 2,
+        x: mainCanvas.width / 2, // キャンバス中央に配置
         y: mainCanvas.height / 2,
         scale: 1,
         rotation: 0,
         color: colorPicker.value,
         fontFamily: fontPicker.value,
-        fontSize: 500,
+        fontSize: 500, // 初期フォントサイズ
 
-        // 縁取り
         outlineEnabled: outlineToggle.checked,
         outlineColor: outlineColorPicker.value,
         outlineWidthRatio: parseInt(outlineWidthPercent.value, 10) / 100,
-
-        // ★ アーチ関連（UI値を初期値に）
-        textShape: (textCurveMode?.value) || 'straight',           // 'straight' | 'archUp' | 'archDown'
-        curveRadius: parseInt(textCurveRadius?.value || '800', 10),// px
-        letterSpacingEm: parseFloat(textLetterSpacing?.value || '0.05') // em
       };
 
       decorationObjects.push(newText); // 配列に追加
@@ -1439,30 +1363,6 @@
     outlineWidthPercent.addEventListener('input', () => {
       outlineWidthValue.textContent = outlineWidthPercent.value + '%';
       updateSelectedTextOutline(obj => obj.outlineWidthRatio = parseInt(outlineWidthPercent.value, 10) / 100);
-    });
-    
-    // --- カーブ配置イベント ---
-    textCurveMode.addEventListener('change', () => {
-      if (selectedObject && selectedObject.type === 'text') {
-        selectedObject.textShape = textCurveMode.value; // 'straight' | 'archUp' | 'archDown'
-        drawAll();
-      }
-    });
-
-    textCurveRadius.addEventListener('input', () => {
-      textCurveRadiusValue.textContent = textCurveRadius.value + 'px';
-      if (selectedObject && selectedObject.type === 'text') {
-        selectedObject.curveRadius = parseInt(textCurveRadius.value, 10);
-        drawAll();
-      }
-    });
-
-    textLetterSpacing.addEventListener('input', () => {
-      textLetterSpacingValue.textContent = textLetterSpacing.value + 'em';
-      if (selectedObject && selectedObject.type === 'text') {
-        selectedObject.letterSpacingEm = parseFloat(textLetterSpacing.value);
-        drawAll();
-      }
     });
 
 
