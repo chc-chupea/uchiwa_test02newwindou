@@ -431,28 +431,6 @@
           </div>
           <!-- ▲ 縁取り設定（ここまで追加） -->
 
-          <!-- ▼ アーチ文字（カーブ）設定（ここから追加） -->
-          <div id="arcControls" class="control-row" style="margin: 10px 0;">
-            <label>
-              <input type="checkbox" id="arcToggle">
-              アーチにする
-            </label>
-
-            <label style="margin-left:8px;">
-              カーブ（角度）：
-              <input type="range" id="arcAngle" min="0" max="180" value="60" step="1">
-              <span id="arcAngleValue">60°</span>
-            </label>
-
-            <label style="margin-left:8px;">
-              向き：
-              <select id="arcDirection">
-                <option value="up">上向き（虹型）</option>
-                <option value="down">下向き（スマイル型）</option>
-              </select>
-            </label>
-          </div>
-          <!-- ▲ アーチ文字（カーブ）設定（ここまで追加） -->
 
         <button onclick="addTextToOverlay()">テキスト追加</button>
       </section>
@@ -555,38 +533,6 @@
     const outlineColorPicker = document.getElementById('outlineColorPicker');
     const outlineWidthPercent = document.getElementById('outlineWidthPercent');
     const outlineWidthValue = document.getElementById('outlineWidthValue');
-    
-    // --- アーチ（カーブ）コントロールを参照する ---
-    const arcToggle = document.getElementById('arcToggle');
-    const arcAngle = document.getElementById('arcAngle');
-    const arcAngleValue = document.getElementById('arcAngleValue');
-    const arcDirection = document.getElementById('arcDirection');
-
-    // 角度スライダーの数字を表示
-    arcAngle.addEventListener('input', () => {
-      arcAngleValue.textContent = arcAngle.value + '°';
-      if (selectedObject && selectedObject.type === 'text') {
-        selectedObject.arcAngleDeg = parseInt(arcAngle.value, 10);
-        drawAll();
-      }
-    });
-
-    // チェックON/OFFでアーチ切替
-    arcToggle.addEventListener('change', () => {
-      if (selectedObject && selectedObject.type === 'text') {
-        selectedObject.arcEnabled = arcToggle.checked;
-        drawAll();
-      }
-    });
-
-    // 向き変更（上/下）
-    arcDirection.addEventListener('change', () => {
-      if (selectedObject && selectedObject.type === 'text') {
-        selectedObject.arcDirection = arcDirection.value; // 'up' or 'down'
-        drawAll();
-      }
-    });
-
 
     // スライダーの数字を表示に反映
     outlineWidthPercent.addEventListener('input', () => {
@@ -765,14 +711,7 @@
             rotation: obj.rotation,
             color: obj.color,
             fontFamily: obj.fontFamily,
-            fontSize: obj.fontSize,
-
-            outlineEnabled: obj.outlineEnabled,
-            outlineColor: obj.outlineColor,
-            outlineWidthRatio: obj.outlineWidthRatio,
-            arcEnabled: obj.arcEnabled,
-            arcAngleDeg: obj.arcAngleDeg,
-            arcDirection: obj.arcDirection
+            fontSize: obj.fontSize
           };
         }
       });
@@ -826,15 +765,7 @@
             rotation: item.rotation,
             color: item.color,
             fontFamily: item.fontFamily,
-            fontSize: item.fontSize,
-
-
-            outlineEnabled: item.outlineEnabled,
-            outlineColor: item.outlineColor,
-            outlineWidthRatio: item.outlineWidthRatio,
-            arcEnabled: item.arcEnabled,
-            arcAngleDeg: item.arcAngleDeg,
-            arcDirection: item.arcDirection
+            fontSize: item.fontSize
           };
         }
       });
@@ -877,157 +808,69 @@
       ctx.restore(); // 保存した状態に戻す
     }
 
-    // === アーチ文字（1文字ずつ円弧に沿って描く） ===
-    function drawArchedTextOnContext(context, obj) {
-      const text = obj.content || '';
-      if (!text) return;
-
-      context.save();
-      context.font = `${obj.fontSize}px ${obj.fontFamily}`;
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-
-      // 文字ごとの幅を測り合計（弧の長さ）
-      const widths = [];
-      let totalWidth = 0;
-      for (const ch of text) {
-        const w = context.measureText(ch).width;
-        widths.push(w);
-        totalWidth += w;
-      }
-
-      const angleDeg = Math.max(0, Math.min(180, obj.arcAngleDeg || 60));
-      if (angleDeg === 0 || totalWidth === 0) {
-        // 角度0なら普通に描く（２重ふちどり→塗り）
-        if (obj.outlineEnabled) {
-          const ratio  = obj.outlineWidthRatio || 0.12;
-          const outerW = Math.max(1, obj.fontSize * ratio); // 外側
-          const innerW = Math.max(1, outerW * 0.5);         // 内側=外側の半分くらい
-          context.lineJoin = 'round';
-          context.miterLimit = 2;
-          context.strokeStyle = obj.outlineColor || '#000000';
-          context.lineWidth = outerW;
-          context.strokeText(text, 0, 0);
-          context.strokeStyle = '#ffffff';
-          context.lineWidth = innerW;
-          context.strokeText(text, 0, 0);
-        }
-        context.fillStyle = obj.color;
-        context.fillText(text, 0, 0);
-        context.restore();
-        return;
-      }
-
-      const theta = angleDeg * Math.PI / 180; // 中心角
-      const r = totalWidth / theta;           // 半径 r = 弧長 / 中心角
-      const start = -theta / 2;               // 左端開始（中央揃え）
-      const down = (obj.arcDirection === 'down');
-      let acc = 0;
-
-      for (let i = 0; i < text.length; i++) {
-        const ch = text[i];
-        const w = widths[i];
-        const dAngle = w / r;               // その文字ぶんの角度
-        const a = start + acc + dAngle / 2; // 文字の中央角
-
-        context.save();
-        context.rotate(a);
-        context.translate(0, down ? r : -r); // 上: -r / 下: +r
-        if (down) context.rotate(Math.PI);   // 下向きでも正立
-
-        // ２重ふちどり
-        if (obj.outlineEnabled) {
-          const ratio  = obj.outlineWidthRatio || 0.12;
-          const outerW = Math.max(1, obj.fontSize * ratio);
-          const innerW = Math.max(1, outerW * 0.5);
-          context.lineJoin = 'round';
-          context.miterLimit = 2;
-
-          context.strokeStyle = obj.outlineColor || '#000000'; // 外側（色選択）
-          context.lineWidth = outerW;
-          context.strokeText(ch, 0, 0);
-
-          context.strokeStyle = '#ffffff';                     // 内側（白）
-          context.lineWidth = innerW;
-          context.strokeText(ch, 0, 0);
-        }
-
-        context.fillStyle = obj.color; // 本体（塗り）
-        context.fillText(ch, 0, 0);
-        context.restore();
-
-        acc += dAngle;
-      }
-
-      context.restore();
-    }
-
-
-
-
-
-
-
-
-     /**
+    /**
      * デコレーションオブジェクト（テキスト、スタンプ）をキャンバスに描画します。
      */
     function drawDecorations() {
       decorationObjects.forEach(obj => {
         ctx.save();
+        // オブジェクトの中心を基準に移動、回転、拡大縮小
         ctx.translate(obj.x, obj.y);
         ctx.rotate(obj.rotation);
         ctx.scale(obj.scale, obj.scale);
 
         if (obj.type === 'text') {
+          ctx.fillStyle = obj.color;
+
+          // ← 相殺をやめる：そのままのフォントサイズで描く
           ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
-          if (obj.arcEnabled) {
-            // ← アーチ描画
-            drawArchedTextOnContext(ctx, obj);
-          } else { 
+          // === ２重ふちどり ===
+          if (obj.outlineEnabled) {
+            const ratio  = obj.outlineWidthRatio || 0.12;
+            const outerW = Math.max(1, obj.fontSize * ratio);   // 外側（スライダー連動）
+            const innerW = Math.max(1, outerW * 0.35);           // 内側＝外側の半分くらい
 
-            // ← まっすぐ描画（２重ふちどり→塗り）
-            if (obj.outlineEnabled) {
-              const ratio  = obj.outlineWidthRatio || 0.12;
-              const outerW = Math.max(1, obj.fontSize * ratio);
-              const innerW = Math.max(1, outerW * 0.5);
-              ctx.lineJoin = 'round';
-              ctx.miterLimit = 2;
+            // 1) 外側（選んだ色）
+            ctx.lineJoin   = 'round';
+            ctx.miterLimit = 2;
+            ctx.strokeStyle = obj.outlineColor || '#000000';
+            ctx.lineWidth   = outerW;
+            ctx.strokeText(obj.content, 0, 0);
 
-              ctx.strokeStyle = obj.outlineColor || '#000000'; // 外側
-              ctx.lineWidth = outerW;
-              ctx.strokeText(obj.content, 0, 0);
-
-              ctx.strokeStyle = '#ffffff';                     // 内側（白）
-              ctx.lineWidth = innerW;
-              ctx.strokeText(obj.content, 0, 0);
-            }
-            ctx.fillStyle = obj.color;                         // 本体（塗り）
-            ctx.fillText(obj.content, 0, 0);
+            // 2) 内側（白固定）
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth   = innerW;
+            ctx.strokeText(obj.content, 0, 0);
           }
+
+          // 3) 本体（塗り）
+          ctx.fillStyle = obj.color;
+          ctx.fillText(obj.content, 0, 0);
+
+
         } else if (obj.type === 'image') {
+          // 画像を描画（中心座標が0,0になるようにオフセット）
           ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
         }
 
-        // 選択枠など（あなたの元コード）…
+        // 選択中のオブジェクトに枠線を表示
         if (obj === selectedObject) {
           ctx.strokeStyle = '#42a5f5';
-          ctx.lineWidth = 10 / obj.scale;
-          ctx.setLineDash([20 / obj.scale, 10 / obj.scale]);
+          ctx.lineWidth = 10 / obj.scale; // スケーリングに合わせて線幅を調整
+          ctx.setLineDash([20 / obj.scale, 10 / obj.scale]); // スケーリングに合わせて点線の間隔を調整
+          // オブジェクトの描画サイズを計算し、枠線を描画
           const rectWidth  = obj.type === 'text' ? ctx.measureText(obj.content).width : obj.width;
           const rectHeight = obj.type === 'text' ? obj.fontSize * 1.2 : obj.height;
           ctx.strokeRect(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
-          ctx.setLineDash([]);
+          ctx.setLineDash([]); // 点線モードをリセット
         }
 
         ctx.restore();
       });
     }
-
-
 
     /**
      * キャンバス全体をクリアし、写真とデコレーションを再描画します。
@@ -1195,41 +1038,33 @@
       drawAll(); // 全体を再描画
     });
 
-
-
     /**
      * 決定 → プレビューボタンの処理
      */
     generateBtn.addEventListener('click', () => {
-      // オフスクリーン（高解像度）キャンバス
+      // ... 既存のチェックロジック ...
+
+      // 高解像度での最終画像を生成するためのオフスクリーンキャンバス
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = mainCanvas.width;
       tempCanvas.height = mainCanvas.height;
       const tempCtx = tempCanvas.getContext('2d');
 
-      // 1) 背景
+      // 1. まず背景色で全体を塗りつぶす
       tempCtx.fillStyle = backgroundColor;
       tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-      // 2) 写真
+      // 2. 写真を描画（存在する場合）
       if (uploadedImg) {
         tempCtx.save();
         tempCtx.translate(photoObject.x, photoObject.y);
         tempCtx.rotate(photoObject.rotation);
         tempCtx.scale(photoObject.scale, photoObject.scale);
-
-        // ← フィルターを適用
-        if (currentFilter && currentFilter !== 'none') {
-          tempCtx.filter = currentFilter;
-        } else {
-          tempCtx.filter = 'none';
-        }
-
         tempCtx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
         tempCtx.restore();
       }
 
-      // 3) デコ（テキスト＆画像）
+      // 3. デコレーションを描画
       decorationObjects.forEach(obj => {
         tempCtx.save();
         tempCtx.translate(obj.x, obj.y);
@@ -1241,29 +1076,29 @@
           tempCtx.textAlign = 'center';
           tempCtx.textBaseline = 'middle';
 
-          if (obj.arcEnabled) {
-            // アーチ文字
-            drawArchedTextOnContext(tempCtx, obj);
-          } else {
-            // まっすぐ文字（２重ふちどり＋塗り）
-            if (obj.outlineEnabled) {
-              const ratio  = obj.outlineWidthRatio || 0.12;
-              const outerW = Math.max(1, obj.fontSize * ratio);
-              const innerW = Math.max(1, outerW * 0.35);
-              tempCtx.lineJoin = 'round';
-              tempCtx.miterLimit = 2;
+          // === ２重ふちどり（書き出し用） ===
+          if (obj.outlineEnabled) {
+            const ratio  = obj.outlineWidthRatio || 0.12;
+            const outerW = Math.max(1, obj.fontSize * ratio);
+            const innerW = Math.max(1, outerW * 0.5);
 
-              tempCtx.strokeStyle = obj.outlineColor || '#000000'; // 外側
-              tempCtx.lineWidth = outerW;
-              tempCtx.strokeText(obj.content, 0, 0);
+            // 外側
+            tempCtx.lineJoin   = 'round';
+            tempCtx.miterLimit = 2;
+            tempCtx.strokeStyle = obj.outlineColor || '#000000';
+            tempCtx.lineWidth   = outerW;
+            tempCtx.strokeText(obj.content, 0, 0);
 
-              tempCtx.strokeStyle = '#ffffff'; // 内側（白）
-              tempCtx.lineWidth = innerW;
-              tempCtx.strokeText(obj.content, 0, 0);
-            }
-            tempCtx.fillStyle = obj.color;
-            tempCtx.fillText(obj.content, 0, 0);
+            // 内側（白）
+            tempCtx.strokeStyle = '#ffffff';
+            tempCtx.lineWidth   = innerW;
+            tempCtx.strokeText(obj.content, 0, 0);
           }
+
+          // 本体（塗り）
+          tempCtx.fillStyle = obj.color;
+          tempCtx.fillText(obj.content, 0, 0);
+
         } else if (obj.type === 'image') {
           tempCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
         }
@@ -1271,22 +1106,22 @@
         tempCtx.restore();
       });
 
-    // 4) 高解像度テンプレを重ねてプレビュー表示
-    const templateHighRes = new Image();
-    templateHighRes.onload = () => {
-      tempCtx.drawImage(templateHighRes, 0, 0, tempCanvas.width, tempCanvas.height);
-      previewImage.src = tempCanvas.toDataURL('image/png');
+      // 4. 高解像度うちわテンプレートを重ねる
+      const templateHighRes = new Image();
+      templateHighRes.onload = () => {
+        tempCtx.drawImage(templateHighRes, 0, 0, tempCanvas.width, tempCanvas.height);
+        previewImage.src = tempCanvas.toDataURL('image/png'); // 完成イメージをDataURLとして設定
 
-      areaResult.style.display = 'block'; // ★ 完成イメージエリア全体を表示
-      previewWrapper.style.display = 'block'; // プレビュー表示エリアを表示
-      goToOrderFormBtn.style.display = 'block'; // 注文フォームボタンを表示
+        areaResult.style.display = 'block'; // ★ 完成イメージエリア全体を表示
+        previewWrapper.style.display = 'block'; // プレビュー表示エリアを表示
+        goToOrderFormBtn.style.display = 'block'; // 注文フォームボタンを表示
 
-      // 保存案内メッセージ
-      previewNotice.innerHTML = `iPhone：画像を👆長押しして「“写真”に追加」を選んで保存してください。<br>Android：画像を👆長押しして「画像を保存」を選択してください。`;
-      areaResult.scrollIntoView({ behavior: 'smooth' }); // 完成イメージエリアへスクロール
-    };
-    templateHighRes.src = templateSelector.value; // 選択された高解像度テンプレートを読み込む
-  });
+        // 保存案内メッセージ
+        previewNotice.innerHTML = `iPhone：画像を👆長押しして「“写真”に追加」を選んで保存してください。<br>Android：画像を👆長押しして「画像を保存」を選択してください。`;
+        areaResult.scrollIntoView({ behavior: 'smooth' }); // 完成イメージエリアへスクロール
+      };
+      templateHighRes.src = templateSelector.value; // 選択された高解像度テンプレートを読み込む
+    });
 
     // --- デコレーションオブジェクト追加機能 ---
     /**
@@ -1310,12 +1145,6 @@
         outlineEnabled: outlineToggle.checked,
         outlineColor: outlineColorPicker.value,
         outlineWidthRatio: parseInt(outlineWidthPercent.value, 10) / 100,
-
-        // ▼▼ ここからアーチ追加（3行） ▼▼
-        arcEnabled: arcToggle.checked,
-        arcAngleDeg: parseInt(arcAngle.value, 10), // 0〜180
-        arcDirection: arcDirection.value,          // 'up' / 'down'
-        // ▲▲ ここまでアーチ追加 ▲▲
       };
 
       decorationObjects.push(newText); // 配列に追加
