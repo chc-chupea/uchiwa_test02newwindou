@@ -431,6 +431,33 @@
           </div>
           <!-- ▲ 縁取り設定（ここまで追加） -->
 
+          <!-- ▼ アーチ文字設定（ここから追加） -->
+          <div id="archControls" class="control-row" style="margin:10px 0 14px;">
+            <label>
+              <input type="checkbox" id="archToggle">
+              アーチ文字にする
+            </label>
+
+            <div style="margin-top:8px;">
+              <span style="min-width:6em; display:inline-block;">形：</span>
+              <label style="margin-right:10px;">
+                <input type="radio" name="archStyle" value="rainbow" checked> 虹型（∩）
+              </label>
+              <label>
+                <input type="radio" name="archStyle" value="smile"> スマイル型（∪）
+              </label>
+            </div>
+
+            <div style="margin-top:8px;">
+              <span style="min-width:6em; display:inline-block;">カーブ：</span>
+              <input type="range" id="archAmount" min="0" max="100" value="50" step="1">
+              <span id="archAmountValue">50</span>
+            </div>
+          </div>
+          <!-- ▲ アーチ文字設定（ここまで追加） -->
+
+
+
 
         <button onclick="addTextToOverlay()">テキスト追加</button>
       </section>
@@ -533,6 +560,14 @@
     const outlineColorPicker = document.getElementById('outlineColorPicker');
     const outlineWidthPercent = document.getElementById('outlineWidthPercent');
     const outlineWidthValue = document.getElementById('outlineWidthValue');
+
+    // --- アーチ文字コントロールを参照する ---
+    const archToggle = document.getElementById('archToggle');
+    const archStyleRadios = document.querySelectorAll('input[name="archStyle"]');
+    const archAmount = document.getElementById('archAmount');
+    const archAmountValue = document.getElementById('archAmountValue');
+
+
 
     // スライダーの数字を表示に反映
     outlineWidthPercent.addEventListener('input', () => {
@@ -808,6 +843,88 @@
       ctx.restore(); // 保存した状態に戻す
     }
 
+    // --- 直線／アーチ文字の共通描画関数 -----------------------------
+    function drawTextByStyle(ctx, obj) {
+      // フォントとアラインを統一
+      ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const ratio  = obj.outlineWidthRatio || 0.12;
+      const outerW = Math.max(1, obj.fontSize * ratio);
+      const innerW = Math.max(1, outerW * 0.35);
+
+      const strokeAndFill = (ch) => {
+        if (obj.outlineEnabled) {
+          ctx.lineJoin = 'round';
+          ctx.miterLimit = 2;
+
+          // 外側
+          ctx.strokeStyle = obj.outlineColor || '#000000';
+          ctx.lineWidth   = outerW;
+          ctx.strokeText(ch, 0, 0);
+
+          // 内側（白）
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth   = innerW;
+          ctx.strokeText(ch, 0, 0);
+        }
+        // 本体
+        ctx.fillStyle = obj.color;
+        ctx.fillText(ch, 0, 0);
+      };
+
+      const isArched = !!obj.isArched && (obj.archAmount || 0) > 0;
+
+      if (!isArched) {
+        // まっすぐ描画（従来）
+        strokeAndFill(obj.content);
+        return;
+      }
+
+      // --- アーチ描画 ---
+      const text = obj.content || '';
+      if (!text) return;
+
+      const chars  = [...text];
+      const widths = chars.map(ch => ctx.measureText(ch).width);
+      const totalWidth = widths.reduce((a, b) => a + b, 0);
+
+      const MAX_RAD = 2.4; // 最大カーブ角（約137°）
+      const amount  = Math.max(0, Math.min(100, obj.archAmount || 0));
+      const theta   = Math.max(0.001, MAX_RAD * (amount / 100)); // 全体角度
+
+      const R = totalWidth / theta; // 弧長 = R * θ
+      const dir = (obj.archStyle === 'smile') ? +1 : -1; // smile=∪(下にふくらむ), rainbow=∩(上にふくらむ)
+
+      let angle = -theta / 2; // 左端スタート
+      for (let i = 0; i < chars.length; i++) {
+        const w = widths[i];
+        const charAngle = w / R;
+        const mid = angle + charAngle / 2; // その文字の中心角
+
+        const x = R * Math.sin(mid);
+        const y = dir * R * (1 - Math.cos(mid)); // φ=0 で y=0 になる座標系
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(dir * mid); // 接線方向に回転
+
+        strokeAndFill(chars[i]);
+
+        ctx.restore();
+        angle += charAngle;
+      }
+    }
+    // --------------------------------------------------------------
+
+
+
+
+
+
+
+
     /**
      * デコレーションオブジェクト（テキスト、スタンプ）をキャンバスに描画します。
      */
@@ -820,35 +937,7 @@
         ctx.scale(obj.scale, obj.scale);
 
         if (obj.type === 'text') {
-          ctx.fillStyle = obj.color;
-
-          // ← 相殺をやめる：そのままのフォントサイズで描く
-          ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-
-          // === ２重ふちどり ===
-          if (obj.outlineEnabled) {
-            const ratio  = obj.outlineWidthRatio || 0.12;
-            const outerW = Math.max(1, obj.fontSize * ratio);   // 外側（スライダー連動）
-            const innerW = Math.max(1, outerW * 0.35);           // 内側＝外側の半分くらい
-
-            // 1) 外側（選んだ色）
-            ctx.lineJoin   = 'round';
-            ctx.miterLimit = 2;
-            ctx.strokeStyle = obj.outlineColor || '#000000';
-            ctx.lineWidth   = outerW;
-            ctx.strokeText(obj.content, 0, 0);
-
-            // 2) 内側（白固定）
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth   = innerW;
-            ctx.strokeText(obj.content, 0, 0);
-          }
-
-          // 3) 本体（塗り）
-          ctx.fillStyle = obj.color;
-          ctx.fillText(obj.content, 0, 0);
+          drawTextByStyle(ctx, obj);
 
 
         } else if (obj.type === 'image') {
@@ -1072,32 +1161,7 @@
         tempCtx.scale(obj.scale, obj.scale);
 
         if (obj.type === 'text') {
-          tempCtx.font = `${obj.fontSize}px ${obj.fontFamily}`;
-          tempCtx.textAlign = 'center';
-          tempCtx.textBaseline = 'middle';
-
-          // === ２重ふちどり（書き出し用） ===
-          if (obj.outlineEnabled) {
-            const ratio  = obj.outlineWidthRatio || 0.12;
-            const outerW = Math.max(1, obj.fontSize * ratio);
-            const innerW = Math.max(1, outerW * 0.5);
-
-            // 外側
-            tempCtx.lineJoin   = 'round';
-            tempCtx.miterLimit = 2;
-            tempCtx.strokeStyle = obj.outlineColor || '#000000';
-            tempCtx.lineWidth   = outerW;
-            tempCtx.strokeText(obj.content, 0, 0);
-
-            // 内側（白）
-            tempCtx.strokeStyle = '#ffffff';
-            tempCtx.lineWidth   = innerW;
-            tempCtx.strokeText(obj.content, 0, 0);
-          }
-
-          // 本体（塗り）
-          tempCtx.fillStyle = obj.color;
-          tempCtx.fillText(obj.content, 0, 0);
+          drawTextByStyle(tempCtx, obj);
 
         } else if (obj.type === 'image') {
           tempCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
@@ -1145,6 +1209,9 @@
         outlineEnabled: outlineToggle.checked,
         outlineColor: outlineColorPicker.value,
         outlineWidthRatio: parseInt(outlineWidthPercent.value, 10) / 100,
+        isArched: false,
+        archStyle: 'rainbow',
+        archAmount: 50,
       };
 
       decorationObjects.push(newText); // 配列に追加
@@ -1363,6 +1430,30 @@
     outlineWidthPercent.addEventListener('input', () => {
       outlineWidthValue.textContent = outlineWidthPercent.value + '%';
       updateSelectedTextOutline(obj => obj.outlineWidthRatio = parseInt(outlineWidthPercent.value, 10) / 100);
+    });
+
+    // --- アーチ文字のリアルタイム更新 ---
+    function updateSelectedTextArch(updater) {
+      if (selectedObject && selectedObject.type === 'text') {
+        updater(selectedObject);
+        drawAll();
+      }
+    }
+
+    archToggle.addEventListener('change', () => {
+      updateSelectedTextArch(obj => obj.isArched = archToggle.checked);
+    });
+
+    archStyleRadios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        const checked = document.querySelector('input[name="archStyle"]:checked');
+        updateSelectedTextArch(obj => obj.archStyle = checked ? checked.value : 'rainbow');
+      });
+    });
+
+    archAmount.addEventListener('input', () => {
+      archAmountValue.textContent = archAmount.value;
+      updateSelectedTextArch(obj => obj.archAmount = parseInt(archAmount.value, 10));
     });
 
 
