@@ -388,8 +388,7 @@
     <div class="cc-panels">
       <!-- テキスト -->
       <section id="panel-text" class="cc-panel">
-        <button onclick="addTextToOverlay()">テキスト追加</button>
-        <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
+                <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
         <div style="display: flex; gap: 5px; margin-bottom: 10px;">
           <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
           <select id="fontPicker" class="native-font-select">
@@ -408,6 +407,7 @@
           </select>
           <div class="font-picker-wrap">
             <button id="fontPickerBtn" type="button">フォントを選ぶ</button>
+            <button onclick="addTextToOverlay()">テキスト追加</button>
             <div id="fontDropdown" hidden></div>
           </div>
         </div>
