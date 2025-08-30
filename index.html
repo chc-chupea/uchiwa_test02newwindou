@@ -1314,43 +1314,72 @@
     });
     // --- ここまで置き換え ---
     
-    // ここから追加：裏面作成モードに切り替える処理（変更済み：裏面は「1) 裏面の背景を決める」からスタート）
+    // ここから追加：裏面作成モードに切り替える処理（変更：裏面は完全リセットして "1) 裏面の背景を決める" から開始）
     document.getElementById('makeBackBtn').addEventListener('click', () => {
       // 1) モード切替
       mode = 'back';
 
-      // 2) エディタの状態をリセット（裏面でも写真は使えるが、まだ未選択なのでロック状態にしておく）
+      // 2) 完全リセット（表での状態は保持したい場合は frontImageDataUrl は触らない）
       uploadedImg = null;
       photoObject = null;
-      isPhotoLocked = true;    // 初期は写真操作をロック（画像を選べば imageLoader 側で解除されます）
-      decorationObjects = [];
+      isPhotoLocked = true;      // 初期状態は写真操作をロック（写真を選択したら解除される想定）
+      decorationObjects = [];    // デコを空に
       selectedObject = null;
       history = [];
       historyIndex = -1;
 
-      // 3) 背景色は表で最後に選んでいた色を引き継ぐ（空なら白）
-      backgroundColor = backgroundColorPicker.value || '#ffffff';
+      // 3) 入力コントロールを初期値に戻す（安全に getElementById して存在チェック）
+      const bgPicker = document.getElementById('backgroundColorPicker');
+      if (bgPicker) {
+        bgPicker.value = '#ffffff'; // 初期色を白に（お好みで変更可）
+      }
+      backgroundColor = '#ffffff';
 
-      // 4) UI の切替：プレビューを隠し、最初に「1) 背景を決める」エリアを表示する
+      const tpl = document.getElementById('templateSelector');
+      if (tpl) {
+        tpl.selectedIndex = 0; // 最初のテンプレートに戻す
+        if (typeof preloadTemplate === 'function') {
+          preloadTemplate(tpl.value); // プリロード関数があれば呼ぶ（存在チェック）
+        }
+      }
+
+      // 4) UI 表示を「1) 背景を決める」エリアに合わせる
       const areaSelect = document.getElementById('area-select');
       const areaCanvas = document.getElementById('area-canvas');
-      areaResult.style.display = 'none';       // プレビューは隠す
-      areaDecorations.style.display = 'none';  // 裏面開始時はデコはまだ見せない
-      if (areaSelect) areaSelect.style.display = 'block';  // ここがスタート位置になる
-      if (areaCanvas) areaCanvas.style.display = 'block';  // キャンバス自体は見える（編集領域は確認可能）
-      confirmPhotoBtn.style.display = 'none';  // 写真確定ボタンは未表示（写真未選択のため）
-      reEditPhotoBtn.style.display = 'none';
+      const areaDecor = document.getElementById('area-decorations');
+      const areaResultEl = document.getElementById('area-result');
 
-      // 5) 見出しの切替（ユーザに裏面モードだと分かるように）
-      const sec1 = document.getElementById('section1-title');
-      const sec2 = document.getElementById('section2-title');
-      const sec3 = document.getElementById('section3-title');
-      if (sec1) sec1.textContent = '1) 裏面の背景を決める';
-      if (sec2) sec2.textContent = '2) 裏面をデザイン';
-      if (sec3) sec3.textContent = '3) 裏面のデコレーション';
+      if (areaResultEl) areaResultEl.style.display = 'none'; // プレビューは隠す
+      if (areaDecor) areaDecor.style.display = 'none';       // デコは非表示
+      if (areaSelect) areaSelect.style.display = 'block';     // 1) 背景選択を先頭に
+      if (areaCanvas) areaCanvas.style.display = 'block';     // キャンバスは見せる（空の状態）
 
-      // 6) 再描画してスクロール
+      // 写真操作系ボタンは初期非表示（写真が無ければ確定できないため）
+      const confirmBtn = document.getElementById('confirmPhotoBtn');
+      if (confirmBtn) confirmBtn.style.display = 'none';
+      const reEditBtn = document.getElementById('reEditPhotoBtn');
+      if (reEditBtn) reEditBtn.style.display = 'none';
+
+      // 「裏面も作る」ボタンはプレビュー側にのみ出す仕様なのでここでは隠す
+      const makeBackBtnEl = document.getElementById('makeBackBtn');
+      if (makeBackBtnEl) makeBackBtnEl.style.display = 'none';
+
+      // プレビュー案内リセット
+      const previewNoticeEl = document.getElementById('previewNotice');
+      if (previewNoticeEl) previewNoticeEl.innerHTML = '';
+
+      // 5) 見出しを裏面向けの初期文言に変更
+      const s1 = document.getElementById('section1-title');
+      const s2 = document.getElementById('section2-title');
+      const s3 = document.getElementById('section3-title');
+      if (s1) s1.textContent = '1) 裏面の背景を決める';
+      if (s2) s2.textContent = '2) 裏面をデザイン';
+      if (s3) s3.textContent = '3) 裏面のデコレーション';
+
+      // 6) 初期描画（背景色だけの空の裏面を描画）
       drawAll();
+
+      // 7) スクロールして1番目のエリアへ
       if (areaSelect) areaSelect.scrollIntoView({ behavior: 'smooth' });
     });
     // ここまで追加
