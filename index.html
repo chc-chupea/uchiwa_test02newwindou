@@ -502,7 +502,6 @@
 
     <!-- 「決定 → プレビュー」ボタンをデコレーションエリア内に移動 -->
     <button id="generateBtn" class="form-button" style="margin-top: 20px;">決定 → プレビュー</button>
-    <span style="min-width:6em; display:inline-block;">プレビュー表示に少し時間がかかります</span>
   </div>
 
   <div class="area" id="area-result" style="display: none;">
@@ -511,6 +510,18 @@
       <img id="previewImage" alt="合成画像プレビュー" />
     </div>
     <div id="previewNotice" style="font-size:14px; color:black; margin-top:10px;"></div>
+
+    <!-- ここから追加 -->
+    <div id="previewSpinner" style="display:none; margin-top:10px; font-size:14px; align-items:center;">
+      <span style="display:inline-block; width:18px; height:18px; border-radius:50%; margin-right:8px; vertical-align:middle; animation:spin 1s linear infinite; background:linear-gradient(135deg,#ff9fcf,#ff6fa6);"></span>
+      画像を合成しています…（少しお待ちください）
+    </div>
+
+    <style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    /* 小さなスタイル：必要なら後でCSSファイルへ移動してください */
+    </style>
+    <!-- ここまで追加 -->
 
     <!-- ここから追加 -->
     <button id="makeBackBtn" class="form-button" style="display:none; margin-top:12px; background: linear-gradient(135deg, #ff9fcf, #ff6fa6);">
@@ -558,6 +569,29 @@
     const templateOverlay = document.getElementById('templateOverlay');
     const imageLoader = document.getElementById('imageLoader');
     const templateSelector = document.getElementById('templateSelector');
+    // --- ここから追加 ---
+    const templateCache = {}; // src -> Image
+
+    function preloadTemplate(src) {
+      if (!src) return;
+      if (templateCache[src]) return templateCache[src];
+      const img = new Image();
+      img.src = src;
+      templateCache[src] = img;
+      // decode が使えれば非同期にデコードを促す（エラーは無視）
+      if (img.decode) img.decode().catch(() => {});
+      return img;
+    }
+
+    // 選択が変わったらプリロード
+    templateSelector.addEventListener('change', () => {
+      preloadTemplate(templateSelector.value);
+    });
+
+    // ページ読み込み時に現在のテンプレートをプリロード（あれば）
+    preloadTemplate(templateSelector.value);
+    // --- ここまで追加 ---
+
     const confirmPhotoBtn = document.getElementById('confirmPhotoBtn');
     const reEditPhotoBtn = document.getElementById('reEditPhotoBtn');
     const generateBtn = document.getElementById('generateBtn');
@@ -725,6 +759,10 @@
     let historyIndex = -1;
     // 追加: 背景色を保持する変数
     let backgroundColor = '#ffffff'; // デフォルトは白
+
+    // --- ここから追加 ---
+    let isRendering = false; // generate処理中フラグ（多重クリック防止）
+    // --- ここまで追加 ---
 
     // ジェスチャー開始時のオブジェクトの状態とタッチ中心
     var initialObjX, initialObjY, initialObjScale, initialObjRotation;
@@ -1150,57 +1188,89 @@
       drawAll(); // 全体を再描画
     });
 
-    /**
-     * 決定 → プレビューボタンの処理
-     */
-    generateBtn.addEventListener('click', () => {
-      // ... 既存のチェックロジック ...
+    // --- ここから置き換え：決定 → プレビュー (改良版) ---
+    generateBtn.addEventListener('click', async () => {
+      if (isRendering) return; // 既にレンダリング中なら無視
+      isRendering = true;
+      generateBtn.disabled = true;
 
-      // 高解像度での最終画像を生成するためのオフスクリーンキャンバス
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = mainCanvas.width;
-      tempCanvas.height = mainCanvas.height;
-      const tempCtx = tempCanvas.getContext('2d');
+      // スピナー表示
+      const spinner = document.getElementById('previewSpinner');
+      if (spinner) spinner.style.display = 'flex';
 
-      // 1. まず背景色で全体を塗りつぶす
-      tempCtx.fillStyle = backgroundColor;
-      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+      try {
+        // 高解像度での最終画像を生成するためのオフスクリーンキャンバス
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = mainCanvas.width;
+        tempCanvas.height = mainCanvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
 
-      // 2. 写真を描画（存在する場合）
-      if (uploadedImg) {
-        tempCtx.save();
-        tempCtx.translate(photoObject.x, photoObject.y);
-        tempCtx.rotate(photoObject.rotation);
-        tempCtx.scale(photoObject.scale, photoObject.scale);
-        tempCtx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
-        tempCtx.restore();
-      }
+        // 1. 背景色で塗りつぶす
+        tempCtx.fillStyle = backgroundColor;
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-      // 3. デコレーションを描画
-      decorationObjects.forEach(obj => {
-        tempCtx.save();
-        tempCtx.translate(obj.x, obj.y);
-        tempCtx.rotate(obj.rotation);
-        tempCtx.scale(obj.scale, obj.scale);
-
-        if (obj.type === 'text') {
-          drawTextByStyle(tempCtx, obj);
-
-        } else if (obj.type === 'image') {
-          tempCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+        // 2. 写真を描画（存在する場合）
+        if (uploadedImg) {
+          // uploadedImg が Image 要素なら decode を試す（未完了だと待つ）
+          if (uploadedImg.decode) {
+            try { await uploadedImg.decode(); } catch(e){ /* 無視 */ }
+          }
+          tempCtx.save();
+          tempCtx.translate(photoObject.x, photoObject.y);
+          tempCtx.rotate(photoObject.rotation);
+          tempCtx.scale(photoObject.scale, photoObject.scale);
+          tempCtx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
+          tempCtx.restore();
         }
 
-        tempCtx.restore();
-      });
+        // 3. デコレーションを描画（既存のロジックをそのまま利用）
+        decorationObjects.forEach(obj => {
+          tempCtx.save();
+          tempCtx.translate(obj.x, obj.y);
+          tempCtx.rotate(obj.rotation);
+          tempCtx.scale(obj.scale, obj.scale);
 
-      // 4. 高解像度うちわテンプレートを重ねる
-      const templateHighRes = new Image();
-      templateHighRes.onload = () => {
-        tempCtx.drawImage(templateHighRes, 0, 0, tempCanvas.width, tempCanvas.height);
-        const dataUrl = tempCanvas.toDataURL('image/png'); // 最終プレビューのDataURL
-        previewImage.src = dataUrl; // 完成イメージをDataURLとして設定
+          if (obj.type === 'text') {
+            drawTextByStyle(tempCtx, obj);
+          } else if (obj.type === 'image') {
+            // 画像オブジェクトが未デコードなら試す（安全化）
+            try { obj.img && obj.img.decode && obj.img.decode().catch(()=>{}); } catch(e){}
+            tempCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+          }
+          tempCtx.restore();
+        });
 
-        // UI 表示
+        // 4. テンプレート画像（高解像度）を取得（プリロードキャッシュ優先）
+        let templateImg = templateCache[templateSelector.value];
+        if (!templateImg) {
+          templateImg = new Image();
+          templateImg.src = templateSelector.value;
+          // decode を待つ（画像が大きいときのブロッキングを小さくするため最小限で）
+          if (templateImg.decode) {
+            try { await templateImg.decode(); } catch(e){ /* 無視 */ }
+          }
+        } else {
+          // キャッシュ済みでも decode を試みる（既に完了していれば即時戻る）
+          if (templateImg.decode) {
+            try { await templateImg.decode(); } catch(e){ /* 無視 */ }
+          }
+        }
+        tempCtx.drawImage(templateImg, 0, 0, tempCanvas.width, tempCanvas.height);
+
+        // —— ここから「高速プレビュー（縮小）」を作成して即表示 —— 
+        const MAX_PREVIEW_WIDTH = 1200; // ここを小さくするとさらに速くなる（スマホ向け）
+        const previewScale = Math.min(1, MAX_PREVIEW_WIDTH / tempCanvas.width);
+        const previewCanvas = document.createElement('canvas');
+        previewCanvas.width = Math.max(1, Math.round(tempCanvas.width * previewScale));
+        previewCanvas.height = Math.max(1, Math.round(tempCanvas.height * previewScale));
+        const previewCtx = previewCanvas.getContext('2d');
+        // 低解像度でも滑らかに縮小するため drawImage を使う
+        previewCtx.drawImage(tempCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
+
+        const quickDataUrl = previewCanvas.toDataURL('image/png');
+        previewImage.src = quickDataUrl; // まずは縮小版を素早く表示（UI を塞がない）
+
+        // UI 表示（既存の表示ロジックを踏襲）
         areaResult.style.display = 'block';
         previewWrapper.style.display = 'block';
         goToOrderFormBtn.style.display = 'block';
@@ -1209,24 +1279,40 @@
         const orderNote = document.getElementById('orderNote');
 
         if (mode === 'front') {
-          // 表面を保存した状態（フロントモードの振る舞い）
           makeBackBtn.style.display = 'block';
           previewNotice.innerHTML = '📲 この画像を長押し👆してスマホに保存してください（後でフォームにアップロードします）';
           orderNote.style.display = 'block';
-          // フロントのプレビューを一時保存（必要になればここからダウンロード等に使える）
-          frontImageDataUrl = dataUrl;
+          // 一時的には縮小版を保存（必要なら後で高解像度を生成）
+          frontImageDataUrl = quickDataUrl;
         } else {
-          // 裏面を作成したときのプレビュー（バックモード）
           makeBackBtn.style.display = 'none';
           previewNotice.innerHTML = '📲 この裏面の画像も長押し👆してスマホに保存してください';
           orderNote.style.display = 'block';
         }
-
         areaResult.scrollIntoView({ behavior: 'smooth' });
-      };
-      templateHighRes.src = templateSelector.value; // 選択された高解像度テンプレートを読み込む
-    });
 
+        // —— オプション：フル解像度DataURLを遅延して生成（UIの応答性優先）
+        // (重い処理なので setTimeout で次のイベントループに回します)
+        setTimeout(() => {
+          try {
+            frontImageDataUrl = tempCanvas.toDataURL('image/png'); // 可能なら作る（時間がかかる）
+          } catch (e) {
+            console.warn('フル解像度生成に失敗しました', e);
+          }
+        }, 50);
+
+      } catch (e) {
+        console.error('preview generate error:', e);
+        alert('プレビュー生成中にエラーが発生しました。コンソールを確認してください。');
+      } finally {
+        // スピナーを消してボタンを再び有効化
+        if (spinner) spinner.style.display = 'none';
+        isRendering = false;
+        generateBtn.disabled = false;
+      }
+    });
+    // --- ここまで置き換え ---
+    
     // ここから追加：裏面作成モードに切り替える処理（変更済み：裏面は「1) 裏面の背景を決める」からスタート）
     document.getElementById('makeBackBtn').addEventListener('click', () => {
       // 1) モード切替
