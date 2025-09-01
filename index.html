@@ -325,6 +325,44 @@
     /* 既存のボタン群がぎゅうぎゅうにならないように少し調整 */
     .cc-panel button { margin: 4px 2px; }
 
+    /* 👇ここから追記 */
+    /* ボトムドック */
+    .cc-toolbar {
+      position: sticky;
+      bottom: 0;
+      background: #fff;
+      padding: 8px 0 env(safe-area-inset-bottom);
+      border-top: 1px solid #ddd;
+      overflow-x: auto;
+      white-space: nowrap;
+      z-index: 100;
+    }
+
+    /* ツールボタンの横スクロール感を残す */
+    .cc-toolbar button {
+      display: inline-block;
+      margin: 0 6px;
+    }
+
+    /* パネルはツールバー直下に展開 */
+    .cc-panels {
+      position: sticky;
+      bottom: 50px; /* toolbarの高さ分 */
+      background: #fafafa;
+      max-height: 40vh;
+      overflow-y: auto;
+      border-top: 1px solid #ccc;
+    }
+
+    /* キャンバス領域を自動調整 */
+    #area-canvas {
+      height: calc(100dvh - 160px); /* ヘッダ + ドック分を引く（要調整） */
+      overflow: hidden;
+    }
+    /* 👆ここまで追記 */
+
+
+
   </style>
 </head>
 <body>
@@ -360,13 +398,7 @@
     <button id="reEditPhotoBtn" style="margin-top: 10px; display: none;">写真の再編集</button>
   </div>
 
-  <div class="area" id="area-decorations" style="display: none;">
-    <h2 id="section3-title">3) デコレーション</h2>
-    <!-- <p id="decorationNotice" style="font-size: 12px; color: #666;">
-      ※ オブジェクトをタップすると選択され、移動・サイズ変更・回転できます。
-    </p> -->
-
-    <!-- ▼▼ ここから “横スライド メニュー” を追加 ▼▼ -->
+   <!-- ▼▼ ここから “横スライド メニュー” を追加 ▼▼ -->
     <div class="cc-toolbar" role="tablist">
       <button class="cc-item active" data-target="panel-text">
         <!-- <span class="icon">T</span> --><span class="label">テキスト</span>
@@ -412,6 +444,14 @@
           </div>
         </div>
 
+
+  <div class="area" id="area-decorations" style="display: none;">
+    <h2 id="section3-title">3) デコレーション</h2>
+    <!-- <p id="decorationNotice" style="font-size: 12px; color: #666;">
+      ※ オブジェクトをタップすると選択され、移動・サイズ変更・回転できます。
+    </p> -->
+
+   
         <!-- ▼ 縁取り設定（ここから追加） -->
           <div id="outlineControls" class="control-row" style="margin-bottom: 10px;">
             <label>
@@ -570,6 +610,10 @@
     const templateOverlay = document.getElementById('templateOverlay');
     const imageLoader = document.getElementById('imageLoader');
     const templateSelector = document.getElementById('templateSelector');
+
+
+
+
     // --- ここから追加 ---
     const templateCache = {}; // src -> Image
 
@@ -1172,7 +1216,6 @@
       confirmPhotoBtn.style.display = 'none'; // 確定ボタンを非表示
       reEditPhotoBtn.style.display = 'block'; // 再編集ボタンを表示
       areaDecorations.style.display = 'block'; // デコレーションエリアを表示
-      document.getElementById('area-decorations').scrollIntoView({ behavior: 'smooth' }); // デコレーションエリアへスクロール
       saveState(); // 最初のデコレーション状態を保存
     });
 
