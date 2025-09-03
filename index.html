@@ -1296,8 +1296,8 @@
         // 重い処理なので次のイベントループに回す（UI の応答性確保）
         setTimeout(async () => {
           try {
-            const fullW = 4961; // A3 横向きの一辺（px, 300dpi）
-            const fullH = 3508; // A3 縦（px, 300dpi）
+            const fullW = 4134; // A3 横向きの一辺（px, 250dpi）
+            const fullH = 2920; // A3 縦（px, 250dpi）
             const fullCanvas = document.createElement('canvas');
             fullCanvas.width = fullW;
             fullCanvas.height = fullH;
