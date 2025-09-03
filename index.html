@@ -43,9 +43,12 @@
       position: relative;
       width: 100%;
       max-width: 900px; /* 最大幅 */
-      aspect-ratio: 4 / 3; /* アスペクト比を固定 */
+      /* 見た目比率を A3 に合わせる（実際の論理サイズは mainCanvas の width/height で決まる）*/
+      aspect-ratio: 4961 / 3508; /* A3 比率（幅:x 高さ） */
       margin: 0 auto;
       background-color: #f9f9f9;
+
+
       overflow: hidden;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -335,9 +338,9 @@
     <h2 id="section1-title">1) 背景を決める</h2>
     <label id="templateLabel">うちわのデザインフィルターを選んでね👇</label>
     <select id="templateSelector">
-      <option value="fan1-highres.png" data-lowres="fan1-lowres.png">無地</option>
-      <option value="fan2-highres.png" data-lowres="fan2-lowres.png">夏祭り①</option>
-      <option value="fan3-highres.png" data-lowres="fan3-lowres.png">夏祭り②</option>
+      <option value="fan1-highres.png" data-lowres="fan1-lowres.png">A4サイズ</option>
+      <option value="fan2-highres.png" data-lowres="fan2-lowres.png">A3サイズ♡型</option>
+      <option value="fan3-highres.png" data-lowres="fan3-lowres.png">A3サイズ</option>
     </select>
     <label for="imageLoader" id="customFileLabel">写真で背景を作る</label>
     <input type="file" id="imageLoader" accept="image/*" style="display:none;" />
@@ -350,7 +353,8 @@
   <div class="area" id="area-canvas">
     <h2 id="section2-title">2) デザイン編集スペース</h2>
     <div id="editorWrapper">
-      <canvas id="mainCanvas" width="3508" height="2480"></canvas>
+      <!-- 編集は軽量キャンバス（例：1240x877）で行う -->
+      <canvas id="mainCanvas" width="1240" height="877"></canvas>
       <img id="templateOverlay" src="fan1-lowres.png" alt="うちわテンプレート">
     </div>
     <p id="editNotice" style="font-size: 12px; color: #666; margin-top: 10px;">
@@ -1193,116 +1197,178 @@
       drawAll(); // 全体を再描画
     });
 
-    // --- ここから置き換え：決定 → プレビュー (改良版) ---
+    // --- ここから置き換え：決定 → プレビュー（低解像度で素早く表示 → 裏でA3生成） ---
     generateBtn.addEventListener('click', async () => {
-      if (isRendering) return; // 既にレンダリング中なら無視
+      if (isRendering) return; // 多重クリック防止
       isRendering = true;
       generateBtn.disabled = true;
 
-      // スピナー表示
       const spinner = document.getElementById('previewSpinner');
       if (spinner) spinner.style.display = 'flex';
 
       try {
-        // 高解像度での最終画像を生成するためのオフスクリーンキャンバス
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = mainCanvas.width;
-        tempCanvas.height = mainCanvas.height;
-        const tempCtx = tempCanvas.getContext('2d');
+        // ---------- 1) 素早い「縮小プレビュー」生成（低解像度ベース） ----------
+        const smallCanvas = document.createElement('canvas');
+        smallCanvas.width = mainCanvas.width;   // 編集用（低解像度）の論理サイズ
+        smallCanvas.height = mainCanvas.height;
+        const sctx = smallCanvas.getContext('2d');
 
-        // 1. 背景色で塗りつぶす
-        tempCtx.fillStyle = backgroundColor;
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        // 背景色を塗る
+        sctx.fillStyle = backgroundColor;
+        sctx.fillRect(0, 0, smallCanvas.width, smallCanvas.height);
 
-        // 2. 写真を描画（存在する場合）
+        // 写真（存在する場合）を簡易に描画（編集時と同じロジック。ただし低解像度座標）
         if (uploadedImg) {
-          // uploadedImg が Image 要素なら decode を試す（未完了だと待つ）
           if (uploadedImg.decode) {
-            try { await uploadedImg.decode(); } catch(e){ /* 無視 */ }
+            try { await uploadedImg.decode(); } catch(e) { /* ignore */ }
           }
-          tempCtx.save();
-          tempCtx.translate(photoObject.x, photoObject.y);
-          tempCtx.rotate(photoObject.rotation);
-          tempCtx.scale(photoObject.scale, photoObject.scale);
-          tempCtx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
-          tempCtx.restore();
+          // uploadedImg の実際のピクセルサイズに依存せず、編集時の見た目を再現するため
+          // mainCanvas 上の scale/位置を使って描く（低解像度）
+          const srcW = (uploadedImg.naturalWidth || uploadedImg.width);
+          const srcH = (uploadedImg.naturalHeight || uploadedImg.height);
+          const drawW = srcW * (photoObject.scale || 1);
+          const drawH = srcH * (photoObject.scale || 1);
+
+          sctx.save();
+          sctx.translate(photoObject.x, photoObject.y);
+          sctx.rotate(photoObject.rotation || 0);
+          sctx.drawImage(uploadedImg, -drawW / 2, -drawH / 2, drawW, drawH);
+          sctx.restore();
         }
 
-        // 3. デコレーションを描画（既存のロジックをそのまま利用）
+        // デコレーション（テキスト・スタンプ）を低解像度で描画
         decorationObjects.forEach(obj => {
-          tempCtx.save();
-          tempCtx.translate(obj.x, obj.y);
-          tempCtx.rotate(obj.rotation);
-          tempCtx.scale(obj.scale, obj.scale);
-
+          sctx.save();
+          sctx.translate(obj.x, obj.y);
+          sctx.rotate(obj.rotation || 0);
           if (obj.type === 'text') {
-            drawTextByStyle(tempCtx, obj);
+            // 既存の関数 drawTextByStyle は obj.fontSize を期待するのでそのまま呼べる
+            drawTextByStyle(sctx, obj);
           } else if (obj.type === 'image') {
-            // 画像オブジェクトが未デコードなら試す（安全化）
-            try { obj.img && obj.img.decode && obj.img.decode().catch(()=>{}); } catch(e){}
-            tempCtx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+            // obj.width/height は「編集時の論理サイズ」を保持しているはず
+            sctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
           }
-          tempCtx.restore();
+          sctx.restore();
         });
 
-        // 4. テンプレート画像（高解像度）を取得（プリロードキャッシュ優先）
-        let templateImg = templateCache[templateSelector.value];
-        if (!templateImg) {
-          templateImg = new Image();
-          templateImg.src = templateSelector.value;
-          // decode を待つ（画像が大きいときのブロッキングを小さくするため最小限で）
-          if (templateImg.decode) {
-            try { await templateImg.decode(); } catch(e){ /* 無視 */ }
-          }
+        // テンプレート（高解像度ファイルをプリロードしているならそれを使う。ただしここは縮小して描く）
+        let tplImg = templateCache[templateSelector.value];
+        if (!tplImg) {
+          tplImg = new Image();
+          tplImg.src = templateSelector.value;
+          if (tplImg.decode) try { await tplImg.decode(); } catch(e){/*ignore*/ }
         } else {
-          // キャッシュ済みでも decode を試みる（既に完了していれば即時戻る）
-          if (templateImg.decode) {
-            try { await templateImg.decode(); } catch(e){ /* 無視 */ }
-          }
+          if (tplImg.decode) try { await tplImg.decode(); } catch(e){/*ignore*/ }
         }
-        tempCtx.drawImage(templateImg, 0, 0, tempCanvas.width, tempCanvas.height);
+        sctx.drawImage(tplImg, 0, 0, smallCanvas.width, smallCanvas.height);
 
-        // —— ここから「高速プレビュー（縮小）」を作成して即表示 —— 
-        const MAX_PREVIEW_WIDTH = 1200; // ここを小さくするとさらに速くなる（スマホ向け）
-        const previewScale = Math.min(1, MAX_PREVIEW_WIDTH / tempCanvas.width);
+        // プレビュー用に縮小してすぐ表示（UI ロックを最小にする）
+        const MAX_PREVIEW_WIDTH = 1200;
+        const previewScale = Math.min(1, MAX_PREVIEW_WIDTH / smallCanvas.width);
         const previewCanvas = document.createElement('canvas');
-        previewCanvas.width = Math.max(1, Math.round(tempCanvas.width * previewScale));
-        previewCanvas.height = Math.max(1, Math.round(tempCanvas.height * previewScale));
-        const previewCtx = previewCanvas.getContext('2d');
-        // 低解像度でも滑らかに縮小するため drawImage を使う
-        previewCtx.drawImage(tempCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
-
+        previewCanvas.width = Math.max(1, Math.round(smallCanvas.width * previewScale));
+        previewCanvas.height = Math.max(1, Math.round(smallCanvas.height * previewScale));
+        const pctx = previewCanvas.getContext('2d');
+        pctx.drawImage(smallCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
         const quickDataUrl = previewCanvas.toDataURL('image/png');
-        previewImage.src = quickDataUrl; // まずは縮小版を素早く表示（UI を塞がない）
+        previewImage.src = quickDataUrl; // まずは縮小版を素早く表示
 
-        // UI 表示（既存の表示ロジックを踏襲）
+        // UI 表示
         areaResult.style.display = 'block';
         previewWrapper.style.display = 'block';
         goToOrderFormBtn.style.display = 'block';
-
         const makeBackBtn = document.getElementById('makeBackBtn');
         const orderNote = document.getElementById('orderNote');
 
         if (mode === 'front') {
-          makeBackBtn.style.display = 'block';
-          previewNotice.innerHTML = '📲 この画像を長押し👆してスマホに保存してください（後でフォームにアップロードします）';
-          orderNote.style.display = 'block';
-          // 一時的には縮小版を保存（必要なら後で高解像度を生成）
-          frontImageDataUrl = quickDataUrl;
+          if (makeBackBtn) makeBackBtn.style.display = 'block';
+          previewNotice.innerHTML = '👇 「画像を長押し」→ 「画像を保存」または「写真に追加」で写真アプリに保存されます。（後でフォームにアップロードします）';
+          if (orderNote) orderNote.style.display = 'block';
+          frontImageDataUrl = quickDataUrl; // とりあえず縮小版を一時保存
         } else {
-          makeBackBtn.style.display = 'none';
-          previewNotice.innerHTML = '📲 この裏面の画像も長押し👆してスマホに保存してください';
-          orderNote.style.display = 'block';
+          if (makeBackBtn) makeBackBtn.style.display = 'none';
+          previewNotice.innerHTML = '📲 この裏面の画像も長押しして保存してください';
+          if (orderNote) orderNote.style.display = 'block';
         }
         areaResult.scrollIntoView({ behavior: 'smooth' });
 
-        // —— オプション：フル解像度DataURLを遅延して生成（UIの応答性優先）
-        // (重い処理なので setTimeout で次のイベントループに回します)
-        setTimeout(() => {
+        // ---------- 2) 裏で A3 フル解像度（4961x3508）を生成してプレビュー差し替え ----------
+        // 重い処理なので次のイベントループに回す（UI の応答性確保）
+        setTimeout(async () => {
           try {
-            frontImageDataUrl = tempCanvas.toDataURL('image/png'); // 可能なら作る（時間がかかる）
-          } catch (e) {
-            console.warn('フル解像度生成に失敗しました', e);
+            const fullW = 4961; // A3 横向きの一辺（px, 300dpi）
+            const fullH = 3508; // A3 縦（px, 300dpi）
+            const fullCanvas = document.createElement('canvas');
+            fullCanvas.width = fullW;
+            fullCanvas.height = fullH;
+            const fctx = fullCanvas.getContext('2d');
+            fctx.imageSmoothingEnabled = true;
+            fctx.imageSmoothingQuality = 'high';
+
+            const scaleX = fullCanvas.width / mainCanvas.width;
+            const scaleY = fullCanvas.height / mainCanvas.height;
+            const avgScale = (scaleX + scaleY) / 2;
+
+            // 背景色
+            fctx.fillStyle = backgroundColor;
+            fctx.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
+
+            // 写真（高解像度で描く）
+            if (uploadedImg) {
+              try { if (uploadedImg.decode) await uploadedImg.decode(); } catch(e) { /* ignore */ }
+              const srcW = (uploadedImg.naturalWidth || uploadedImg.width);
+              const srcH = (uploadedImg.naturalHeight || uploadedImg.height);
+              const drawW = srcW * (photoObject.scale || 1) * scaleX;
+              const drawH = srcH * (photoObject.scale || 1) * scaleY;
+
+              fctx.save();
+              fctx.translate((photoObject.x || 0) * scaleX, (photoObject.y || 0) * scaleY);
+              fctx.rotate(photoObject.rotation || 0);
+              fctx.drawImage(uploadedImg, -drawW / 2, -drawH / 2, drawW, drawH);
+              fctx.restore();
+            }
+
+            // デコレーション（高解像度描画）
+            for (const obj of decorationObjects) {
+              fctx.save();
+              fctx.translate(obj.x * scaleX, obj.y * scaleY);
+              fctx.rotate(obj.rotation || 0);
+
+              if (obj.type === 'text') {
+                // drawTextByStyle は obj.fontSize に依存するため、フォントサイズをスケールした浅いコピーを渡す
+                const scaledText = Object.assign({}, obj, {
+                  fontSize: (obj.fontSize || 16) * (obj.scale || 1) * avgScale,
+                  scale: 1 // drawTextByStyle 内で ctx.scale を期待しないようにする
+                });
+                drawTextByStyle(fctx, scaledText);
+              } else if (obj.type === 'image') {
+                try { obj.img && obj.img.decode && obj.img.decode().catch(()=>{}); } catch(e){}
+                const w = (obj.width || (obj.img && (obj.img.naturalWidth || obj.img.width))) * (obj.scale || 1) * scaleX;
+                const h = (obj.height || (obj.img && (obj.img.naturalHeight || obj.img.height))) * (obj.scale || 1) * scaleY;
+                fctx.drawImage(obj.img, -w / 2, -h / 2, w, h);
+              }
+
+              fctx.restore();
+            }
+
+            // テンプレート（高解像度版を全面に）
+            let tplImg2 = templateCache[templateSelector.value];
+            if (!tplImg2) {
+              tplImg2 = new Image();
+              tplImg2.src = templateSelector.value;
+              if (tplImg2.decode) try { await tplImg2.decode(); } catch(e){/*ignore*/ }
+            } else {
+              if (tplImg2.decode) try { await tplImg2.decode(); } catch(e){/*ignore*/ }
+            }
+            fctx.drawImage(tplImg2, 0, 0, fullCanvas.width, fullCanvas.height);
+
+            // 生成した A3 PNG をプレビューに差し替え（ユーザーはその場で長押し保存できる）
+            const fullDataUrl = fullCanvas.toDataURL('image/png');
+            previewImage.src = fullDataUrl;
+            if (mode === 'front') frontImageDataUrl = fullDataUrl;
+          } catch (err) {
+            console.warn('フル解像度生成に失敗しました', err);
+            // 失敗時は縮小版のままにする（既に quickDataUrl が表示されている）
           }
         }, 50);
 
@@ -1310,14 +1376,17 @@
         console.error('preview generate error:', e);
         alert('プレビュー生成中にエラーが発生しました。コンソールを確認してください。');
       } finally {
-        // スピナーを消してボタンを再び有効化
         if (spinner) spinner.style.display = 'none';
         isRendering = false;
         generateBtn.disabled = false;
       }
     });
     // --- ここまで置き換え ---
-    
+
+
+
+
+
     // ここから追加：裏面作成モードに切り替える処理（変更：裏面は完全リセットして "1) 裏面の背景を決める" から開始）
     document.getElementById('makeBackBtn').addEventListener('click', () => {
       // 1) モード切替
