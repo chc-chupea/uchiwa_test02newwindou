@@ -1786,15 +1786,19 @@
     hammertime.on('panstart', function(e) {
         const activeObj = getActiveObject();
         if (activeObj) {
-        // 2本指以上なら pan は処理しない（念のための安全弁）
-        if (e.pointers && e.pointers.length !== 1) return;
+          // 2本指以上なら pan は処理しない（念のための安全弁）
+          if (e.pointers && e.pointers.length !== 1) return;
 
-            initialObjX = activeObj.x;
-            initialObjY = activeObj.y;
-            // ジェスチャー開始時のタッチ中心点をキャンバス座標で記録
-            const touchCenter = getCanvasCoords(e.center.x, e.center.y);
-            initialTouchCenterX = touchCenter.x;
-            initialTouchCenterY = touchCenter.y;
+          // 直前の位置・拡大率・回転を基準にする
+          initialObjX = activeObj.x;
+          initialObjY = activeObj.y;
+          initialObjScale = activeObj.scale;
+          initialObjRotation = activeObj.rotation;
+
+          // ジェスチャー開始時のタッチ中心点をキャンバス座標で記録
+          const touchCenter = getCanvasCoords(e.center.x, e.center.y);
+          initialTouchCenterX = touchCenter.x;
+          initialTouchCenterY = touchCenter.y;
         }
     });
     hammertime.on('pan', function(e) {
@@ -1870,8 +1874,15 @@
             drawAll();
         }
     });
-    hammertime.on('pinchend', function() {
-        if(isPhotoLocked) saveState(); // デコレーション拡大縮小後に履歴保存
+
+    hammertime.on('pinchend', function(e) {
+        // 最後に計算した状態を確定させる
+        initialObjX = photoObject.x;
+        initialObjY = photoObject.y;
+        initialObjScale = photoObject.scale;
+        initialObjRotation = photoObject.rotation;
+
+        if (isPhotoLocked) saveState();
     });
 
 
