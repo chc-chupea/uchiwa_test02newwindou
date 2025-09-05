@@ -815,10 +815,16 @@
             rotation: obj.rotation,
             color: obj.color,
             fontFamily: obj.fontFamily,
-            fontSize: obj.fontSize
+            fontSize: obj.fontSize,
+            // ▼ 追加：縁取り・アーチも履歴に保存
+            outlineEnabled: !!obj.outlineEnabled,
+            outlineColor: obj.outlineColor || '#000000',
+            outlineWidthRatio: (typeof obj.outlineWidthRatio === 'number') ? obj.outlineWidthRatio : 0.12,
+            isArched: !!obj.isArched,
+            archStyle: obj.archStyle || 'rainbow',
+            archAmount: (typeof obj.archAmount === 'number') ? obj.archAmount : 50
           };
         }
-      });
 
       history.push(JSON.stringify(snapshot));
       historyIndex++;
@@ -858,7 +864,7 @@
             height: item.height
           };
         } else {
-          // text 等はそのまま戻す
+          // text 等（過去の履歴に装飾プロパティが無い場合に備えてデフォルト補完）
           return {
             id: item.id,
             type: item.type,
@@ -869,7 +875,14 @@
             rotation: item.rotation,
             color: item.color,
             fontFamily: item.fontFamily,
-            fontSize: item.fontSize
+            fontSize: item.fontSize,
+            // ▼ 追加：縁取り／アーチを復元（無ければデフォルト）
+            outlineEnabled: (typeof item.outlineEnabled !== 'undefined') ? item.outlineEnabled : false,
+            outlineColor: item.outlineColor || '#000000',
+            outlineWidthRatio: (typeof item.outlineWidthRatio === 'number') ? item.outlineWidthRatio : 0.12,
+            isArched: (typeof item.isArched !== 'undefined') ? item.isArched : false,
+            archStyle: item.archStyle || 'rainbow',
+            archAmount: (typeof item.archAmount === 'number') ? item.archAmount : 50
           };
         }
       });
@@ -1557,7 +1570,14 @@
           rotation: 0,
           color: 'black',
           fontFamily: 'sans-serif',
-          fontSize: 500
+          fontSize: 500,
+          // ▼ 追加：縁取り／アーチの初期値
+          outlineEnabled: false,
+          outlineColor: '#000000',
+          outlineWidthRatio: 0.12,
+          isArched: false,
+          archStyle: 'rainbow',
+          archAmount: 50
         };
 
         decorationObjects.push(newStamp);
@@ -1693,15 +1713,28 @@
 
     outlineToggle.addEventListener('change', () => {
       updateSelectedTextOutline(obj => obj.outlineEnabled = outlineToggle.checked);
+      saveState(); // ← 追加
     });
     outlineColorPicker.addEventListener('input', () => {
       updateSelectedTextOutline(obj => obj.outlineColor = outlineColorPicker.value);
     });
+    outlineColorPicker.addEventListener('change', () => {
+      if (selectedObject && selectedObject.type === 'text') {
+        saveState();
+      }
+    });
+
+
+
     outlineWidthPercent.addEventListener('input', () => {
       outlineWidthValue.textContent = outlineWidthPercent.value + '%';
       updateSelectedTextOutline(obj => obj.outlineWidthRatio = parseInt(outlineWidthPercent.value, 10) / 100);
     });
-
+    outlineWidthPercent.addEventListener('change', () => {
+      if (selectedObject && selectedObject.type === 'text') {
+        saveState();
+      }
+    });
     // --- アーチ文字のリアルタイム更新 ---
     function updateSelectedTextArch(updater) {
       if (selectedObject && selectedObject.type === 'text') {
@@ -1712,18 +1745,25 @@
 
     archToggle.addEventListener('change', () => {
       updateSelectedTextArch(obj => obj.isArched = archToggle.checked);
+      saveState(); // ← 追加
     });
 
     archStyleRadios.forEach(radio => {
       radio.addEventListener('change', () => {
         const checked = document.querySelector('input[name="archStyle"]:checked');
         updateSelectedTextArch(obj => obj.archStyle = checked ? checked.value : 'rainbow');
+        saveState(); // ← 追加
       });
     });
 
     archAmount.addEventListener('input', () => {
       archAmountValue.textContent = archAmount.value;
       updateSelectedTextArch(obj => obj.archAmount = parseInt(archAmount.value, 10));
+    });
+    archAmount.addEventListener('change', () => {
+      if (selectedObject && selectedObject.type === 'text') {
+        saveState();
+      }
     });
 
 
