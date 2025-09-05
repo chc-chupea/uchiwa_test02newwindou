@@ -1822,13 +1822,20 @@
     hammertime.on('pinchstart', function(e) {
         const activeObj = getActiveObject();
         if (activeObj) {
-            initialObjX = activeObj.x;
-            initialObjY = activeObj.y;
-            initialObjScale = activeObj.scale;
-            initialObjRotation = activeObj.rotation; // 回転も考慮
+            // 軽タッチ（変化が小さい）なら初期値をまだ更新しない
+            const scaleDelta = Math.abs(e.scale - 1);
+            if (scaleDelta < 0.05 && Math.abs(e.rotation) < 2) {
+                return; // 本格的にピンチが始まってから初期化する
+            }
+
             const touchCenter = getCanvasCoords(e.center.x, e.center.y);
             initialTouchCenterX = touchCenter.x;
             initialTouchCenterY = touchCenter.y;
+
+            initialObjX = activeObj.x;
+            initialObjY = activeObj.y;
+            initialObjScale = activeObj.scale;
+            initialObjRotation = activeObj.rotation;
 
             // オブジェクトの中心からタッチ中心への初期ベクトル (キャンバス座標系)
             initialVecOffsetX = initialTouchCenterX - initialObjX;
