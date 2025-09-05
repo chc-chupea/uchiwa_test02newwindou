@@ -470,17 +470,17 @@
           <button class="stamp-button" onclick="addStamp('❤️')">❤️</button>
           <button class="stamp-button" onclick="addStamp('⭐')">⭐</button>
           <button class="stamp-button" onclick="addStamp('🎶')">🎶</button>
-          <button class="stamp-button" onclick="addStamp('stamps/01loveu.png')"><img src="stamps/01loveu.png" alt="Love You"></button>
-          <button class="stamp-button" onclick="addStamp('stamps/02ntwithFace.png')"><img src="stamps/02ntwithFace.png" alt="NT with Face"></button>
-          <button class="stamp-button" onclick="addStamp('stamps/03eyestome.png')"><img src="stamps/03eyestome.png" alt="Eyes to me"></button>
-          <button class="stamp-button" onclick="addStamp('stamps/04getmyheart.png')"><img src="stamps/04getmyheart.png" alt="Get my heart"></button>
-          <button class="stamp-button" onclick="addStamp('stamps/05angel.png')"><img src="stamps/05angel.png" alt="Angel"></button>
-          <button class="stamp-button" onclick="addStamp('stamps/06god.png')"><img src="stamps/06god.png" alt="God"></button>
-          <button class="stamp-button" onclick="addStamp('stamps/07precious.png')"><img src="stamps/07precious.png" alt="Precious"></button>
-          <button class="stamp-button" onclick="addStamp('stamps/08osi_pink.png')"><img src="stamps/08osi_pink.png" alt="Precious"></button>
-          <button class="stamp-button" onclick="addStamp('stamps/09osi_yellow.png')"><img src="stamps/09osi_yellow.png" alt="Precious"></button>
-          <button class="stamp-button" onclick="addStamp('stamps/10osi_lightblue.png')"><img src="stamps/10osi_lightblue.png" alt="Precious"></button>
-          <button class="stamp-button" onclick="addStamp('stamps/11osi_green.png')"><img src="stamps/11osi_green.png" alt="Precious"></button>
+          <button class="stamp-button" onclick="addStamp('01loveu.png')"><img src="01loveu.png" alt="Love You"></button>
+          <button class="stamp-button" onclick="addStamp('02ntwithFace.png')"><img src="02ntwithFace.png" alt="NT with Face"></button>
+          <button class="stamp-button" onclick="addStamp('03eyestome.png')"><img src="03eyestome.png" alt="Eyes to me"></button>
+          <button class="stamp-button" onclick="addStamp('04getmyheart.png')"><img src="04getmyheart.png" alt="Get my heart"></button>
+          <button class="stamp-button" onclick="addStamp('05angel.png')"><img src="05angel.png" alt="Angel"></button>
+          <button class="stamp-button" onclick="addStamp('06god.png')"><img src="06god.png" alt="God"></button>
+          <button class="stamp-button" onclick="addStamp('07precious.png')"><img src="07precious.png" alt="Precious"></button>
+          <button class="stamp-button" onclick="addStamp('08osi_pink.png')"><img src="08osi_pink.png" alt="Precious"></button>
+          <button class="stamp-button" onclick="addStamp('09osi_yellow.png')"><img src="09osi_yellow.png" alt="Precious"></button>
+          <button class="stamp-button" onclick="addStamp('10osi_lightblue.png')"><img src="10osi_lightblue.png" alt="Precious"></button>
+          <button class="stamp-button" onclick="addStamp('11osi_green.png')"><img src="11osi_green.png" alt="Precious"></button>
         </div>
       </section>
 
@@ -1212,36 +1212,6 @@
       drawAll(); // 全体を再描画
     });
 
-
-
-    // ▼▼ このブロックを追加 ▼▼
-    async function ensureAllStampImagesReady() {
-      // decorationObjects のうち「画像タイプ」だけ対象にする
-      const targets = (Array.isArray(decorationObjects) ? decorationObjects : [])
-        .filter(o => o && o.type === 'image' && o.img);
-
-      // 画像ごとに decode() か onload を待つ
-      const waiters = targets.map(o => {
-        const img = o.img;
-        if (img && img.complete && (img.naturalWidth || img.width)) {
-          return Promise.resolve(); // もう読み込めている
-        }
-        if (img && typeof img.decode === 'function') {
-          return img.decode().catch(() => {}); // 失敗は無視して続行
-        }
-        // decode がない環境用のフォールバック
-        return new Promise(res => {
-          if (!img) return res();
-          const done = () => res();
-          img.addEventListener('load', done, { once: true });
-          img.addEventListener('error', done, { once: true });
-        });
-      });
-
-      await Promise.all(waiters);
-    }
-    // ▲▲ ここまで追加 ▲▲
-    
     // --- ここから置き換え：決定 → プレビュー（低解像度で素早く表示 → 裏でA3生成） ---
     generateBtn.addEventListener('click', async () => {
       if (isRendering) return; // 多重クリック防止
@@ -1252,9 +1222,6 @@
       if (spinner) spinner.style.display = 'flex';
 
       try {
-        // ▼ ここに追加 ▼
-        await ensureAllStampImagesReady();
-
         // ---------- 1) 素早い「縮小プレビュー」生成（低解像度ベース） ----------
         const smallCanvas = document.createElement('canvas');
         smallCanvas.width = mainCanvas.width;   // 編集用（低解像度）の論理サイズ
@@ -1356,9 +1323,6 @@
             const scaleX = fullCanvas.width / mainCanvas.width;
             const scaleY = fullCanvas.height / mainCanvas.height;
             const avgScale = (scaleX + scaleY) / 2;
-
-            // ▼ ここに追加 ▼
-            await ensureAllStampImagesReady();
 
             // 背景色
             fctx.fillStyle = backgroundColor;
@@ -1541,33 +1505,16 @@
       saveState(); // 状態を履歴に保存
     }
 
-    // --- ここを丸っと置き換え ---
-    // PNGステッカー画像を事前に読み込む（画像を stamps/ に置く場合の例）
+    // PNGステッカー画像を事前に読み込む
     const stampImages = {};
-    const PREFIX_FOR_STAMPS = 'stamps/'; // 画像を stamps/ に置くなら 'stamps/'、そのままなら '' に変更
-
-    const pngStickers = [
-      PREFIX_FOR_STAMPS + '01loveu.png',
-      PREFIX_FOR_STAMPS + '02ntwithFace.png',
-      PREFIX_FOR_STAMPS + '03eyestome.png',
-      PREFIX_FOR_STAMPS + '04getmyheart.png',
-      PREFIX_FOR_STAMPS + '05angel.png',
-      PREFIX_FOR_STAMPS + '06god.png',
-      PREFIX_FOR_STAMPS + '07precious.png'
-    ];
-
+    const pngStickers = ['01loveu.png', '02ntwithFace.png', '03eyestome.png', '04getmyheart.png',  '05angel.png', '06god.png', '07precious.png'];
     pngStickers.forEach(src => {
       const img = new Image();
       img.src = src;
       img.onload = () => {
         stampImages[src] = img; // 読み込み完了後、オブジェクトに格納
       };
-      img.onerror = () => {
-        console.warn('スタンプ画像のプリロードに失敗しました:', src);
-        stampImages[src] = null; // 明示的に null を入れておけば存在チェックができる
-      };
     });
-    // --- ここまで置き換え ---
 
     /**
      * スタンプ（絵文字またはPNG画像）をデコレーションとして追加します。
