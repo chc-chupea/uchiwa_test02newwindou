@@ -1848,29 +1848,14 @@
     hammertime.on('pinch', function(e) {
         const activeObj = getActiveObject();
         if (activeObj) {
-            const currentTouchCenter = getCanvasCoords(e.center.x, e.center.y);
+            // スケールだけ更新
             const newScale = clampScale(initialObjScale * e.scale);
-            // newRotationはpinchイベントにもe.rotationがある場合があるので、それを使うかinitialObjRotationを使用
-            // Hammer.jsのe.rotationはジェスチャー開始時からの相対値なので、そのまま利用する
-            const currentRotationDelta = e.rotation * Math.PI / 180; // Hammer.jsは度数法なのでラジアンに変換
+            activeObj.scale = newScale;
 
-            // 初期ベクトルを現在のスケール倍率でスケーリング
-            const scaledOffsetX = initialVecOffsetX * (newScale / initialObjScale);
-            const scaledOffsetY = initialVecOffsetY * (newScale / initialObjScale);
+            // 回転だけ更新
+            activeObj.rotation = initialObjRotation + (e.rotation * Math.PI / 180);
 
-            // スケーリングされたベクトルを回転量の差分で回転
-            const cos_rot_delta = Math.cos(currentRotationDelta);
-            const sin_rot_delta = Math.sin(currentRotationDelta);
-
-            const transformedOffsetX = scaledOffsetX * cos_rot_delta - scaledOffsetY * sin_rot_delta;
-            const transformedOffsetY = scaledOffsetX * sin_rot_delta + scaledOffsetY * cos_rot_delta;
-
-            // 新しいオブジェクトの中心 = 現在のタッチ中心 - (オブジェクトからタッチへの変換済みベクトル)
-            activeObj.x = currentTouchCenter.x - transformedOffsetX;
-            activeObj.y = currentTouchCenter.y - transformedOffsetY;
-            
-            activeObj.scale = newScale; // スケールを更新
-            activeObj.rotation = initialObjRotation + currentRotationDelta; // 回転を更新 (初期回転 + デルタ)
+            // 位置 (x, y) は変更しない → ズレ防止
             drawAll();
         }
     });
