@@ -1729,8 +1729,26 @@
 
     // --- Hammer.js によるタッチ/マウスジェスチャーハンドリング ---
     const hammertime = new Hammer(mainCanvas);
-    hammertime.get('pinch').set({ enable: true });
-    hammertime.get('rotate').set({ enable: true });
+
+    // ブラウザの慣性スクロール/ページズームを確実に無効化（CSSに加えて保険）
+    mainCanvas.style.touchAction = 'none';
+
+    const pan    = hammertime.get('pan');
+    const pinch  = hammertime.get('pinch');
+    const rotate = hammertime.get('rotate');
+
+    // 1本指パンのみ許可（2本以上の指では pan を発火させない）
+    pan.set({ enable: true, pointers: 1, threshold: 0 });
+
+    // ピンチ／回転は常に有効
+    pinch.set({ enable: true });
+    rotate.set({ enable: true });
+
+    // 2本指ジェスチャー（pinch/rotate）が認識されたら pan は発火しないようにする
+    pinch.recognizeWith(rotate);
+    pan.requireFailure([pinch, rotate]);
+
+
 
     // 操作対象のオブジェクトを返すヘルパー関数
     function getActiveObject() {
@@ -1768,6 +1786,9 @@
     hammertime.on('panstart', function(e) {
         const activeObj = getActiveObject();
         if (activeObj) {
+        // 2本指以上なら pan は処理しない（念のための安全弁）
+        if (e.pointers && e.pointers.length !== 1) return;
+
             initialObjX = activeObj.x;
             initialObjY = activeObj.y;
             // ジェスチャー開始時のタッチ中心点をキャンバス座標で記録
@@ -1779,6 +1800,8 @@
     hammertime.on('pan', function(e) {
         const activeObj = getActiveObject();
         if (activeObj) {
+        // 2本指以上なら pan は処理しない（念のための安全弁）
+        if (e.pointers && e.pointers.length !== 1) return;
             // 現在のタッチ中心点をキャンバス座標で取得
             const currentTouchCenter = getCanvasCoords(e.center.x, e.center.y);
             // オブジェクトの新しい位置は、開始時の位置にタッチ中心点の移動量を加算
@@ -1822,7 +1845,7 @@
         const activeObj = getActiveObject();
         if (activeObj) {
             const currentTouchCenter = getCanvasCoords(e.center.x, e.center.y);
-            const newScale = initialObjScale * e.scale;
+            const newScale = clampScale(initialObjScale * e.scale);
             // newRotationはpinchイベントにもe.rotationがある場合があるので、それを使うかinitialObjRotationを使用
             // Hammer.jsのe.rotationはジェスチャー開始時からの相対値なので、そのまま利用する
             const currentRotationDelta = e.rotation * Math.PI / 180; // Hammer.jsは度数法なのでラジアンに変換
@@ -1849,56 +1872,6 @@
     });
     hammertime.on('pinchend', function() {
         if(isPhotoLocked) saveState(); // デコレーション拡大縮小後に履歴保存
-    });
-
-    // 回転ジェスチャー
-    hammertime.on('rotatestart', function(e) {
-        const activeObj = getActiveObject();
-        if (activeObj) {
-            initialObjX = activeObj.x;
-            initialObjY = activeObj.y;
-            initialObjScale = activeObj.scale; // スケールも考慮
-            initialObjRotation = activeObj.rotation;
-            const touchCenter = getCanvasCoords(e.center.x, e.center.y);
-            initialTouchCenterX = touchCenter.x;
-            initialTouchCenterY = touchCenter.y;
-
-            // オブジェクトの中心からタッチ中心への初期ベクトル（キャンバス座標系）
-            initialVecOffsetX = initialTouchCenterX - initialObjX;
-            initialVecOffsetY = initialTouchCenterY - initialObjY;
-        }
-    });
-    hammertime.on('rotate', function(e) {
-        const activeObj = getActiveObject();
-        if (activeObj) {
-            const currentTouchCenter = getCanvasCoords(e.center.x, e.center.y);
-            const newRotation = initialObjRotation + e.rotation * Math.PI / 180; // 新しい回転角度 (ラジアン)
-            // scaleコンポーネントはrotateイベントにも含まれる場合があるため、それを使用するかinitialObjScaleを使用
-            const currentScale = initialObjScale * (e.scale || 1); // Hammer.jsのe.scaleはジェスチャー開始時からの相対値
-
-            // 初期ベクトルを現在のスケール倍率でスケーリング
-            const scaledOffsetX = initialVecOffsetX * (currentScale / initialObjScale);
-            const scaledOffsetY = initialVecOffsetY * (currentScale / initialObjScale);
-
-            // スケーリングされたベクトルを回転量の差分で回転
-            const rotationDelta = e.rotation * Math.PI / 180; // Hammer.jsのe.rotationはデルタ
-            const cos_rot_delta = Math.cos(rotationDelta);
-            const sin_rot_delta = Math.sin(rotationDelta);
-
-            const transformedOffsetX = scaledOffsetX * cos_rot_delta - scaledOffsetY * sin_rot_delta;
-            const transformedOffsetY = scaledOffsetX * sin_rot_delta + scaledOffsetY * cos_rot_delta;
-
-            // 新しいオブジェクトの中心 = 現在のタッチ中心 - (オブジェクトからタッチへの変換済みベクトル)
-            activeObj.x = currentTouchCenter.x - transformedOffsetX;
-            activeObj.y = currentTouchCenter.y - transformedOffsetY;
-            
-            activeObj.rotation = newRotation; // 回転を更新
-            activeObj.scale = currentScale; // スケールも更新
-            drawAll();
-        }
-    });
-    hammertime.on('rotateend', function() {
-        if(isPhotoLocked) saveState(); // デコレーション回転後に履歴保存
     });
 
 
