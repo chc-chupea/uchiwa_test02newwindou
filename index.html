@@ -1889,7 +1889,7 @@
         if (activeObj) {
             // 軽タッチ（変化が小さい）なら初期値をまだ更新しない
             const scaleDelta = Math.abs(e.scale - 1);
-            if (scaleDelta < 0.1 && Math.abs(e.rotation) < 3) {
+            if (scaleDelta < 0.1 && Math.abs(e.rotation) < 5) {
                 return; // 本格的にピンチが始まってから初期化する
             }
 
