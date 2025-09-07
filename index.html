@@ -327,7 +327,49 @@
 
     /* 既存のボタン群がぎゅうぎゅうにならないように少し調整 */
     .cc-panel button { margin: 4px 2px; }
+    /* === 画面下固定（CapCut風） === */
+    /* ツールバー本体を下固定 */
+    .cc-toolbar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: env(safe-area-inset-bottom, 0);
+      z-index: 1000;
+      margin: 0;                 /* 既存の margin を打ち消す */
+      border-top: 1px solid #eee;
+      border-bottom: 0;
+      background: #fff;
+      padding: 8px 6px;
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+    }
+    .cc-toolbar::-webkit-scrollbar { display: none; }
 
+    /* パネル（ツールの中身）も下固定：ツールバーの“すぐ上”に出す */
+    .cc-panels {
+      position: fixed;
+      left: 0;
+      right: 0;
+      /* ツールバー高さ（約64px） + セーフエリアぶんだけ持ち上げる */
+      bottom: calc(64px + env(safe-area-inset-bottom, 0));
+      z-index: 999;
+      max-height: 42vh;          /* 片手操作で見切れない程度 */
+      overflow-y: auto;
+      margin: 0;                 /* 既存の margin を打ち消す */
+      padding: 8px 10px 12px;
+      background: #fff;
+      box-shadow: 0 -4px 12px rgba(0,0,0,.08);
+      border-top: 1px solid #eee;
+    }
+    .cc-panel[hidden] { display: none; }
+
+    /* キャンバスが下固定UIに隠れないようボディ下に余白をつける */
+    body {
+      padding-bottom: calc(220px + env(safe-area-inset-bottom, 0));
+    }
   </style>
 </head>
 <body>
@@ -366,6 +408,11 @@
 
   <div class="area" id="area-decorations" style="display: none;">
     <h2 id="section3-title">3) デコレーション</h2>
+    <style>
+      @media (max-width: 768px) {
+        #section3-title { display: none; }
+      }
+    </style>
     <!-- <p id="decorationNotice" style="font-size: 12px; color: #666;">
       ※ オブジェクトをタップすると選択され、移動・サイズ変更・回転できます。
     </p> -->
@@ -646,6 +693,12 @@
       const btn = document.querySelector(`.cc-item[data-target="${id}"]`);
       if (btn) btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
+    
+    // 追加：すべての詳細パネルを閉じ、アクティブ表示もリセット
+    function hidePanels() {
+      ccPanels.forEach(p => p.hidden = true);
+      ccItems.forEach(b => b.classList.remove('active'));
+    }
 
     ccToolbar.addEventListener('click', (e) => {
       const btn = e.target.closest('.cc-item');
@@ -653,8 +706,8 @@
       showPanel(btn.dataset.target);
     });
 
-    // 初期表示は「テキスト」パネル
-    showPanel('panel-text');
+    // 初期表示は何も開かない（選択時に自動オープン）
+    hidePanels()
 
 
 
@@ -1833,9 +1886,20 @@
         // Zオーダーを考慮し、配列の最後（最も手前）から逆順に判定
         for (let i = decorationObjects.length - 1; i >= 0; i--) {
           const obj = decorationObjects[i];
+
+
           if (isPointInObject(p, obj)) {
             selectedObject = obj; // オブジェクトを選択状態にする
             drawAll(); // 全体を再描画
+
+            // 追加：選択内容に応じて詳細パネルを自動オープン
+            if (selectedObject && selectedObject.type === 'text') {
+              showPanel('panel-text');
+            } else if (selectedObject) {
+              // 画像スタンプなどは配置・レイヤー操作中心に
+              showPanel('panel-arrange');
+            }
+
             found = true;
             break;
           }
@@ -1843,6 +1907,8 @@
         if (!found) { // どのオブジェクトも選択されなかった場合
           selectedObject = null; // 選択状態を解除
           drawAll(); // 全体を再描画
+          // 追加：未選択ならパネルを閉じる
+          hidePanels();
         }
       }
     });
@@ -1972,10 +2038,23 @@
             const obj = decorationObjects[i];
             if (isPointInObject(p, obj)) {
               selectedObject = obj;
+            // 追加：選択内容で詳細パネルを自動オープン
+              if (selectedObject && selectedObject.type === 'text') {
+                showPanel('panel-text');
+              } else {
+                showPanel('panel-arrange');
+              }
+
+
               dragTarget = 'decoration';
               break;
             }
           }
+          // 追加：何も選べなかった場合は閉じる
+          if (!selectedObject) {
+            hidePanels();
+          }
+
         }
       } else if (e.button === 2) { // 右クリック（回転）
         if (!isPhotoLocked) {
