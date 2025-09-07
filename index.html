@@ -338,9 +338,9 @@
     <h2 id="section1-title">1) 背景を決める</h2>
     <label id="templateLabel">うちわのデザインフィルターを選んでね👇</label>
     <select id="templateSelector">
-      <option value="fan1-highres.png" data-lowres="fan1-lowres.png">A4サイズ</option>
+      <option value="fan1-highres.png" data-lowres="fan1-lowres.png">A4サイズレギュラー型</option>
       <option value="fan2-highres.png" data-lowres="fan2-lowres.png">A3サイズ♡型</option>
-      <option value="fan3-highres.png" data-lowres="fan3-lowres.png">A3サイズ</option>
+      <option value="fan3-highres.png" data-lowres="fan3-lowres.png">A3サイズ大型</option>
     </select>
     <label for="imageLoader" id="customFileLabel">写真で背景を作る</label>
     <input type="file" id="imageLoader" accept="image/*" style="display:none;" />
@@ -1296,15 +1296,31 @@
         const orderNote = document.getElementById('orderNote');
 
         if (mode === 'front') {
-          if (makeBackBtn) makeBackBtn.style.display = 'block';
-          previewNotice.innerHTML = '👇 「画像を長押し」→ 「画像を保存」または「写真に追加」で写真アプリに保存されます。（後でフォームにアップロードします）';
+          // 表面プレビュー時のUI（テンプレート選択を表示）
+  if (makeBackBtn) makeBackBtn.style.display = 'block';
+          previewNotice.innerHTML = ' 「画像を長押し👆」→ 「画像を保存」または「写真に追加」で写真アプリに保存されます。（後でフォームにアップロードします）';
           if (orderNote) orderNote.style.display = 'block';
           frontImageDataUrl = quickDataUrl; // とりあえず縮小版を一時保存
+
+          // --- 表モードなのでテンプレート選択UIを表示に戻す ---
+          const tpl = document.getElementById('templateSelector');
+          const tplLabel = document.getElementById('templateLabel');
+          if (tpl) tpl.style.display = 'block';
+          if (tplLabel) tplLabel.textContent = 'うちわのテンプレ―トを選んでね👇';
+
         } else {
+          // 裏面プレビュー時はテンプレート選択を非表示にして案内文を出す
           if (makeBackBtn) makeBackBtn.style.display = 'none';
-          previewNotice.innerHTML = '📲 この裏面の画像も長押しして保存してください';
+          previewNotice.innerHTML = '📲 この裏面の画像も「長押し👆」して保存してください';
           if (orderNote) orderNote.style.display = 'block';
+
+          // --- 裏モード：テンプレート選択UIを隠して案内文へ差し替える ---
+          const tpl = document.getElementById('templateSelector');
+          const tplLabel = document.getElementById('templateLabel');
+          if (tpl) tpl.style.display = 'none';
+          if (tplLabel) tplLabel.textContent = '※ 表で選んだテンプレートが裏面にも適用されます';
         }
+
         areaResult.scrollIntoView({ behavior: 'smooth' });
 
         // ---------- 2) 裏で A3 フル解像度（4961x3508）を生成してプレビュー差し替え ----------
@@ -1430,6 +1446,13 @@
           preloadTemplate(tpl.value); // プリロード関数があれば呼ぶ（存在チェック）
         }
       }
+
+      // ---------- 追加：裏面モードに入ったらテンプレート選択を隠す ----------
+        const tplLabel = document.getElementById('templateLabel');
+        // tpl は既に上で取得済み（document.getElementById('templateSelector')）
+        if (tpl) tpl.style.display = 'none'; // セレクタを非表示にする
+        if (tplLabel) tplLabel.textContent = '※ 表で選んだデザインフィルターが裏面にも適用されます';
+        // ----
 
       // 4) UI 表示を「1) 背景を決める」エリアに合わせる
       const areaSelect = document.getElementById('area-select');
