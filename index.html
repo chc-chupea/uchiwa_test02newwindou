@@ -286,26 +286,17 @@
       left: -9999px !important; /* 画面からよける（フォーム値は残す） */
     }
 
-    /* === CapCut風：横スクロールツールバー（固定表示：スマホで常時下部に表示） === */
+    /* === CapCut風：横スクロールツールバー === */
     .cc-toolbar {
-      position: sticky;          /* 画面のスクロールに追随して「張り付く」 */
-      bottom: 0;                 /* 下端に張り付ける */
-      left: 0;
-      right: 0;
       display: flex;
       gap: 12px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      padding: 10px 12px;        /* 押しやすくするため上下左右に余白 */
-      margin: 0;                 /* sticky の時は余白をリセット */
+      padding: 8px 6px;
+      margin: 8px -6px 10px;   /* 端まで広くドラッグできるように少しはみ出させる */
       border-top: 1px solid #eee;
-      border-bottom: 0;          /* 上だけボーダーがあれば十分 */
-      background: rgba(255,255,255,0.95); /* 半透明で下のコンテンツが少し見える */
-      backdrop-filter: blur(6px); /* 対応ブラウザで背景を弱くぼかす（任意） */
-      box-shadow: 0 -6px 12px rgba(0,0,0,0.06);
-      z-index: 1200;             /* 上位に置く */
+      border-bottom: 1px solid #eee;
       scroll-snap-type: x proximity;
-      -webkit-backface-visibility: hidden; /* 合成のちらつき抑制 */
     }
     .cc-toolbar::-webkit-scrollbar { display: none; } /* スクロールバーを隠す（スマホ向け） */
 
@@ -331,7 +322,7 @@
     }
 
     /* パネル（ツールの中身） */
-    .cc-panels { margin-top: 8px; padding-bottom: 92px; } /* 下部にツールバー分の余白を確保 */
+    .cc-panels { margin-top: 8px; }
     .cc-panel[hidden] { display: none; }
 
     /* 既存のボタン群がぎゅうぎゅうにならないように少し調整 */
