@@ -1889,8 +1889,17 @@
         if (activeObj) {
             // 軽タッチ（変化が小さい）なら初期値をまだ更新しない
             const scaleDelta = Math.abs(e.scale - 1);
-            if (scaleDelta < 0.1 && Math.abs(e.rotation) < 5) {
-                return; // 本格的にピンチが始まってから初期化する
+            let scaleThreshold = 0.1;
+            let rotationThreshold = 5;
+
+            // activeObj がスタンプなら、もっと大きめのしきい値を設定
+            if (activeObj && activeObj.type === 'stamp') {
+                scaleThreshold = 0.15;     // 15% 未満なら軽タッチ扱い
+                rotationThreshold = 8;     // 8° 未満なら軽タッチ扱い
+            }
+
+            if (scaleDelta < scaleThreshold && Math.abs(e.rotation) < rotationThreshold) {
+                return; // 軽タッチ扱い
             }
 
             const touchCenter = getCanvasCoords(e.center.x, e.center.y);
