@@ -336,7 +336,7 @@
 
   <div class="area" id="area-select">
     <h2 id="section1-title">1) 背景を決める</h2>
-    <label id="templateLabel">うちわのデザインフィルターを選んでね👇</label>
+    <label id="templateLabel">うちわのサイズ・型を選んでね👇</label>
     <select id="templateSelector">
       <option value="fan1-highres.png" data-lowres="fan1-lowres.png">A4サイズレギュラー型</option>
       <option value="fan2-highres.png" data-lowres="fan2-lowres.png">A3サイズ♡型</option>
@@ -1451,7 +1451,7 @@
         const tplLabel = document.getElementById('templateLabel');
         // tpl は既に上で取得済み（document.getElementById('templateSelector')）
         if (tpl) tpl.style.display = 'none'; // セレクタを非表示にする
-        if (tplLabel) tplLabel.textContent = '※ 表で選んだデザインフィルターが裏面にも適用されます';
+        if (tplLabel) tplLabel.textContent = '※ 表で選んだ「サイズ・型」が裏面にも適用されます';
         // ----
 
       // 4) UI 表示を「1) 背景を決める」エリアに合わせる
@@ -1889,7 +1889,7 @@
         if (activeObj) {
             // 軽タッチ（変化が小さい）なら初期値をまだ更新しない
             const scaleDelta = Math.abs(e.scale - 1);
-            if (scaleDelta < 0.05 && Math.abs(e.rotation) < 2) {
+            if (scaleDelta < 0.1 && Math.abs(e.rotation) < 3) {
                 return; // 本格的にピンチが始まってから初期化する
             }
 
