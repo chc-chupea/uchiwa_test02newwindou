@@ -1997,6 +1997,11 @@
     hammertime.on('panstart', function(e) {
         const activeObj = getActiveObject();
         if (activeObj) {
+        // --- 基準値を必ずリセット ---
+          initialObjX = activeObj.x;
+          initialObjY = activeObj.y;
+          initialObjScale = activeObj.scale;
+          initialObjRotation = activeObj.rotation;
           // 2本指以上なら pan は処理しない（念のための安全弁）
           if (e.pointers && e.pointers.length !== 1) return;
 
@@ -2033,6 +2038,11 @@
     hammertime.on('pinchstart', function(e) {
         const activeObj = getActiveObject();
         if (activeObj) {
+        // --- ピンチ開始時に必ず基準をリセット ---
+        initialObjX = activeObj.x;
+        initialObjY = activeObj.y;
+        initialObjScale = activeObj.scale;
+        initialObjRotation = activeObj.rotation;
             // 軽タッチ（変化が小さい）なら初期値をまだ更新しない
             const scaleDelta = Math.abs(e.scale - 1);
             let scaleThreshold = 0.1;
