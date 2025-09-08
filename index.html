@@ -327,6 +327,55 @@
 
     /* 既存のボタン群がぎゅうぎゅうにならないように少し調整 */
     .cc-panel button { margin: 4px 2px; }
+    /* -------- 小型「決定」アイコンのスタイル -------- */
+    .generate-icon {
+      /* 基本の見た目 */
+      width: 56px;
+      min-width: 56px;
+      height: 44px;
+      padding: 6px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 2px;
+      background: linear-gradient(135deg,#4cafef,#1976d2);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 10px rgba(33,150,243,0.18);
+      font-size: 12px;
+    }
+    .generate-icon .icon { font-size: 18px; line-height: 1; }
+    .generate-icon .label { font-size: 10px; opacity: 0.95; }
+
+    /* 押下フィードバック */
+    .generate-icon.pressed {
+      transform: translateY(2px) scale(0.98);
+      box-shadow: 0 2px 6px rgba(33,150,243,0.12) !important;
+      transition: transform .08s, box-shadow .08s;
+    }
+
+    /* モバイル時：既存の大きなボタンを隠し、小アイコンは表示する */
+    @media (max-width: 1024px) {
+      #generateBtn {
+        display: none !important;
+      }
+      /* ラベルを小さくしてボタン内で見映えを調整（必要なら非表示も可） */
+      .generate-icon .label { display: none; } /* ラベルを消したければこの行をそのまま */
+    }
+
+    /* デスクトップでは小アイコンを補助的に表示（必要なら非表示に） */
+    @media (min-width: 1025px) {
+      /* 任意：PCで小アイコンを非表示にしたければ以下をアンコメント */
+      /* #generateIconBtn { display: none; } */
+    }
+    /* ツールバー内で generate-icon を右端に寄せる（flex の空間を利用） */
+    .cc-toolbar .generate-icon {
+      margin-left: auto; /* これで行の最後に寄ります */
+    }
+
+
     /* === 画面下固定（CapCut風） === */
     /* ツールバー本体を下固定 */
     .cc-toolbar {
@@ -434,6 +483,13 @@
       <button class="cc-item" data-target="panel-layer">
         <!-- <span class="icon">⬆︎⬇︎</span> --><span class="label">レイヤー</span>
       </button>
+      <!-- 追加：ツールバー右端の小さな「決定」ボタン（モバイル向け） -->
+      <button class="cc-item generate-icon" id="generateIconBtn" title="決定・プレビュー">
+        <span class="icon">✅</span>
+        <span class="label">決定</span>
+      </button>
+
+
     </div>
 
     <div class="cc-panels">
@@ -705,6 +761,31 @@
       if (!btn) return;
       showPanel(btn.dataset.target);
     });
+
+    // 追加：ツールバー右端の小さな「決定」アイコンのクリックでプレビュー生成を呼ぶ
+    (function() {
+      const generateIconBtn = document.getElementById('generateIconBtn');
+      // 無しでもエラーにならないよう existence check
+      if (!generateIconBtn) return;
+
+      generateIconBtn.addEventListener('click', (ev) => {
+        ev.preventDefault();
+
+        // 簡単な押下アニメーション（短く見せる）
+        generateIconBtn.classList.add('pressed');
+        setTimeout(() => generateIconBtn.classList.remove('pressed'), 120);
+
+        // 既存の大ボタンがあるなら click を発火させて既存ロジックを再利用
+        if (typeof generateBtn !== 'undefined' && generateBtn) {
+          generateBtn.click();
+          return;
+        }
+
+        // 万一 generateBtn が見つからない（将来の差し替えで消えた等）は
+        // ここで直接プレビュー生成関数を呼び出すロジックを入れることもできます。
+        console.warn('generateBtn not found — generateIconBtn clicked');
+      });
+    })();
 
     // 初期表示は何も開かない（選択時に自動オープン）
     hidePanels()
