@@ -1324,11 +1324,15 @@
      */
     confirmPhotoBtn.addEventListener('click', () => {
       if (!uploadedImg) return; // 写真がアップロードされていなければ何もしない
-      isPhotoLocked = true; // 写真をロック
-      confirmPhotoBtn.style.display = 'none'; // 確定ボタンを非表示
-      reEditPhotoBtn.style.display = 'block'; // 再編集ボタンを表示
-      areaDecorations.style.display = 'block'; // デコレーションエリアを表示
-      document.getElementById('area-decorations').scrollIntoView({ behavior: 'smooth' }); // デコレーションエリアへスクロール
+
+      // 写真をロックして「分岐」UIを出す（編集パネルは最初は閉じる）
+      isPhotoLocked = true;
+      confirmPhotoBtn.style.display = 'none';
+      reEditPhotoBtn.style.display = 'block';
+      areaDecorations.style.display = 'none'; // 編集パネルは閉じた状態で分岐表示
+      document.getElementById('arrangeControls').style.display = 'flex'; // 保存/編集の入口を表示
+      document.getElementById('editorWrapper').scrollIntoView({ behavior: 'smooth' });
+
       saveState(); // 最初のデコレーション状態を保存
     });
 
