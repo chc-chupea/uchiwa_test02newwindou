@@ -640,6 +640,8 @@
     <style>
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     /* 小さなスタイル：必要なら後でCSSファイルへ移動してください */
+    /* ← ここに追加する（次の行を貼る） */
+    #previewContainer { display: none !important; }
     </style>
     <!-- ここまで追加 -->
 
@@ -665,11 +667,7 @@
   <div id="previewScreen" style="display:none; position:fixed; inset:0; z-index:1300;
                                 background:rgba(0,0,0,0.75); align-items:center; justify-content:center;">
     <div style="position:relative; max-width:95%; max-height:95%; margin:auto; display:flex; flex-direction:column; align-items:center;">
-      <button id="previewCloseBtn" aria-label="閉じる"
-              style="position:absolute; top:10px; right:10px; z-index:1311; border:none;
-                     background:rgba(255,255,255,0.95); padding:6px 10px; border-radius:8px; font-weight:600;">
-        閉じる
-      </button>
+
 
       <div style="background:#fff; padding:6px; border-radius:12px; overflow:auto; max-height:88vh;">
         <img id="previewFullImage" alt="合成プレビュー（長押しで保存）" 
@@ -679,6 +677,13 @@
       <div style="color:#fff; font-size:14px; text-align:center; margin-top:8px;">
         画像を＜長押し＞して「画像を保存」してください
       </div>
+      <!-- 長押し保存の説明の下に閉じるボタン配置 -->
+      <button id="previewCloseBtn"
+              style="margin-top:12px; padding:8px 16px; border:none;
+                     background:#fff; border-radius:20px; font-weight:600;
+                     box-shadow:0 3px 8px rgba(0,0,0,0.2);">
+        閉じる
+      </button>
     </div>
   </div>
   <!-- ここまで追加 -->
@@ -2304,7 +2309,15 @@
     }
 
     document.getElementById('previewCloseBtn').addEventListener('click', () => {
-    document.getElementById('previewScreen').style.display = "none";
+      const previewScreen = document.getElementById('previewScreen');
+      previewScreen.style.display = "none";
+
+      // プレビューを閉じた後に「裏面も作る」「注文フォームへ進む」を表示
+      const backBtn = document.querySelector('button:contains("裏面も作る")');
+      const orderBtn = document.querySelector('button:contains("注文フォームへ進む")');
+
+      if (backBtn) backBtn.style.display = "block";
+      if (orderBtn) orderBtn.style.display = "block";
     });
   </script>
 </body>
