@@ -2233,7 +2233,22 @@
         await showPreviewOverlay();
       });
     }
+    // === 簡易プレビュー生成関数 ===
+    async function showPreviewOverlay() {
+      console.log("🚀 showPreviewOverlay called");
+      const previewScreen = document.getElementById('previewScreen');
+      const previewFullImage = document.getElementById('previewFullImage');
+      if (!previewScreen || !previewFullImage) {
+        console.error("previewScreen or previewFullImage not found");
+        return;
+      }
 
+      // ここでは簡易的に canvas の内容をそのまま使う（最初はこれでOK）
+      const dataUrl = mainCanvas.toDataURL("image/png");
+      previewFullImage.src = dataUrl;
+
+      previewScreen.style.display = "flex";
+    }
   </script>
 </body>
 </html>
