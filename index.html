@@ -613,6 +613,14 @@
 
     <!-- 「決定 → プレビュー」ボタンをデコレーションエリア内に移動 -->
     <button id="generateBtn" class="form-button" style="margin-top: 20px;">決定 → プレビュー</button>
+    <!-- ここから追加：編集モードの右上ボタン（初期は非表示） -->
+    <button id="previewBtnTopRight" class="form-button"
+            style="position:fixed; top:12px; right:12px; z-index:1201; display:none;
+                   padding:8px 12px; border-radius:20px; box-shadow:0 6px 12px rgba(0,0,0,0.15);">
+      決定 → プレビュー
+    </button>
+<!-- ここまで追加 -->
+
     <span style="min-width:6em; display:inline-block;">プレビュー表示に少し時間がかかります</span>
   </div>
 
@@ -653,6 +661,27 @@
        id="goToOrderFormBtn"
        style="display: none;">📝 注文フォームへ進む</a>
   </div>
+  <!-- ここから追加：プレビューオーバーレイ（長押しで保存を想定） -->
+  <div id="previewScreen" style="display:none; position:fixed; inset:0; z-index:1300;
+                                background:rgba(0,0,0,0.75); align-items:center; justify-content:center;">
+    <div style="position:relative; max-width:95%; max-height:95%; margin:auto; display:flex; flex-direction:column; align-items:center;">
+      <button id="previewCloseBtn" aria-label="閉じる"
+              style="position:absolute; top:10px; right:10px; z-index:1311; border:none;
+                     background:rgba(255,255,255,0.95); padding:6px 10px; border-radius:8px; font-weight:600;">
+        閉じる
+      </button>
+
+      <div style="background:#fff; padding:6px; border-radius:12px; overflow:auto; max-height:88vh;">
+        <img id="previewFullImage" alt="合成プレビュー（長押しで保存）" 
+             style="display:block; max-width:100%; height:auto; -webkit-user-select:none; user-select:none; touch-action:manipulation;">
+      </div>
+
+      <div style="color:#fff; font-size:14px; text-align:center; margin-top:8px;">
+        画像を＜長押し＞して「画像を保存」してください
+      </div>
+    </div>
+  </div>
+  <!-- ここまで追加 -->
 
   <footer style="font-size: 6px; color: #888; margin-top: 20px;">
     © 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br />
@@ -2233,9 +2262,9 @@
         await showPreviewOverlay();
       });
     }
-    // === 簡易プレビュー生成関数 ===
+
     async function showPreviewOverlay() {
-      console.log("🚀 showPreviewOverlay called");
+      console.log("🚀 showPreviewOverlay called (modified)");
       const previewScreen = document.getElementById('previewScreen');
       const previewFullImage = document.getElementById('previewFullImage');
       if (!previewScreen || !previewFullImage) {
@@ -2243,11 +2272,35 @@
         return;
       }
 
-      // ここでは簡易的に canvas の内容をそのまま使う（最初はこれでOK）
-      const dataUrl = mainCanvas.toDataURL("image/png");
-      previewFullImage.src = dataUrl;
+      // 画面上の重なる UI を隠して、プレビューに集中させる
+      const arrange = document.getElementById('arrangeControls');
+      if (arrange) arrange.style.display = 'none';
+      if (areaDecorations) areaDecorations.style.display = 'none';
 
-      previewScreen.style.display = "flex";
+      // 最新の描画を反映（念のため）
+      try { drawAll(); } catch(e) { console.warn('drawAll() failed in preview', e); }
+
+      // 現在の編集用キャンバスを DataURL にして表示
+      try {
+        const dataUrl = mainCanvas.toDataURL("image/png");
+        previewFullImage.src = dataUrl;
+        previewFullImage.alt = '合成プレビュー（長押しで保存）';
+      } catch (err) {
+        console.error('preview canvas toDataURL error:', err);
+        // 代替：空のプレースホルダを出す
+        previewFullImage.src = '';
+      }
+
+      // オーバーレイを表示（flex で中央表示する想定）
+      previewScreen.style.display = 'flex';
+
+      // オーバーレイの背景クリックで閉じる（追加の利便性）
+      // ※ ボタンで閉じる処理も既にあるため二重にはなりません
+      previewScreen.onclick = function(e) {
+        if (e.target === previewScreen) {
+          previewScreen.style.display = 'none';
+        }
+      };
     }
 
     document.getElementById('previewCloseBtn').addEventListener('click', () => {
