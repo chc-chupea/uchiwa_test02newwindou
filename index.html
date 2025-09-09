@@ -2204,6 +2204,36 @@
 
     // 初期描画
     drawAll();
+
+    // === 「保存→プレビュー」「編集」「右上プレビュー」ボタンのイベント ===
+    const toPreviewBtnEl = document.getElementById('toPreviewBtn');
+    const toEditBtnEl = document.getElementById('toEditBtn');
+    const previewBtnTopRightEl = document.getElementById('previewBtnTopRight');
+
+    if (toPreviewBtnEl) {
+      toPreviewBtnEl.addEventListener('click', async () => {
+        console.log("✅ 保存→プレビュー ボタンが押されました");
+        await showPreviewOverlay();
+      });
+    }
+
+    if (toEditBtnEl) {
+      toEditBtnEl.addEventListener('click', () => {
+        console.log("✅ 編集 ボタンが押されました");
+        document.getElementById('arrangeControls').style.display = 'none';
+        areaDecorations.style.display = 'block';
+        document.getElementById('previewBtnTopRight').style.display = 'block';
+        document.getElementById('area-decorations').scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+
+    if (previewBtnTopRightEl) {
+      previewBtnTopRightEl.addEventListener('click', async () => {
+        console.log("✅ 右上の保存→プレビュー ボタンが押されました");
+        await showPreviewOverlay();
+      });
+    }
+
   </script>
 </body>
 </html>
