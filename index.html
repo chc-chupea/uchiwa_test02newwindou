@@ -419,14 +419,6 @@
     body {
       padding-bottom: calc(220px + env(safe-area-inset-bottom, 0));
     }
-    /* === Arrange / Preview UI === */
-    #arrangeControls { display:flex; align-items:center; justify-content:center; }
-    #arrangeControls .form-button { min-width:120px; border-radius:18px; }
-    #arrangeControls #toEditBtn { background:#fff; color:#1976d2; box-shadow:none; border:2px solid #1976d2; }
-    #previewScreen { display:none; flex-direction:column; }
-    #previewScreen .form-button { border-radius:12px; }
-    /* プレビュー画像の長押し用に pointer-events を適切に（親がオーバーレイ） */
-    #previewFullImage { touch-action: none; -webkit-user-select: none; user-select: none; }
   </style>
 </head>
 <body>
@@ -461,11 +453,6 @@
     </p>
     <button id="confirmPhotoBtn" style="margin-top: 10px;">写真の配置を確定</button>
     <button id="reEditPhotoBtn" style="margin-top: 10px; display: none;">写真の再編集</button>
-   <!-- 追加：配置完了後の分岐コントロール（保存→プレビュー / 編集） -->
-    <div id="arrangeControls" style="display:none; position: fixed; bottom: calc(78px + env(safe-area-inset-bottom, 0)); left: 50%; transform: translateX(-50%); z-index: 1100; gap:8px;">
-      <button id="toPreviewBtn" class="form-button" style="display:inline-block; padding:10px 16px; margin-right:8px;">保存 → プレビュー</button>
-      <button id="toEditBtn" class="form-button" style="display:inline-block; padding:10px 16px; background:#fff; color:#1976d2; border:1px solid #1976d2;">編集</button>
-    </div>
   </div>
 
   <div class="area" id="area-decorations" style="display: none;">
@@ -621,22 +608,10 @@
 
     <!-- 「決定 → プレビュー」ボタンをデコレーションエリア内に移動 -->
     <button id="generateBtn" class="form-button" style="margin-top: 20px;">決定 → プレビュー</button>
-    <!-- 追加：編集モード時に右上に表示される保存プレビューボタン -->
-    <button id="previewBtnTopRight" class="form-button" style="position: fixed; top: 12px; right: 12px; display: none; z-index: 1200; padding:8px 12px; border-radius: 14px; font-size:14px;">保存 → プレビュー</button>
     <span style="min-width:6em; display:inline-block;">プレビュー表示に少し時間がかかります</span>
   </div>
 
   <div class="area" id="area-result" style="display: none;">
-  <!-- 追加：フルスクリーンプレビュー（長押しで保存） -->
-  <div id="previewScreen" style="display:none; position:fixed; inset:0; background:#000; z-index:1300; align-items:center; justify-content:center; padding:12px;">
-    <img id="previewFullImage" alt="フルスクリーンプレビュー" style="max-width:100%; max-height:100%; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.6); object-fit:contain;">
-    <div id="previewOverlayUI" style="position: absolute; top: 16px; left:16px; right:16px; display:flex; justify-content:space-between; align-items:center; color:#fff; pointer-events:auto;">
-      <button id="previewCloseBtn" class="form-button" style="background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.18);">閉じる</button>
-      <span style="font-size:14px;">長押しで保存</span>
-      <button id="previewDownloadBtn" class="form-button" style="background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.18);">ダウンロード</button>
-    </div>
-  </div>
-
     <h2 id="section4-title">4) 完成イメージ</h2>
     <div id="previewWrapper">
       <img id="previewImage" alt="合成画像プレビュー" />
@@ -1349,214 +1324,13 @@
      */
     confirmPhotoBtn.addEventListener('click', () => {
       if (!uploadedImg) return; // 写真がアップロードされていなければ何もしない
-
-      // 写真をロックして「分岐」UIを出す（編集パネルは最初は閉じる）
-      isPhotoLocked = true;
-      confirmPhotoBtn.style.display = 'none';
-      reEditPhotoBtn.style.display = 'block';
-      areaDecorations.style.display = 'none'; // 編集パネルは閉じた状態で分岐表示
-      document.getElementById('arrangeControls').style.display = 'flex'; // 保存/編集の入口を表示
-      document.getElementById('editorWrapper').scrollIntoView({ behavior: 'smooth' });
-
+      isPhotoLocked = true; // 写真をロック
+      confirmPhotoBtn.style.display = 'none'; // 確定ボタンを非表示
+      reEditPhotoBtn.style.display = 'block'; // 再編集ボタンを表示
+      areaDecorations.style.display = 'block'; // デコレーションエリアを表示
+      document.getElementById('area-decorations').scrollIntoView({ behavior: 'smooth' }); // デコレーションエリアへスクロール
       saveState(); // 最初のデコレーション状態を保存
     });
-
-    // ====== 新規：プレビュー生成＆画面切替のユーティリティ ======
-    let currentPreviewDataUrl = null;
-
-    // 軽めの縮小プレビューを生成して dataURL を返す（既存 generateBtn の "クイックプレビュー" 部分を切り出した版）
-    async function createQuickPreviewDataUrl() {
-      // smallCanvas: 編集用の論理サイズを使って一旦合成
-      const smallCanvas = document.createElement('canvas');
-      smallCanvas.width = mainCanvas.width;
-      smallCanvas.height = mainCanvas.height;
-      const sctx = smallCanvas.getContext('2d');
-
-      // 背景色
-      sctx.fillStyle = backgroundColor || '#ffffff';
-      sctx.fillRect(0, 0, smallCanvas.width, smallCanvas.height);
-
-      // 写真（存在する場合）
-      if (uploadedImg && photoObject) {
-        if (uploadedImg.decode) {
-          try { await uploadedImg.decode(); } catch(e) { /* ignore */ }
-        }
-        const srcW = (uploadedImg.naturalWidth || uploadedImg.width);
-        const srcH = (uploadedImg.naturalHeight || uploadedImg.height);
-        const drawW = srcW * (photoObject.scale || 1);
-        const drawH = srcH * (photoObject.scale || 1);
-
-        sctx.save();
-        sctx.translate(photoObject.x || 0, photoObject.y || 0);
-        sctx.rotate(photoObject.rotation || 0);
-        sctx.drawImage(uploadedImg, -drawW / 2, -drawH / 2, drawW, drawH);
-        sctx.restore();
-      }
-
-      // デコレーション（テキスト・スタンプ）
-      decorationObjects.forEach(obj => {
-        sctx.save();
-        sctx.translate(obj.x, obj.y);
-        sctx.rotate(obj.rotation || 0);
-        if (obj.type === 'text') {
-          // drawTextByStyle は (ctx, obj) を期待するのでそのまま渡す
-          drawTextByStyle(sctx, obj);
-        } else if (obj.type === 'image') {
-          sctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
-        }
-        sctx.restore();
-      });
-
-      // テンプレート（低解像度 or プリロード済み）
-      let tplImg = templateCache[templateSelector.value];
-      if (!tplImg) {
-        tplImg = new Image();
-        tplImg.src = templateSelector.value;
-        if (tplImg.decode) try { await tplImg.decode(); } catch(e) {}
-      } else {
-        if (tplImg.decode) try { await tplImg.decode(); } catch(e) {}
-      }
-      try { sctx.drawImage(tplImg, 0, 0, smallCanvas.width, smallCanvas.height); } catch(e) { /* ignore */ }
-
-      // 表示用に縮小（MAX_PREVIEW_WIDTH を使って表示サイズを抑える）
-      const MAX_PREVIEW_WIDTH = 1200;
-      const previewScale = Math.min(1, MAX_PREVIEW_WIDTH / smallCanvas.width);
-      const previewCanvas = document.createElement('canvas');
-      previewCanvas.width = Math.max(1, Math.round(smallCanvas.width * previewScale));
-      previewCanvas.height = Math.max(1, Math.round(smallCanvas.height * previewScale));
-      const pctx = previewCanvas.getContext('2d');
-      pctx.drawImage(smallCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
-
-      return previewCanvas.toDataURL('image/png');
-    }
-
-    // プレビューオーバーレイを開く
-    async function showPreviewOverlay() {
-      // 生成
-      try {
-        currentPreviewDataUrl = await createQuickPreviewDataUrl();
-      } catch (err) {
-        console.error('プレビュー生成失敗', err);
-        currentPreviewDataUrl = null;
-        return;
-      }
-      const previewFullImage = document.getElementById('previewFullImage');
-      const previewScreen = document.getElementById('previewScreen');
-      if (previewFullImage && previewScreen) {
-        previewFullImage.src = currentPreviewDataUrl;
-        previewScreen.style.display = 'flex';
-        // ツール群を少し隠す（必要なら）
-        document.getElementById('arrangeControls').style.display = 'none';
-        document.querySelector('.cc-toolbar').style.display = 'none';
-        document.querySelector('.cc-panels').style.display = 'none';
-      }
-    }
-
-    // プレビューオーバーレイを閉じる
-    function closePreviewOverlay() {
-      const previewScreen = document.getElementById('previewScreen');
-      if (!previewScreen) return;
-      previewScreen.style.display = 'none';
-      // 編集モードに戻るかどうかは呼び出し元の状態で制御。ここではツールを復元。
-      document.querySelector('.cc-toolbar').style.display = '';
-      document.querySelector('.cc-panels').style.display = '';
-    }
-
-    // 画像をダウンロードする（ダウンロードできない環境でも新タブで開くフォールバック）
-    function downloadPreviewImage() {
-      if (!currentPreviewDataUrl) return;
-      const a = document.createElement('a');
-      a.href = currentPreviewDataUrl;
-      a.download = 'my_uchiwa.png';
-      document.body.appendChild(a);
-      try {
-        a.click();
-      } catch(e) {
-        // 一部モバイルでは a.click() がダウンロードしない場合があるため、新しいタブで開く
-        window.open(currentPreviewDataUrl, '_blank');
-      }
-      a.remove();
-    }
-
-    // 長押し検知（previewFullImage）: press >= 650ms でダウンロード
-    (function setupPreviewLongPress() {
-      const previewFullImage = document.getElementById('previewFullImage');
-      const previewCloseBtn = document.getElementById('previewCloseBtn');
-      const previewDownloadBtn = document.getElementById('previewDownloadBtn');
-
-      let lpTimer = null;
-      const LP_THRESHOLD = 650; // ms
-
-      function clearTimer() {
-        if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
-      }
-
-      // タッチ開始 / マウスダウン
-      function startPress() {
-        clearTimer();
-        lpTimer = setTimeout(() => {
-          // 長押し発火：ダウンロード
-          downloadPreviewImage();
-        }, LP_THRESHOLD);
-      }
-      // キャンセル
-      function endPress() {
-        clearTimer();
-      }
-
-      if (previewFullImage) {
-        previewFullImage.addEventListener('touchstart', (e) => { e.preventDefault(); startPress(); }, { passive: false });
-        previewFullImage.addEventListener('touchend', (e) => { e.preventDefault(); endPress(); }, { passive: false });
-        previewFullImage.addEventListener('mousedown', (e) => { startPress(); });
-        previewFullImage.addEventListener('mouseup', (e) => { endPress(); });
-        previewFullImage.addEventListener('mouseleave', (e) => { endPress(); });
-      }
-      if (previewCloseBtn) previewCloseBtn.addEventListener('click', () => { closePreviewOverlay(); });
-      if (previewDownloadBtn) previewDownloadBtn.addEventListener('click', () => { downloadPreviewImage(); });
-    })();
-
-    // ====== 新規：ボタンのイベント（保存→プレビュー / 編集 / 右上プレビュー） ======
-    const toPreviewBtnEl = document.getElementById('toPreviewBtn');
-    const toEditBtnEl = document.getElementById('toEditBtn');
-    const previewBtnTopRightEl = document.getElementById('previewBtnTopRight');
-
-    if (toPreviewBtnEl) {
-      toPreviewBtnEl.addEventListener('click', async () => {
-        // 直接プレビューを全面表示
-        await showPreviewOverlay();
-      });
-    }
-
-    if (toEditBtnEl) {
-      toEditBtnEl.addEventListener('click', () => {
-        // 編集モードへ：デコレーションパネルを開き、右上プレビューを表示
-        document.getElementById('arrangeControls').style.display = 'none';
-        areaDecorations.style.display = 'block';
-        document.getElementById('previewBtnTopRight').style.display = 'block';
-        document.getElementById('area-decorations').scrollIntoView({ behavior: 'smooth' });
-      });
-    }
-
-    if (previewBtnTopRightEl) {
-      previewBtnTopRightEl.addEventListener('click', async () => {
-        // 編集中でもプレビューを出す
-        await showPreviewOverlay();
-      });
-    }
-
-    // areaResult に表示する既存の previewImage がある場合は、それをクリックしてプレビューオーバーレイを開くことも可能
-    const previewImageElem = document.getElementById('previewImage');
-    if (previewImageElem) {
-      previewImageElem.addEventListener('click', () => {
-        // 既に quick preview が作られている場合はそれを流用、さもなくば新規生成
-        if (previewImageElem.src) {
-          currentPreviewDataUrl = previewImageElem.src;
-          document.getElementById('previewFullImage').src = currentPreviewDataUrl;
-          document.getElementById('previewScreen').style.display = 'flex';
-        }
-      });
-    }
-
 
     /**
      * 写真の再編集ボタンの処理
@@ -1566,8 +1340,6 @@
       reEditPhotoBtn.style.display = 'none'; // 再編集ボタンを非表示
       confirmPhotoBtn.style.display = 'block'; // 確定ボタンを表示
       areaDecorations.style.display = 'none'; // デコレーションエリアを非表示
-      document.getElementById('arrangeControls').style.display = 'none';
-      document.getElementById('previewBtnTopRight').style.display = 'none';
       selectedObject = null; // 選択中のデコレーションオブジェクトを解除
       areaResult.style.display = 'none'; // 完成イメージエリアも非表示にリセット
       drawAll(); // 全体を再描画
