@@ -2312,12 +2312,18 @@
       const previewScreen = document.getElementById('previewScreen');
       previewScreen.style.display = "none";
 
-      // プレビューを閉じた後に「裏面も作る」「注文フォームへ進む」を表示
-      const backBtn = document.querySelector('button:contains("裏面も作る")');
-      const orderBtn = document.querySelector('button:contains("注文フォームへ進む")');
+      // 完成イメージ欄は常に非表示
+      const previewContainer = document.getElementById('previewContainer');
+      if (previewContainer) previewContainer.style.display = "none";
+
+      // 「裏面も作る」「注文フォームへ進む」「注釈文」を表示
+      const backBtn = document.getElementById('makeBackBtn');
+      const orderBtn = document.getElementById('goToOrderFormBtn');
+      const orderNote = document.getElementById('orderNote');
 
       if (backBtn) backBtn.style.display = "block";
       if (orderBtn) orderBtn.style.display = "block";
+      if (orderNote) orderNote.style.display = "block";
     });
   </script>
 </body>
