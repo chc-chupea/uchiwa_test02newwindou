@@ -2309,8 +2309,11 @@
     }
 
     document.getElementById('previewCloseBtn').addEventListener('click', () => {
+      console.log("✅ 閉じるボタン押された"); // デバッグ確認用
+
+      // プレビューオーバーレイを閉じる
       const previewScreen = document.getElementById('previewScreen');
-      previewScreen.style.display = "none";
+      if (previewScreen) previewScreen.style.display = "none";
 
       // 完成イメージ欄は常に非表示
       const previewContainer = document.getElementById('previewContainer');
@@ -2320,6 +2323,8 @@
       const backBtn = document.getElementById('makeBackBtn');
       const orderBtn = document.getElementById('goToOrderFormBtn');
       const orderNote = document.getElementById('orderNote');
+
+      console.log("取得した要素:", backBtn, orderBtn, orderNote); // デバッグ確認用
 
       if (backBtn) backBtn.style.display = "block";
       if (orderBtn) orderBtn.style.display = "block";
