@@ -2324,20 +2324,23 @@
       const previewScreen = document.getElementById('previewScreen');
       if (previewScreen) previewScreen.style.display = "none";
 
-      // 完成イメージ欄は常に非表示
-      const previewContainer = document.getElementById('previewContainer');
-      if (previewContainer) previewContainer.style.display = "none";
+      // 完成領域（#area-result）を表示して、その中のボタンを見えるようにする
+      const areaResult = document.getElementById('area-result');
+      if (areaResult) areaResult.style.display = "block";
 
-      // 「裏面も作る」「注文フォームへ進む」「注釈文」を表示
       const backBtn = document.getElementById('makeBackBtn');
       const orderBtn = document.getElementById('goToOrderFormBtn');
       const orderNote = document.getElementById('orderNote');
 
-      console.log("取得した要素:", backBtn, orderBtn, orderNote); // デバッグ確認用
+      console.log("取得した要素:", backBtn, orderBtn, orderNote);
 
       if (backBtn) backBtn.style.display = "block";
       if (orderBtn) orderBtn.style.display = "block";
       if (orderNote) orderNote.style.display = "block";
+
+      // 編集サイドメニューは閉じる（UI整理）
+      const arrange = document.getElementById('arrangeControls');
+      if (arrange) arrange.style.display = "none";
     });
   </script>
 </body>
