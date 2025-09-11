@@ -365,7 +365,7 @@
       .generate-icon .label { display: none; } /* ラベルを消したければこの行をそのまま */
     }
 
-    /* PC/スマホ共通で隠したいものを明示 */
+    /* hide only the large generate buttons; keep top-right preview visible */
     #generateBtn,
     #generateIconBtn {
       display: none !important;
@@ -1196,40 +1196,52 @@
 
 
     /**
-     * デコレーションオブジェクト（テキスト、スタンプ）をキャンバスに描画します。
+     * デコレーションオブジェクト（テキスト、スタンプ）を指定の ctx に描画します。
+     * @param {CanvasRenderingContext2D} ctxLocal - 描画先の ctx
+     * @param {boolean} exportMode - true のときは選択枠（青点線）を描かない（プレビュー／書き出し用）
      */
-    function drawDecorations() {
+    function drawDecorations(ctxLocal, exportMode = false) {
       decorationObjects.forEach(obj => {
-        ctx.save();
+        ctxLocal.save();
         // オブジェクトの中心を基準に移動、回転、拡大縮小
-        ctx.translate(obj.x, obj.y);
-        ctx.rotate(obj.rotation);
-        ctx.scale(obj.scale, obj.scale);
+        ctxLocal.translate(obj.x, obj.y);
+        ctxLocal.rotate(obj.rotation || 0);
+        ctxLocal.scale(obj.scale || 1, obj.scale || 1);
 
         if (obj.type === 'text') {
-          drawTextByStyle(ctx, obj);
-
-
+          // 既存の汎用関数を使って描く（drawTextByStyle は ctx を受け取る）
+          drawTextByStyle(ctxLocal, obj);
         } else if (obj.type === 'image') {
-          // 画像を描画（中心座標が0,0になるようにオフセット）
-          ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+          const iw = obj.width || (obj.img && (obj.img.naturalWidth || obj.img.width)) || 100;
+          const ih = obj.height || (obj.img && (obj.img.naturalHeight || obj.img.height)) || 100;
+          ctxLocal.drawImage(obj.img, -iw / 2, -ih / 2, iw, ih);
         }
 
-        // 選択中のオブジェクトに枠線を表示
-        if (obj === selectedObject) {
-          ctx.strokeStyle = '#42a5f5';
-          ctx.lineWidth = 10 / obj.scale; // スケーリングに合わせて線幅を調整
-          ctx.setLineDash([20 / obj.scale, 10 / obj.scale]); // スケーリングに合わせて点線の間隔を調整
-          // オブジェクトの描画サイズを計算し、枠線を描画
-          const rectWidth  = obj.type === 'text' ? ctx.measureText(obj.content).width : obj.width;
-          const rectHeight = obj.type === 'text' ? obj.fontSize * 1.2 : obj.height;
-          ctx.strokeRect(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
-          ctx.setLineDash([]); // 点線モードをリセット
+        // 選択枠は exportMode のときは描かない（プレビュー/保存時に不要）
+        if (!exportMode && obj === selectedObject) {
+          // テキストの場合はフォントで幅を測る
+          let rectWidth, rectHeight;
+          if (obj.type === 'text') {
+            ctxLocal.save();
+            ctxLocal.font = `${obj.fontSize}px ${obj.fontFamily}`;
+            rectWidth  = Math.max(1, ctxLocal.measureText(obj.content).width);
+            rectHeight = obj.fontSize * 1.2;
+            ctxLocal.restore();
+          } else {
+            rectWidth  = obj.width || 100;
+            rectHeight = obj.height || 100;
+          }
+
+          ctxLocal.strokeStyle = '#42a5f5';
+          ctxLocal.lineWidth = 10 / (obj.scale || 1);
+          ctxLocal.setLineDash([20 / (obj.scale || 1), 10 / (obj.scale || 1)]);
+          ctxLocal.strokeRect(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
+          ctxLocal.setLineDash([]);
         }
 
-        ctx.restore();
-      });
-    }
+    ctxLocal.restore();
+  });
+}
 
     /**
      * キャンバス全体をクリアし、写真とデコレーションを再描画します。
@@ -1240,8 +1252,8 @@
       ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
       // 2. 写真を描画
       drawImage();
-      // 3. デコレーションを描画
-      drawDecorations();
+      // 3. デコレーションを描画（通常レンダリングなので選択枠は表示）
+      drawDecorations(ctx, false);
     }
 
     /**
@@ -1353,18 +1365,12 @@
     
     // ====> この行の直後に追加 <====
 
-    // 新規追加: 背景色ピッカーの変更イベント
+    // 背景色ピッカーの変更イベント（既存の写真は消さない。配置を壊さない）
     backgroundColorPicker.addEventListener('input', (e) => {
-        backgroundColor = e.target.value; 
-        // メンバーカラーピッカーの背景色を、選択された色にリアルタイムで更新
-        e.target.style.backgroundColor = e.target.value; 
-        uploadedImg = null; 
-        photoObject = null;
-        isPhotoLocked = true;
-        areaDecorations.style.display = 'block'; 
-        reEditPhotoBtn.style.display = 'none';
-        confirmPhotoBtn.style.display = 'none';
-        drawAll(); 
+      backgroundColor = e.target.value;
+      e.target.style.backgroundColor = e.target.value; // ボタンの表示を更新
+      // ※ uploadedImg / photoObject は消さない（誤って写真を消すと配置できなくなるため）
+      drawAll();
     });
 
     // ====> ここまで <====
@@ -1440,20 +1446,8 @@
           sctx.restore();
         }
 
-        // デコレーション（テキスト・スタンプ）を低解像度で描画
-        decorationObjects.forEach(obj => {
-          sctx.save();
-          sctx.translate(obj.x, obj.y);
-          sctx.rotate(obj.rotation || 0);
-          if (obj.type === 'text') {
-            // 既存の関数 drawTextByStyle は obj.fontSize を期待するのでそのまま呼べる
-            drawTextByStyle(sctx, obj);
-          } else if (obj.type === 'image') {
-            // obj.width/height は「編集時の論理サイズ」を保持しているはず
-            sctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
-          }
-          sctx.restore();
-        });
+        // デコレーション（テキスト・スタンプ）を低解像度で描画（選択枠は表示しない）
+        drawDecorations(sctx, true);
 
         // テンプレート（高解像度ファイルをプリロードしているならそれを使う。ただしここは縮小して描く）
         let tplImg = templateCache[templateSelector.value];
@@ -1464,7 +1458,18 @@
         } else {
           if (tplImg.decode) try { await tplImg.decode(); } catch(e){/*ignore*/ }
         }
+        // テンプレートに DOM の CSS filter を反映（無ければ 'none'）
+        let filterStr = 'none';
+        const tplEl = document.getElementById('templateOverlay');
+        if (tplEl) {
+          const cs = window.getComputedStyle(tplEl);
+          filterStr = (cs && cs.filter) ? cs.filter : 'none';
+        }
+        sctx.save();
+        sctx.filter = filterStr || 'none'; // offscreen でも filter が使えるブラウザはこれで反映
         sctx.drawImage(tplImg, 0, 0, smallCanvas.width, smallCanvas.height);
+        sctx.filter = 'none';
+        sctx.restore();
 
         // プレビュー用に縮小してすぐ表示（UI ロックを最小にする）
         const MAX_PREVIEW_WIDTH = 1200;
@@ -2323,24 +2328,8 @@
         offCtx.restore();
       }
 
-      // 3) デコレーションを描画（選択枠は描かない）
-      for (const obj of decorationObjects) {
-        offCtx.save();
-        offCtx.translate(obj.x, obj.y);
-        offCtx.rotate(obj.rotation || 0);
-        offCtx.scale(obj.scale || 1, obj.scale || 1);
-
-        if (obj.type === 'text') {
-          // 既存の drawTextByStyle は ctx と obj を受け取るのでそのまま使う
-          drawTextByStyle(offCtx, obj);
-        } else if (obj.type === 'image') {
-          try { if (obj.img && obj.img.decode) await obj.img.decode(); } catch(e){/*ignore*/ }
-          const iw = obj.width || (obj.img && (obj.img.naturalWidth || obj.img.width)) || 100;
-          const ih = obj.height || (obj.img && (obj.img.naturalHeight || obj.img.height)) || 100;
-          offCtx.drawImage(obj.img, -iw / 2, -ih / 2, iw, ih);
-        }
-        offCtx.restore();
-      }
+      // 3) デコレーションを描画（選択枠は除外 / exportMode=true）
+      drawDecorations(offCtx, true);
 
       // 4) テンプレート（うちわ）を一番上に描画 — CSS の filter があればそれを反映する
       try {
@@ -2405,32 +2394,33 @@
 
     // --- プレビュー閉じる処理 ---
     document.getElementById('previewCloseBtn').addEventListener('click', () => {
-      console.log("✅ 閉じるボタン押された"); // デバッグ確認用
+      console.log("✅ 閉じるボタン押された"); // デバッグ：コンソールに出れば処理が呼ばれている
 
-      // プレビューオーバーレイを閉じる
+      // 1) プレビューオーバーレイを閉じる
       const previewScreen = document.getElementById('previewScreen');
-      if (previewScreen) previewScreen.style.display = "none";
+      if (previewScreen) previewScreen.style.display = 'none';
 
-      // 完成領域（#area-result）を表示して、その中のボタンを見えるようにする
+      // 2) 完成領域（#area-result）を表示して、その中のボタン（子要素）を見えるようにする
       const areaResult = document.getElementById('area-result');
-      if (areaResult) areaResult.style.display = "block";
+      if (areaResult) areaResult.style.display = 'block';
 
       const backBtn = document.getElementById('makeBackBtn');
       const orderBtn = document.getElementById('goToOrderFormBtn');
       const orderNote = document.getElementById('orderNote');
 
-      console.log("取得した要素:", backBtn, orderBtn, orderNote);
+      console.log("取得した要素:", backBtn, orderBtn, orderNote); // デバッグ確認用
 
-      // まだ裏面を作っていないときだけ「裏面も作る」を表示
-      if (!backSideCreated && backBtn) backBtn.style.display = "block";
+      if (backBtn) backBtn.style.display = 'block';
+      if (orderBtn) orderBtn.style.display = 'block';
+      if (orderNote) orderNote.style.display = 'block';
 
-      // 注文フォームボタンと注釈は常に表示
-      if (orderBtn) orderBtn.style.display = "block";
-      if (orderNote) orderNote.style.display = "block";
+      // 3) 編集用の右上プレビューボタンは編集モード専用なので閉じたら非表示にする（必要なら）
+      const previewTop = document.getElementById('previewBtnTopRight');
+      if (previewTop) previewTop.style.display = 'none';
 
-      // 編集サイドメニューは閉じる（UI整理）
+      // 4) 編集サイドメニューが開いていたら閉じる（任意：UI整理のため）
       const arrange = document.getElementById('arrangeControls');
-      if (arrange) arrange.style.display = "none";
+      if (arrange) arrange.style.display = 'none';
     });
   </script>
 </body>
