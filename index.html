@@ -930,6 +930,7 @@
     //
     // 注意：初期は 'front'。「裏面も作る」ボタンで 'back' に切替えます。
     // --- ここまで追加 ---
+    let backSideCreated = false; // 裏面を作ったかどうかのフラグ
 
 
 
@@ -2281,7 +2282,7 @@
     }
 
     async function showPreviewOverlay() {
-      console.log("🚀 showPreviewOverlay called (modified)");
+      console.log("🚀 showPreviewOverlay called (preview render without selection)");
       const previewScreen = document.getElementById('previewScreen');
       const previewFullImage = document.getElementById('previewFullImage');
       if (!previewScreen || !previewFullImage) {
@@ -2289,31 +2290,106 @@
         return;
       }
 
-      // 画面上の重なる UI を隠して、プレビューに集中させる
+      // 画面側の余計な UI を隠す（既存処理を引き継ぐ）
       const arrange = document.getElementById('arrangeControls');
       if (arrange) arrange.style.display = 'none';
       if (areaDecorations) areaDecorations.style.display = 'none';
 
-      // 最新の描画を反映（念のため）
-      try { drawAll(); } catch(e) { console.warn('drawAll() failed in preview', e); }
+      // 最新の編集内容を念のため確定（編集キャンバス自体は変更しない）
+      try { drawAll(); } catch (e) { console.warn('drawAll() failed before preview', e); }
 
-      // 現在の編集用キャンバスを DataURL にして表示
+      // オフスクリーンで合成（選択枠は描かない、template/filter を適用）
+      const w = mainCanvas.width;
+      const h = mainCanvas.height;
+      const off = document.createElement('canvas');
+      off.width = w;
+      off.height = h;
+      const offCtx = off.getContext('2d');
+
+      // 1) 背景色
+      offCtx.fillStyle = (typeof backgroundColor !== 'undefined' ? backgroundColor : '#ffffff');
+      offCtx.fillRect(0, 0, w, h);
+
+      // 2) 写真（あれば）を描画（編集時の位置・回転・スケールを再現）
+      if (uploadedImg && photoObject) {
+        try { if (uploadedImg.decode) await uploadedImg.decode(); } catch(e){ /* ignore */ }
+        offCtx.save();
+        offCtx.translate(photoObject.x, photoObject.y);
+        offCtx.rotate(photoObject.rotation || 0);
+        offCtx.scale(photoObject.scale || 1, photoObject.scale || 1);
+        const srcW = uploadedImg.naturalWidth || uploadedImg.width;
+        const srcH = uploadedImg.naturalHeight || uploadedImg.height;
+        offCtx.drawImage(uploadedImg, -srcW / 2, -srcH / 2, srcW, srcH);
+        offCtx.restore();
+      }
+
+      // 3) デコレーションを描画（選択枠は描かない）
+      for (const obj of decorationObjects) {
+        offCtx.save();
+        offCtx.translate(obj.x, obj.y);
+        offCtx.rotate(obj.rotation || 0);
+        offCtx.scale(obj.scale || 1, obj.scale || 1);
+
+        if (obj.type === 'text') {
+          // 既存の drawTextByStyle は ctx と obj を受け取るのでそのまま使う
+          drawTextByStyle(offCtx, obj);
+        } else if (obj.type === 'image') {
+          try { if (obj.img && obj.img.decode) await obj.img.decode(); } catch(e){/*ignore*/ }
+          const iw = obj.width || (obj.img && (obj.img.naturalWidth || obj.img.width)) || 100;
+          const ih = obj.height || (obj.img && (obj.img.naturalHeight || obj.img.height)) || 100;
+          offCtx.drawImage(obj.img, -iw / 2, -ih / 2, iw, ih);
+        }
+        offCtx.restore();
+      }
+
+      // 4) テンプレート（うちわ）を一番上に描画 — CSS の filter があればそれを反映する
       try {
-        const dataUrl = mainCanvas.toDataURL("image/png");
+        const tplEl = document.getElementById('templateOverlay');
+        const tplSel = document.getElementById('templateSelector');
+        const tplSrc = (tplSel && tplSel.value) || (tplEl && tplEl.src) || null;
+        if (tplSrc) {
+          let tplImg = templateCache[tplSrc];
+          if (!tplImg) {
+            tplImg = new Image();
+            tplImg.src = tplSrc;
+            try { if (tplImg.decode) await tplImg.decode(); } catch(e){/*ignore*/ }
+          } else {
+            try { if (tplImg.decode) await tplImg.decode(); } catch(e){/*ignore*/ }
+          }
+
+          // DOM の計算済み filter を取得して canvas に適用（なければ 'none'）
+          let filterStr = 'none';
+          if (tplEl) {
+            const cs = window.getComputedStyle(tplEl);
+            if (cs && cs.filter) filterStr = cs.filter || 'none';
+          }
+
+          offCtx.save();
+          // offCtx.filter が使えるブラウザだと CSS と同じ filter を適用できます
+          offCtx.filter = filterStr || 'none';
+          offCtx.drawImage(tplImg, 0, 0, w, h);
+          offCtx.filter = 'none';
+          offCtx.restore();
+        }
+      } catch (err) {
+        console.warn('template draw failed in preview:', err);
+      }
+
+      // 5) image に変換して表示（長押しで保存できるように <img> を使う）
+      try {
+        const dataUrl = off.toDataURL('image/png');
         previewFullImage.src = dataUrl;
         previewFullImage.alt = '合成プレビュー（長押しで保存）';
       } catch (err) {
-        console.error('preview canvas toDataURL error:', err);
-        // 代替：空のプレースホルダを出す
-        previewFullImage.src = '';
+        console.error('offscreen -> dataURL error', err);
+        previewFullImage.src = ''; // フォールバック
       }
 
-      // オーバーレイを表示（flex で中央表示する想定）
+      // オーバーレイ表示
       previewScreen.style.display = 'flex';
 
-      // オーバーレイの背景クリックで閉じる（追加の利便性）
-      // ※ ボタンで閉じる処理も既にあるため二重にはなりません
-      previewScreen.onclick = function(e) {
+      // 背景クリックで閉じる（既存挙動を維持）
+      previewScreen.onclick = function (e) {
         if (e.target === previewScreen) {
           previewScreen.style.display = 'none';
         }
