@@ -1406,10 +1406,17 @@
       isRendering = true;
       generateBtn.disabled = true;
 
+      // 追加：プレビュー生成中は選択アウトラインを写さないため、選択を一時退避して解除する
+      let _prevSelectedForPreview = null;
+      
       const spinner = document.getElementById('previewSpinner');
       if (spinner) spinner.style.display = 'flex';
 
       try {
+        // 追加：実際の描画を始める直前に現在の選択を退避して無効化
+        _prevSelectedForPreview = selectedObject;
+        selectedObject = null;
+
         // ---------- 1) 素早い「縮小プレビュー」生成（低解像度ベース） ----------
         const smallCanvas = document.createElement('canvas');
         smallCanvas.width = mainCanvas.width;   // 編集用（低解像度）の論理サイズ
@@ -1463,7 +1470,22 @@
         } else {
           if (tplImg.decode) try { await tplImg.decode(); } catch(e){/*ignore*/ }
         }
+        // テンプレート画像を描画する前に、DOM上の filter/opacity を取得して反映する
+        try {
+          const tplEl = document.getElementById('templateOverlay');
+          const tplStyle = tplEl ? window.getComputedStyle(tplEl) : null;
+          const tplFilter = tplStyle ? (tplStyle.filter || 'none') : 'none';
+          const tplOpacity = tplStyle ? parseFloat(tplStyle.opacity || '1') : 1;
+
+          if (tplFilter && tplFilter !== 'none') sctx.filter = tplFilter;
+          sctx.globalAlpha = tplOpacity;
+        } catch (e) {
+          // 取得に失敗しても描画は続ける（ブラウザ差や要素未配置に備える）
+        }
         sctx.drawImage(tplImg, 0, 0, smallCanvas.width, smallCanvas.height);
+        // リセット
+        sctx.filter = 'none';
+        sctx.globalAlpha = 1;
 
         // プレビュー用に縮小してすぐ表示（UI ロックを最小にする）
         const MAX_PREVIEW_WIDTH = 1200;
@@ -1579,7 +1601,22 @@
             } else {
               if (tplImg2.decode) try { await tplImg2.decode(); } catch(e){/*ignore*/ }
             }
+            // フル解像度でも DOM の filter/opacity を反映して描画
+            try {
+              const tplEl = document.getElementById('templateOverlay');
+              const tplStyle = tplEl ? window.getComputedStyle(tplEl) : null;
+              const tplFilter = tplStyle ? (tplStyle.filter || 'none') : 'none';
+              const tplOpacity = tplStyle ? parseFloat(tplStyle.opacity || '1') : 1;
+
+              if (tplFilter && tplFilter !== 'none') fctx.filter = tplFilter;
+              fctx.globalAlpha = tplOpacity;
+            } catch (e) {
+              // ignore
+            }
             fctx.drawImage(tplImg2, 0, 0, fullCanvas.width, fullCanvas.height);
+            // reset
+            fctx.filter = 'none';
+            fctx.globalAlpha = 1;
 
             // 生成した A3 PNG をプレビューに差し替え（ユーザーはその場で長押し保存できる）
             const fullDataUrl = fullCanvas.toDataURL('image/png');
@@ -1596,6 +1633,8 @@
         alert('プレビュー生成中にエラーが発生しました。コンソールを確認してください。');
       } finally {
         if (spinner) spinner.style.display = 'none';
+        // プレビュー処理終了後に選択を復元
+        selectedObject = _prevSelectedForPreview;
         isRendering = false;
         generateBtn.disabled = false;
       }
