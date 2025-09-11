@@ -365,6 +365,14 @@
       .generate-icon .label { display: none; } /* ラベルを消したければこの行をそのまま */
     }
 
+    /* PC/スマホ共通で隠したいものを明示 */
+    #generateBtn,
+    #generateIconBtn {
+      display: none !important;
+    }
+
+    /* area-result は初期非表示に任せるので CSS で強制しない */
+
     /* デスクトップでは小アイコンを補助的に表示（必要なら非表示に） */
     @media (min-width: 1025px) {
       /* 任意：PCで小アイコンを非表示にしたければ以下をアンコメント */
