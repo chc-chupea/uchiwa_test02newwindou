@@ -1406,39 +1406,51 @@
       isRendering = true;
       generateBtn.disabled = true;
 
-      // 追加：プレビュー生成中は選択アウトラインを写さないため、選択を一時退避して解除する
-      let _prevSelectedForPreview = null;
-      
+      // 選択を一時退避して消す（プレビューに選択枠を入れないため）
+      let _prevSelectedForPreview = selectedObject;
+      selectedObject = null;
+
       const spinner = document.getElementById('previewSpinner');
       if (spinner) spinner.style.display = 'flex';
 
-      try {
-        // 追加：実際の描画を始める直前に現在の選択を退避して無効化
-        _prevSelectedForPreview = selectedObject;
-        selectedObject = null;
+      // ヘルパ：テンプレートに適用されている filter/opacity を取得（DOM要素 or ::before に対応）
+      function _getTemplateFilterAndOpacity() {
+        try {
+          const tplEl = document.getElementById('templateOverlay');
+          if (tplEl) {
+            const cs = window.getComputedStyle(tplEl);
+            return { filter: cs.filter || 'none', opacity: parseFloat(cs.opacity || '1') || 1 };
+          }
+          // fallback: #editorWrapper::before にテンプレがあるケース
+          const editor = document.getElementById('editorWrapper');
+          if (editor) {
+            const csBefore = window.getComputedStyle(editor, '::before');
+            return { filter: csBefore.filter || 'none', opacity: parseFloat(csBefore.opacity || '1') || 1 };
+          }
+        } catch (e) {
+          // ignore
+        }
+        return { filter: 'none', opacity: 1 };
+      }
 
+      try {
         // ---------- 1) 素早い「縮小プレビュー」生成（低解像度ベース） ----------
         const smallCanvas = document.createElement('canvas');
-        smallCanvas.width = mainCanvas.width;   // 編集用（低解像度）の論理サイズ
+        smallCanvas.width = mainCanvas.width;
         smallCanvas.height = mainCanvas.height;
         const sctx = smallCanvas.getContext('2d');
 
-        // 背景色を塗る
+        // 背景
         sctx.fillStyle = backgroundColor;
         sctx.fillRect(0, 0, smallCanvas.width, smallCanvas.height);
 
-        // 写真（存在する場合）を簡易に描画（編集時と同じロジック。ただし低解像度座標）
+        // 写真（低解像度で概算描画）
         if (uploadedImg) {
-          if (uploadedImg.decode) {
-            try { await uploadedImg.decode(); } catch(e) { /* ignore */ }
-          }
-          // uploadedImg の実際のピクセルサイズに依存せず、編集時の見た目を再現するため
-          // mainCanvas 上の scale/位置を使って描く（低解像度）
+          if (uploadedImg.decode) try { await uploadedImg.decode(); } catch(e){/*ignore*/ }
           const srcW = (uploadedImg.naturalWidth || uploadedImg.width);
           const srcH = (uploadedImg.naturalHeight || uploadedImg.height);
           const drawW = srcW * (photoObject.scale || 1);
           const drawH = srcH * (photoObject.scale || 1);
-
           sctx.save();
           sctx.translate(photoObject.x, photoObject.y);
           sctx.rotate(photoObject.rotation || 0);
@@ -1446,22 +1458,20 @@
           sctx.restore();
         }
 
-        // デコレーション（テキスト・スタンプ）を低解像度で描画
+        // デコレーション（低解像度で描画 — 選択枠は selectedObject を null にしているため描かれない）
         decorationObjects.forEach(obj => {
           sctx.save();
           sctx.translate(obj.x, obj.y);
           sctx.rotate(obj.rotation || 0);
           if (obj.type === 'text') {
-            // 既存の関数 drawTextByStyle は obj.fontSize を期待するのでそのまま呼べる
             drawTextByStyle(sctx, obj);
           } else if (obj.type === 'image') {
-            // obj.width/height は「編集時の論理サイズ」を保持しているはず
             sctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
           }
           sctx.restore();
         });
 
-        // テンプレート（高解像度ファイルをプリロードしているならそれを使う。ただしここは縮小して描く）
+        // テンプレート（縮小版）を描画：DOMの filter/opacity を反映
         let tplImg = templateCache[templateSelector.value];
         if (!tplImg) {
           tplImg = new Image();
@@ -1470,24 +1480,16 @@
         } else {
           if (tplImg.decode) try { await tplImg.decode(); } catch(e){/*ignore*/ }
         }
-        // テンプレート画像を描画する前に、DOM上の filter/opacity を取得して反映する
+        const tplStyle = _getTemplateFilterAndOpacity();
         try {
-          const tplEl = document.getElementById('templateOverlay');
-          const tplStyle = tplEl ? window.getComputedStyle(tplEl) : null;
-          const tplFilter = tplStyle ? (tplStyle.filter || 'none') : 'none';
-          const tplOpacity = tplStyle ? parseFloat(tplStyle.opacity || '1') : 1;
-
-          if (tplFilter && tplFilter !== 'none') sctx.filter = tplFilter;
-          sctx.globalAlpha = tplOpacity;
-        } catch (e) {
-          // 取得に失敗しても描画は続ける（ブラウザ差や要素未配置に備える）
-        }
+          if (tplStyle.filter && tplStyle.filter !== 'none') sctx.filter = tplStyle.filter;
+          sctx.globalAlpha = tplStyle.opacity;
+        } catch (e) {/* ignore */}
         sctx.drawImage(tplImg, 0, 0, smallCanvas.width, smallCanvas.height);
-        // リセット
         sctx.filter = 'none';
         sctx.globalAlpha = 1;
 
-        // プレビュー用に縮小してすぐ表示（UI ロックを最小にする）
+        // 縮小して先に素早く表示
         const MAX_PREVIEW_WIDTH = 1200;
         const previewScale = Math.min(1, MAX_PREVIEW_WIDTH / smallCanvas.width);
         const previewCanvas = document.createElement('canvas');
@@ -1497,71 +1499,33 @@
         pctx.drawImage(smallCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
         const quickDataUrl = previewCanvas.toDataURL('image/png');
         previewImage.src = quickDataUrl; // まずは縮小版を素早く表示
-
-        // UI 表示
         areaResult.style.display = 'block';
         previewWrapper.style.display = 'block';
         goToOrderFormBtn.style.display = 'block';
-        const makeBackBtn = document.getElementById('makeBackBtn');
-        const orderNote = document.getElementById('orderNote');
+        if (mode === 'front') frontImageDataUrl = quickDataUrl;
 
-        if (mode === 'front') {
-          // 表面プレビュー時のUI（テンプレート選択を表示）
-  if (makeBackBtn) makeBackBtn.style.display = 'block';
-          previewNotice.innerHTML = ' 「画像を長押し👆」→ 「画像を保存」または「写真に追加」で写真アプリに保存されます。（後でフォームにアップロードします）';
-          if (orderNote) orderNote.style.display = 'block';
-          frontImageDataUrl = quickDataUrl; // とりあえず縮小版を一時保存
-
-          // --- 表モードなのでテンプレート選択UIを表示に戻す ---
-          const tpl = document.getElementById('templateSelector');
-          const tplLabel = document.getElementById('templateLabel');
-          if (tpl) tpl.style.display = 'block';
-          if (tplLabel) tplLabel.textContent = 'うちわのテンプレ―トを選んでね👇';
-
-        } else {
-          // 裏面プレビュー時はテンプレート選択を非表示にして案内文を出す
-          if (makeBackBtn) makeBackBtn.style.display = 'none';
-          previewNotice.innerHTML = '📲 この裏面の画像も「長押し👆」して保存してください';
-          if (orderNote) orderNote.style.display = 'block';
-
-          // --- 裏モード：テンプレート選択UIを隠して案内文へ差し替える ---
-          const tpl = document.getElementById('templateSelector');
-          const tplLabel = document.getElementById('templateLabel');
-          if (tpl) tpl.style.display = 'none';
-          if (tplLabel) tplLabel.textContent = '※ 表で選んだテンプレートが裏面にも適用されます';
-        }
-
-        areaResult.scrollIntoView({ behavior: 'smooth' });
-
-        // ---------- 2) 裏で A3 フル解像度（4961x3508）を生成してプレビュー差し替え ----------
-        // 重い処理なので次のイベントループに回す（UI の応答性確保）
+        // ---------- 2) 裏でフル解像度生成（A3相当） ----------
         setTimeout(async () => {
           try {
-            const fullW = 4134; // A3 横向きの一辺（px, 250dpi）
-            const fullH = 2920; // A3 縦（px, 250dpi）
             const fullCanvas = document.createElement('canvas');
-            fullCanvas.width = fullW;
-            fullCanvas.height = fullH;
+            fullCanvas.width = Math.round(3508); // 必要ならここを動的に計算
+            fullCanvas.height = Math.round(4961); // 必要ならここを動的に計算
             const fctx = fullCanvas.getContext('2d');
-            fctx.imageSmoothingEnabled = true;
-            fctx.imageSmoothingQuality = 'high';
 
-            const scaleX = fullCanvas.width / mainCanvas.width;
-            const scaleY = fullCanvas.height / mainCanvas.height;
-            const avgScale = (scaleX + scaleY) / 2;
-
-            // 背景色
+            // 背景
             fctx.fillStyle = backgroundColor;
             fctx.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
 
-            // 写真（高解像度で描く）
+            // 写真（高解像度で描画 — スケーリングに注意）
             if (uploadedImg) {
-              try { if (uploadedImg.decode) await uploadedImg.decode(); } catch(e) { /* ignore */ }
+              try { if (uploadedImg.decode) await uploadedImg.decode(); } catch(e){/*ignore*/ }
               const srcW = (uploadedImg.naturalWidth || uploadedImg.width);
               const srcH = (uploadedImg.naturalHeight || uploadedImg.height);
+              // scaleX/scaleY を適切に計算する（ここは既存ロジックを踏襲）
+              const scaleX = fullCanvas.width / mainCanvas.width;
+              const scaleY = fullCanvas.height / mainCanvas.height;
               const drawW = srcW * (photoObject.scale || 1) * scaleX;
               const drawH = srcH * (photoObject.scale || 1) * scaleY;
-
               fctx.save();
               fctx.translate((photoObject.x || 0) * scaleX, (photoObject.y || 0) * scaleY);
               fctx.rotate(photoObject.rotation || 0);
@@ -1569,17 +1533,18 @@
               fctx.restore();
             }
 
-            // デコレーション（高解像度描画）
+            // デコレーション（高解像度）
+            const scaleX = fullCanvas.width / mainCanvas.width;
+            const scaleY = fullCanvas.height / mainCanvas.height;
+            const avgScale = (scaleX + scaleY) / 2;
             for (const obj of decorationObjects) {
               fctx.save();
               fctx.translate(obj.x * scaleX, obj.y * scaleY);
               fctx.rotate(obj.rotation || 0);
-
               if (obj.type === 'text') {
-                // drawTextByStyle は obj.fontSize に依存するため、フォントサイズをスケールした浅いコピーを渡す
                 const scaledText = Object.assign({}, obj, {
                   fontSize: (obj.fontSize || 16) * (obj.scale || 1) * avgScale,
-                  scale: 1 // drawTextByStyle 内で ctx.scale を期待しないようにする
+                  scale: 1
                 });
                 drawTextByStyle(fctx, scaledText);
               } else if (obj.type === 'image') {
@@ -1588,11 +1553,10 @@
                 const h = (obj.height || (obj.img && (obj.img.naturalHeight || obj.img.height))) * (obj.scale || 1) * scaleY;
                 fctx.drawImage(obj.img, -w / 2, -h / 2, w, h);
               }
-
               fctx.restore();
             }
 
-            // テンプレート（高解像度版を全面に）
+            // テンプレート（高解像度）を描画（DOMの filter/opacity を反映）
             let tplImg2 = templateCache[templateSelector.value];
             if (!tplImg2) {
               tplImg2 = new Image();
@@ -1601,30 +1565,21 @@
             } else {
               if (tplImg2.decode) try { await tplImg2.decode(); } catch(e){/*ignore*/ }
             }
-            // フル解像度でも DOM の filter/opacity を反映して描画
             try {
-              const tplEl = document.getElementById('templateOverlay');
-              const tplStyle = tplEl ? window.getComputedStyle(tplEl) : null;
-              const tplFilter = tplStyle ? (tplStyle.filter || 'none') : 'none';
-              const tplOpacity = tplStyle ? parseFloat(tplStyle.opacity || '1') : 1;
-
-              if (tplFilter && tplFilter !== 'none') fctx.filter = tplFilter;
-              fctx.globalAlpha = tplOpacity;
-            } catch (e) {
-              // ignore
-            }
+              const tplStyle2 = _getTemplateFilterAndOpacity();
+              if (tplStyle2.filter && tplStyle2.filter !== 'none') fctx.filter = tplStyle2.filter;
+              fctx.globalAlpha = tplStyle2.opacity;
+            } catch (e) { /* ignore */ }
             fctx.drawImage(tplImg2, 0, 0, fullCanvas.width, fullCanvas.height);
-            // reset
             fctx.filter = 'none';
             fctx.globalAlpha = 1;
 
-            // 生成した A3 PNG をプレビューに差し替え（ユーザーはその場で長押し保存できる）
+            // 完全解像度画像をプレビューに差し替え
             const fullDataUrl = fullCanvas.toDataURL('image/png');
             previewImage.src = fullDataUrl;
             if (mode === 'front') frontImageDataUrl = fullDataUrl;
           } catch (err) {
             console.warn('フル解像度生成に失敗しました', err);
-            // 失敗時は縮小版のままにする（既に quickDataUrl が表示されている）
           }
         }, 50);
 
@@ -1632,11 +1587,12 @@
         console.error('preview generate error:', e);
         alert('プレビュー生成中にエラーが発生しました。コンソールを確認してください。');
       } finally {
-        if (spinner) spinner.style.display = 'none';
-        // プレビュー処理終了後に選択を復元
+        // プレビュー終了後に選択を復元して UI を再描画
         selectedObject = _prevSelectedForPreview;
+        if (spinner) spinner.style.display = 'none';
         isRendering = false;
         generateBtn.disabled = false;
+        try { drawAll(); } catch(e) { /* ignore */ }
       }
     });
     // --- ここまで置き換え ---
@@ -2320,7 +2276,6 @@
     }
 
     async function showPreviewOverlay() {
-      console.log("🚀 showPreviewOverlay called (modified)");
       const previewScreen = document.getElementById('previewScreen');
       const previewFullImage = document.getElementById('previewFullImage');
       if (!previewScreen || !previewFullImage) {
@@ -2328,35 +2283,85 @@
         return;
       }
 
-      // 画面上の重なる UI を隠して、プレビューに集中させる
+      // 画面上の重なる UI を隠す
       const arrange = document.getElementById('arrangeControls');
       if (arrange) arrange.style.display = 'none';
       if (areaDecorations) areaDecorations.style.display = 'none';
 
-      // 最新の描画を反映（念のため）
-      try { drawAll(); } catch(e) { console.warn('drawAll() failed in preview', e); }
-
-      // 現在の編集用キャンバスを DataURL にして表示
-      try {
-        const dataUrl = mainCanvas.toDataURL("image/png");
-        previewFullImage.src = dataUrl;
-        previewFullImage.alt = '合成プレビュー（長押しで保存）';
-      } catch (err) {
-        console.error('preview canvas toDataURL error:', err);
-        // 代替：空のプレースホルダを出す
-        previewFullImage.src = '';
+      // ヘルパ（template の filter/opacity を取得）
+      function _getTemplateFilterAndOpacity() {
+        try {
+          const tplEl = document.getElementById('templateOverlay');
+          if (tplEl) {
+            const cs = window.getComputedStyle(tplEl);
+            return { filter: cs.filter || 'none', opacity: parseFloat(cs.opacity || '1') || 1 };
+          }
+          const editor = document.getElementById('editorWrapper');
+          if (editor) {
+            const csBefore = window.getComputedStyle(editor, '::before');
+            return { filter: csBefore.filter || 'none', opacity: parseFloat(csBefore.opacity || '1') || 1 };
+          }
+        } catch (e) { /* ignore */ }
+        return { filter: 'none', opacity: 1 };
       }
 
-      // オーバーレイを表示（flex で中央表示する想定）
-      previewScreen.style.display = 'flex';
+      try {
+        // 1) メインの描画を最新化（念のため）
+        try { drawAll(); } catch(e) { console.warn('drawAll() failed in preview', e); }
 
-      // オーバーレイの背景クリックで閉じる（追加の利便性）
-      // ※ ボタンで閉じる処理も既にあるため二重にはなりません
-      previewScreen.onclick = function(e) {
-        if (e.target === previewScreen) {
-          previewScreen.style.display = 'none';
+        // 2) 選択枠を一時的に非表示にして mainCanvas の内容を取得
+        const prevSel = selectedObject;
+        selectedObject = null;
+        try { drawAll(); } catch(e) { /* ignore */ } // mainCanvas を選択無しで更新
+        // ここで mainCanvas には「写真 + デコレーション（選択枠無し）」が描かれている
+
+        // 3) オフスクリーンキャンバスを作り mainCanvas をコピー → その上にテンプレート（filter反映）を合成
+        const tmp = document.createElement('canvas');
+        tmp.width = mainCanvas.width;
+        tmp.height = mainCanvas.height;
+        const tctx = tmp.getContext('2d');
+        // main の内容をコピー
+        tctx.drawImage(mainCanvas, 0, 0);
+
+        // テンプレート画像を取得（プリロード済みならそれを使う）
+        let tplImg = templateCache[templateSelector.value];
+        if (!tplImg) {
+          tplImg = new Image();
+          tplImg.src = templateSelector.value;
+          try { if (tplImg.decode) await tplImg.decode(); } catch(e){/*ignore*/ }
+        } else {
+          try { if (tplImg.decode) await tplImg.decode(); } catch(e){/*ignore*/ }
         }
-      };
+
+        // テンプレートの filter/opacity を反映して描画
+        const tplStyle = _getTemplateFilterAndOpacity();
+        try {
+          if (tplStyle.filter && tplStyle.filter !== 'none') tctx.filter = tplStyle.filter;
+          tctx.globalAlpha = tplStyle.opacity;
+        } catch (e) { /* ignore */ }
+        tctx.drawImage(tplImg, 0, 0, tmp.width, tmp.height);
+        tctx.filter = 'none';
+        tctx.globalAlpha = 1;
+
+        // 4) 生成した合成を DataURL にしてプレビュー表示
+        const dataUrl = tmp.toDataURL('image/png');
+        previewFullImage.src = dataUrl;
+        previewFullImage.alt = '合成プレビュー（長押しで保存）';
+
+        // 5) UI 表示
+        previewScreen.style.display = 'flex';
+        previewScreen.onclick = function(e) {
+          if (e.target === previewScreen) previewScreen.style.display = 'none';
+        };
+      } catch (err) {
+        console.error('preview canvas toDataURL error:', err);
+        previewFullImage.src = '';
+        previewFullImage.alt = 'プレビューエラー';
+      } finally {
+        // 選択を復元して編集画面を元に戻す
+        selectedObject = (typeof prevSel !== 'undefined') ? prevSel : null;
+        try { drawAll(); } catch(e) { /* ignore */ } // 元の UI を再描画
+      }
     }
 
     // --- 裏面も作るボタンの処理 ---
