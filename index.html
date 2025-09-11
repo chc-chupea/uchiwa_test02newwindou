@@ -634,7 +634,7 @@
   </div>
 
   <div class="area" id="area-result" style="display: none;">
-    <h2 id="section4-title">4) 完成イメージ</h2>
+    <h2 id="section4-title">4) 裏面を作る or 注文</h2>
     <div id="previewWrapper">
       <img id="previewImage" alt="合成画像プレビュー" />
     </div>
@@ -706,6 +706,9 @@
   <!-- Hammer.jsを読み込み：タッチジェスチャーをよりスムーズにするため -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
   <script>
+
+    let backSideCreated = false;
+
 
     // ← ここに追加！
       window.addEventListener('DOMContentLoaded', () => {
@@ -2317,6 +2320,14 @@
       };
     }
 
+    // --- 裏面も作るボタンの処理 ---
+    document.getElementById('makeBackBtn').addEventListener('click', () => {
+      backSideCreated = true; // 裏面を作り始めたらフラグON
+      console.log("✅ 裏面を作るボタン押下 → backSideCreated = true");
+      // 裏面用の処理（すでにある処理をここに書く）
+    });
+
+    // --- プレビュー閉じる処理 ---
     document.getElementById('previewCloseBtn').addEventListener('click', () => {
       console.log("✅ 閉じるボタン押された"); // デバッグ確認用
 
@@ -2334,7 +2345,10 @@
 
       console.log("取得した要素:", backBtn, orderBtn, orderNote);
 
-      if (backBtn) backBtn.style.display = "block";
+      // まだ裏面を作っていないときだけ「裏面も作る」を表示
+      if (!backSideCreated && backBtn) backBtn.style.display = "block";
+
+      // 注文フォームボタンと注釈は常に表示
       if (orderBtn) orderBtn.style.display = "block";
       if (orderNote) orderNote.style.display = "block";
 
