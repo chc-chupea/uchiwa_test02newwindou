@@ -1362,14 +1362,24 @@
     // 新規追加: 背景色ピッカーの変更イベント
     backgroundColorPicker.addEventListener('input', (e) => {
         backgroundColor = e.target.value; 
-        // メンバーカラーピッカーの背景色を、選択された色にリアルタイムで更新
         e.target.style.backgroundColor = e.target.value; 
         uploadedImg = null; 
         photoObject = null;
         isPhotoLocked = true;
+
+        // デコレーションエリアを表示
         areaDecorations.style.display = 'block'; 
+
+        // 完成エリアは閉じる
+        areaResult.style.display = 'none'; 
+
+        // 写真配置確定ボタンや再編集ボタンは非表示にする
         reEditPhotoBtn.style.display = 'none';
         confirmPhotoBtn.style.display = 'none';
+
+        // すぐ編集パネルにスクロールさせると親切
+        areaDecorations.scrollIntoView({ behavior: 'smooth' });
+
         drawAll(); 
     });
 
