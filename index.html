@@ -475,157 +475,6 @@
     </div>
   </div>
 
-  <div class="area" id="area-decorations" style="display: none;">
-    <h2 id="section3-title">3) デコレーション</h2>
-    <style>
-      @media (max-width: 768px) {
-        #section3-title { display: none; }
-      }
-    </style>
-    <!-- <p id="decorationNotice" style="font-size: 12px; color: #666;">
-      ※ オブジェクトをタップすると選択され、移動・サイズ変更・回転できます。
-    </p> -->
-
-    <!-- ▼▼ ここから “横スライド メニュー” を追加 ▼▼ -->
-    <div class="cc-toolbar" role="tablist">
-      <button class="cc-item active" data-target="panel-text">
-        <!-- <span class="icon">T</span> --><span class="label">テキスト</span>
-      </button>
-      <button class="cc-item" data-target="panel-stamp">
-        <!-- <span class="icon">🌟</span> --><span class="label">スタンプ</span>
-      </button>
-      <button class="cc-item" data-target="panel-arrange">
-        <!-- <span class="icon">📋</span> --><span class="label">複製／削除</span>
-      </button>
-      <button class="cc-item" data-target="panel-history">
-        <!-- <span class="icon">↩ ↪</span> --><span class="label">↩ ↪</span>
-      </button>
-      <button class="cc-item" data-target="panel-layer">
-        <!-- <span class="icon">⬆︎⬇︎</span> --><span class="label">レイヤー</span>
-      </button>
-      <!-- 追加：ツールバー右端の小さな「決定」ボタン（モバイル向け） -->
-      <button class="cc-item generate-icon" id="generateIconBtn" title="決定・プレビュー">
-         <span class=""label"">決定→プレビュー</span>
-      </button>
-
-
-    </div>
-
-    <div class="cc-panels">
-      <!-- テキスト -->
-      <section id="panel-text" class="cc-panel">
-                <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
-        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-          <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
-          <select id="fontPicker" class="native-font-select">
-            <option value="Arial, sans-serif">Arial</option>
-            <option value="'DotGothic16', sans-serif">ドットゴシック</option>
-            <option value="'Train One', cursive">Train One</option>
-            <option value="'Cherry Bomb One', cursive">手書き風</option>
-            <option value="'Kaisei Tokumin', serif">丸文字</option>
-            <option value="'M PLUS Rounded 1c', sans-serif">M PLUS Rounded 太字</option>
-            <option value="'M PLUS 1p', sans-serif">M PLUS 1p 太字</option>
-            <option value="'Kosugi Maru', sans-serif">Kosugi Maru</option>
-            <option value="'Reggae One', cursive">Reggae One</option>
-            <option value="'RocknRoll One', sans-serif">RocknRoll One</option>
-            <option value="'Yomogi', cursive">Yomogi</option>
-            <option value="'Hachi Maru Pop', cursive">Hachi Maru Pop</option>
-          </select>
-          <div class="font-picker-wrap">
-            <button id="fontPickerBtn" type="button">フォントを選ぶ</button>
-            <button onclick="addTextToOverlay()">テキスト追加</button>
-            <div id="fontDropdown" hidden></div>
-          </div>
-        </div>
-
-        <!-- ▼ 縁取り設定（ここから追加） -->
-          <div id="outlineControls" class="control-row" style="margin-bottom: 10px;">
-            <label>
-              <input type="checkbox" id="outlineToggle" checked>
-              縁取りON/OFF
-            </label>
-
-            <label style="margin-left:8px;">
-              外側の縁の色：
-              <input type="color" id="outlineColorPicker" value="#ffffff" title="縁取り色" style="width: 50px;" />
-            </label>
-
-            <label style="margin-left:8px;">
-              外側の縁の太さ：
-              <input type="range" id="outlineWidthPercent" min="0" max="30" value="12" step="1">
-              <span id="outlineWidthValue">12%</span>
-            </label>
-          </div>
-          <!-- ▲ 縁取り設定（ここまで追加） -->
-
-          <!-- ▼ アーチ文字設定（ここから追加） -->
-          <div id="archControls" class="control-row" style="margin:10px 0 14px;">
-            <label>
-              <input type="checkbox" id="archToggle">
-              アーチ文字にする
-            </label>
-
-            <div style="margin-top:8px;">              
-              <label style="margin-right:10px;">
-                <input type="radio" name="archStyle" value="rainbow" checked> 虹型（∩）
-              </label>
-              <label>
-                <input type="radio" name="archStyle" value="smile"> スマイル型（∪）
-              </label>
-            </div>
-
-            <div style="margin-top:8px;">
-              <span style="min-width:6em; display:inline-block;">カーブ：</span>
-              <input type="range" id="archAmount" min="0" max="100" value="50" step="1">
-              <span id="archAmountValue">50</span>
-            </div>
-          </div>
-          <!-- ▲ アーチ文字設定（ここまで追加） -->
-
-
-      </section>
-
-      <!-- スタンプ -->
-      <section id="panel-stamp" class="cc-panel" hidden>
-        <h3 style="margin:6px 0 8px;">スタンプ</h3>
-        <div class="stamp-buttons-container">
-          <button class="stamp-button" onclick="addStamp('❤️')">❤️</button>
-          <button class="stamp-button" onclick="addStamp('⭐')">⭐</button>
-          <button class="stamp-button" onclick="addStamp('🎶')">🎶</button>
-          <button class="stamp-button" onclick="addStamp('01loveu.png')"><img src="01loveu.png" alt="Love You"></button>
-          <button class="stamp-button" onclick="addStamp('02ntwithFace.png')"><img src="02ntwithFace.png" alt="NT with Face"></button>
-          <button class="stamp-button" onclick="addStamp('03eyestome.png')"><img src="03eyestome.png" alt="Eyes to me"></button>
-          <button class="stamp-button" onclick="addStamp('04getmyheart.png')"><img src="04getmyheart.png" alt="Get my heart"></button>
-          <button class="stamp-button" onclick="addStamp('05angel.png')"><img src="05angel.png" alt="Angel"></button>
-          <button class="stamp-button" onclick="addStamp('06god.png')"><img src="06god.png" alt="God"></button>
-          <button class="stamp-button" onclick="addStamp('07precious.png')"><img src="07precious.png" alt="Precious"></button>
-          <button class="stamp-button" onclick="addStamp('08osi_pink.png')"><img src="08osi_pink.png" alt="Precious"></button>
-          <button class="stamp-button" onclick="addStamp('09osi_yellow.png')"><img src="09osi_yellow.png" alt="Precious"></button>
-          <button class="stamp-button" onclick="addStamp('10osi_lightblue.png')"><img src="10osi_lightblue.png" alt="Precious"></button>
-          <button class="stamp-button" onclick="addStamp('11osi_green.png')"><img src="11osi_green.png" alt="Precious"></button>
-        </div>
-      </section>
-
-      <!-- 並べ替え（複製・削除） -->
-      <section id="panel-arrange" class="cc-panel" hidden>
-        <button id="duplicateBtn">複製</button>
-        <button id="deleteBtn" style="background:#f44336;">削除</button>
-      </section>
-
-      <!-- 履歴（戻る・やり直し） -->
-      <section id="panel-history" class="cc-panel" hidden>
-        <button id="undoBtn">戻る</button>
-        <button id="redoBtn">やり直し</button>
-      </section>
-
-      <!-- レイヤー（前面/背面） -->
-      <section id="panel-layer" class="cc-panel" hidden>
-        <button id="sendBackwardBtn">背面へ</button>
-        <button id="bringForwardBtn">前面へ</button>
-      </section>
-    </div>
-    <!-- ▲▲ ここまで “横スライド メニュー” ▲▲ -->
-
     <!-- 「決定 → プレビュー」ボタンをデコレーションエリア内に移動 -->
     <button id="generateBtn" class="form-button" style="margin-top: 20px;">決定 → プレビュー</button>
     <!-- ここから追加：編集モードの右上ボタン（初期は非表示） -->
@@ -942,12 +791,14 @@
 
 
 
+    // 置き換え：フォールバックを付けた安全な参照（先頭 3 行）
     const previewImage = document.getElementById('previewImage');
     const previewNotice = document.getElementById('previewNotice');
-    const areaDecorations = document.getElementById('area-decorations');
-    const areaResult = document.getElementById('area-result');
-    // 追加: 背景色ピッカーの取得
-    const backgroundColorPicker = document.getElementById('backgroundColorPicker');
+    const areaDecorations = document.getElementById('area-decorations') || {
+      style: { display: 'none' },
+      scrollIntoView: function(){},
+      classList: { add: function(){}, remove: function(){} }
+    }; // <-- 置き換えブロック（末尾 3 行）
 
     // 状態変数
     let uploadedImg = null;
