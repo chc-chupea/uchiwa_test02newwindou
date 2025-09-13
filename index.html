@@ -293,50 +293,6 @@
     }
 
     /* === CapCut風：横スクロールツールバー === */
-
-    /* --- ここから追加: 編集メニューを画面下に固定表示（修正版） --- */
-    #area-decorations {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      margin: 0 auto;
-      z-index: 1000; /* 周辺オーバーレイと整合する現実的な値へ */
-      max-height: 55vh; /* 40% だと狭すぎる端末があるため vh 基準に */
-      overflow-y: auto;
-      background: #fff; /* 背景が透けないように */
-      box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
-      border-top-left-radius: 12px;
-      border-top-right-radius: 12px;
-      padding-bottom: env(safe-area-inset-bottom, 12px); /* セーフエリア余白確保 */
-    }
-    /* --- ここまで追加 --- */
-
-    /* --- ここから追加: 編集メニューのふわっと表示 & 注目パルス --- */
-    /* area-decorations の初期（非表示）スタイル：表示時は JS で display:block をセットしてから .visible を付与します */
-    #area-decorations {
-      opacity: 0;
-      transform: translateY(18px) scale(0.995);
-      will-change: transform, opacity;
-      /* デフォルトのトランジション（JS側でもセットするので冗長でもOK） */
-      transition: opacity 360ms cubic-bezier(.2,.9,.3,1), transform 420ms cubic-bezier(.16,.8,.36,1);
-    }
-
-    /* ツールバーの一時的な注目パルス（視線誘導用） */
-    .cc-toolbar.attention {
-      animation: cc-toolbar-pulse 1.1s cubic-bezier(.2,.9,.3,1);
-      /* 少し強めに見せるために影を強調（アニメの中で戻る） */
-      box-shadow: 0 12px 30px rgba(0,0,0,0.10);
-    }
-
-    @keyframes cc-toolbar-pulse {
-      0%   { transform: translateY(6px) scale(0.995); box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
-      40%  { transform: translateY(0)   scale(1.02);  box-shadow: 0 14px 34px rgba(0,0,0,0.14); }
-      100% { transform: translateY(0)   scale(1);     box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
-    }
-    /* --- ここまで追加 --- */
-
-
     .cc-toolbar {
       display: flex;
       gap: 12px;
@@ -435,25 +391,24 @@
 
 
     /* === 画面下固定（CapCut風） === */
-    /* ツールバー本体を下固定（修正版） */
+    /* ツールバー本体を下固定 */
     .cc-toolbar {
       position: fixed;
       left: 0;
       right: 0;
       bottom: env(safe-area-inset-bottom, 0);
-      z-index: 1100; /* #area-decorations(1000)より上に出す（ボタンが隠れないように） */
-      margin: 0;
+      z-index: 1000;
+      margin: 0;                 /* 既存の margin を打ち消す */
       border-top: 1px solid #eee;
       border-bottom: 0;
-      background: transparent; /* 背景は親の白を見せる（好みで #fff に） */
-      padding: 10px 8px; /* 少し余裕を持たせる */
+      background: #fff;
+      padding: 8px 6px;
       display: flex;
       gap: 12px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       scroll-snap-type: x proximity;
     }
-
     .cc-toolbar::-webkit-scrollbar { display: none; }
 
     /* パネル（ツールの中身）も下固定：ツールバーの“すぐ上”に出す */
@@ -477,11 +432,6 @@
     /* キャンバスが下固定UIに隠れないようボディ下に余白をつける */
     body {
       padding-bottom: calc(220px + env(safe-area-inset-bottom, 0));
-    }
-
-    /* デバッグ用：要素の枠線を可視化（確認できたら削除） */
-    #area-decorations, .cc-toolbar, .cc-panels {
-      outline: 2px dashed rgba(255,0,0,0.5);
     }
 
   </style>
@@ -555,7 +505,7 @@
       </button>
       <!-- 追加：ツールバー右端の小さな「決定」ボタン（モバイル向け） -->
       <button class="cc-item generate-icon" id="generateIconBtn" title="決定・プレビュー">
-         <span class="label">決定→プレビュー</span>
+         <span class=""label"">決定→プレビュー</span>
       </button>
 
 
@@ -863,61 +813,6 @@
       ccItems.forEach(b => b.classList.remove('active'));
     }
 
-    /* --- ここから追加：編集メニューをふわっと表示して注目させるユーティリティ --- */
-function showEditMenuWithAnimation(opts = {}) {
-      // 参照要素
-      const el = document.getElementById('area-decorations');
-      if (!el) return; // 見つからなければ何もしない
-
-      // 補助 UI（あれば）を取得
-      const arrange = document.getElementById('arrangeControls');
-      const previewTopBtn = document.getElementById('previewBtnTopRight');
-
-      // 1) 分岐コントロール等を隠す
-      if (arrange) arrange.style.display = 'none';
-      // 右上プレビューは表示しておく（あれば）
-      if (previewTopBtn) previewTopBtn.style.display = 'block';
-
-      // 2) 表示しつつアニメーション用に初期化
-      el.style.display = 'block';                 // まずは表示（display）
-      el.style.opacity = '0';                     // 初期は透明
-      el.style.transform = 'translateY(18px) scale(0.995)'; // 少し下・小さめから開始
-      el.style.transition = 'none';               // 一旦トランジション切る（リセット）
-
-      // 強制再描画（ブラウザに現在のスタイルを認識させる）
-      void el.offsetWidth;
-
-      // 3) トランジションを設定して「見せる」
-      // ※ cubic-bezier の値は妥当な小数に修正しています（不正な値だと効果が効かない）
-      el.style.transition = 'opacity 360ms cubic-bezier(.2,.9,.3,1), transform 420ms cubic-bezier(.16,.8,.36,1)';
-
-      // 実際に見える状態にする（ここでアニメーションが走る）
-      el.style.opacity = '1';
-      el.style.transform = 'translateY(0) scale(1)';
-
-      // 4) ツールバーを軽い「注目パルス」で目立たせる（.attention は CSS 側で簡易定義がある想定）
-      const toolbar = el.querySelector('.cc-toolbar');
-      if (toolbar) {
-        toolbar.classList.remove('attention');
-        setTimeout(() => {
-          toolbar.classList.add('attention');
-          // 自動で外す
-          setTimeout(() => toolbar.classList.remove('attention'), 1200);
-        }, 120);
-      }
-
-
-      // 5) オプション：最左のツールを一時ハイライトして目を誘導する
-      if (opts.focusFirstItem) {
-        const first = el.querySelector('.cc-item');
-        if (first) {
-          first.classList.add('active');
-          setTimeout(() => first.classList.remove('active'), 1200);
-        }
-      }
-    }
-    /* --- ここまで追加 --- */
-
     ccToolbar.addEventListener('click', (e) => {
       const btn = e.target.closest('.cc-item');
       if (!btn) return;
@@ -951,7 +846,10 @@ function showEditMenuWithAnimation(opts = {}) {
 
     // 初期表示は何も開かない（選択時に自動オープン）
     hidePanels()
-    
+
+
+
+
 
     // この配列の順序／内容は <select id="fontPicker"> と揃えています
     const FONT_CANDIDATES = [
@@ -1461,30 +1359,31 @@ function showEditMenuWithAnimation(opts = {}) {
     
     // ====> この行の直後に追加 <====
 
-    // === 背景色ピッカー入力時：編集メニューをふわっと表示（メンバーカラー選択後の誘導） ===
+    // 新規追加: 背景色ピッカーの変更イベント
     backgroundColorPicker.addEventListener('input', (e) => {
-        // 背景色を更新
-        backgroundColor = e.target.value;
-        e.target.style.backgroundColor = e.target.value;
-
-        // 写真編集状態をリセット気味に（仕様に合わせて変更可）
-        uploadedImg = null;
+        backgroundColor = e.target.value; 
+        e.target.style.backgroundColor = e.target.value; 
+        uploadedImg = null; 
         photoObject = null;
         isPhotoLocked = true;
 
-        // 完成表示が出ていれば閉じる（あれば）
-        if (areaResult) areaResult.style.display = 'none';
+        // デコレーションエリアを表示
+        areaDecorations.style.display = 'block'; 
 
-        // 写真確定／再編集ボタンは隠す（あれば）
-        if (reEditPhotoBtn) reEditPhotoBtn.style.display = 'none';
-        if (confirmPhotoBtn) confirmPhotoBtn.style.display = 'none';
+        // 完成エリアは閉じる
+        areaResult.style.display = 'none'; 
 
-        // 編集メニューをアニメーション付きで表示（最左のツールに注目）
-        showEditMenuWithAnimation({ focusFirstItem: true });
+        // 写真配置確定ボタンや再編集ボタンは非表示にする
+        reEditPhotoBtn.style.display = 'none';
+        confirmPhotoBtn.style.display = 'none';
 
-        // 画面更新（必要なら）
-        drawAll();
+        // すぐ編集パネルにスクロールさせると親切
+        areaDecorations.scrollIntoView({ behavior: 'smooth' });
+
+        drawAll(); 
     });
+
+    // ====> ここまで <====
 
 
 
@@ -2376,23 +2275,15 @@ function showEditMenuWithAnimation(opts = {}) {
       });
     }
 
-    // --- 置き換え後 ---
     if (toEditBtnEl) {
       toEditBtnEl.addEventListener('click', () => {
         console.log("✅ 編集 ボタンが押されました");
-
-        // 分岐コントロール等を隠す（安全に）
-        const arrange = document.getElementById('arrangeControls');
-        if (arrange) arrange.style.display = 'none';
-
-        const previewTop = document.getElementById('previewBtnTopRight');
-        if (previewTop) previewTop.style.display = 'block';
-
-        // アニメーションで編集メニューを表示（最左をハイライト）
-        showEditMenuWithAnimation({ focusFirstItem: true });
+        document.getElementById('arrangeControls').style.display = 'none';
+        areaDecorations.style.display = 'block';
+        document.getElementById('previewBtnTopRight').style.display = 'block';
+        document.getElementById('area-decorations').scrollIntoView({ behavior: 'smooth' });
       });
     }
-    // --- 置き換え後ここまで ---
 
     if (previewBtnTopRightEl) {
       previewBtnTopRightEl.addEventListener('click', async () => {
