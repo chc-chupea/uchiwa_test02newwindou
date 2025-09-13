@@ -238,6 +238,17 @@
       margin-bottom: 16px; /* 次のセクションへのマージン */
     }
 
+
+    /* ====== ここから追加：#area-decorations の「白い帯」を消す（ツールは fixed のまま維持） ====== */
+    #area-decorations {
+      background: transparent !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      padding: 0 !important;
+      margin-bottom: 0 !important;
+    }
+    /* ====== ここまで追加 ====== */
+
     /* うちわのデザイン選択ラベルから縁の線をなくす */
     #templateLabel {
         border: none;
