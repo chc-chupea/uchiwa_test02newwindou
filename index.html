@@ -536,7 +536,7 @@
       </button>
       <!-- 追加：ツールバー右端の小さな「決定」ボタン（モバイル向け） -->
       <button class="cc-item generate-icon" id="generateIconBtn" title="決定・プレビュー">
-         <span class=""label"">決定→プレビュー</span>
+         <span class="label">決定→プレビュー</span>
       </button>
 
 
@@ -843,6 +843,64 @@
       ccPanels.forEach(p => p.hidden = true);
       ccItems.forEach(b => b.classList.remove('active'));
     }
+
+    /* --- ここから追加：編集メニューをふわっと表示して注目させるユーティリティ --- */
+function showEditMenuWithAnimation(opts = {}) {
+      // 参照要素
+      const el = document.getElementById('area-decorations');
+      if (!el) return; // 見つからなければ何もしない
+
+      // 補助 UI（あれば）を取得
+      const arrange = document.getElementById('arrangeControls');
+      const previewTopBtn = document.getElementById('previewBtnTopRight');
+
+      // 1) 分岐コントロール等を隠す
+      if (arrange) arrange.style.display = 'none';
+      // 右上プレビューは表示しておく（あれば）
+      if (previewTopBtn) previewTopBtn.style.display = 'block';
+
+      // 2) 表示しつつアニメーション用に初期化
+      el.style.display = 'block';                 // まずは表示（display）
+      el.style.opacity = '0';                     // 初期は透明
+      el.style.transform = 'translateY(18px) scale(0.995)'; // 少し下・小さめから開始
+      el.style.transition = 'none';               // 一旦トランジション切る（リセット）
+
+      // 強制再描画（ブラウザに現在のスタイルを認識させる）
+      void el.offsetWidth;
+
+      // 3) トランジションを設定して「見せる」
+      // ※ cubic-bezier の値は妥当な小数に修正しています（不正な値だと効果が効かない）
+      el.style.transition = 'opacity 360ms cubic-bezier(.2,.9,.3,1), transform 420ms cubic-bezier(.16,.8,.36,1)';
+
+      // 実際に見える状態にする（ここでアニメーションが走る）
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0) scale(1)';
+
+      // 4) ツールバーを軽い「注目パルス」で目立たせる（.attention は CSS 側で簡易定義がある想定）
+      const toolbar = el.querySelector('.cc-toolbar');
+      if (toolbar) {
+        toolbar.classList.remove('attention');
+        setTimeout(() => {
+          toolbar.classList.add('attention');
+          // 自動で外す
+          setTimeout(() => toolbar.classList.remove('attention'), 1200);
+        }, 120);
+      }
+
+      // 5) 画面内にスクロール（あると親切）
+      try { el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) { /* ignore */ }
+
+      // 6) オプション：最左のツールを一時ハイライトして目を誘導する
+      if (opts.focusFirstItem) {
+        const first = el.querySelector('.cc-item');
+        if (first) {
+          first.classList.add('active');
+          setTimeout(() => first.classList.remove('active'), 1200);
+          try { first.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch(e) {}
+        }
+      }
+    }
+    /* --- ここまで追加 --- */
 
     ccToolbar.addEventListener('click', (e) => {
       const btn = e.target.closest('.cc-item');
@@ -1448,32 +1506,30 @@
     
     // ====> この行の直後に追加 <====
 
-    // --- 置き換え後 ---
+    // === 背景色ピッカー入力時：編集メニューをふわっと表示（メンバーカラー選択後の誘導） ===
     backgroundColorPicker.addEventListener('input', (e) => {
-      // 値の更新（見た目もすぐに反映）
-      backgroundColor = e.target.value;
-      e.target.style.backgroundColor = e.target.value;
+        // 背景色を更新
+        backgroundColor = e.target.value;
+        e.target.style.backgroundColor = e.target.value;
 
-      // 写真周りはリセットして色のみの背景モードに
-      uploadedImg = null;
-      photoObject = null;
-      isPhotoLocked = true;
+        // 写真編集状態をリセット気味に（仕様に合わせて変更可）
+        uploadedImg = null;
+        photoObject = null;
+        isPhotoLocked = true;
 
-      // 結果エリアは閉じる
-      const areaResultEl = document.getElementById('area-result');
-      if (areaResultEl) areaResultEl.style.display = 'none';
+        // 完成表示が出ていれば閉じる（あれば）
+        if (areaResult) areaResult.style.display = 'none';
 
-      // 写真確定 / 再編集ボタンを非表示に
-      if (reEditPhotoBtn) reEditPhotoBtn.style.display = 'none';
-      if (confirmPhotoBtn) confirmPhotoBtn.style.display = 'none';
+        // 写真確定／再編集ボタンは隠す（あれば）
+        if (reEditPhotoBtn) reEditPhotoBtn.style.display = 'none';
+        if (confirmPhotoBtn) confirmPhotoBtn.style.display = 'none';
 
-      // ここで「ふわっ」表示を呼ぶ（視線誘導付き）
-      showEditMenuWithAnimation({ focusFirstItem: true });
+        // 編集メニューをアニメーション付きで表示（最左のツールに注目）
+        showEditMenuWithAnimation({ focusFirstItem: true });
 
-      // canvas 再描画（背景色反映）
-      drawAll();
+        // 画面更新（必要なら）
+        drawAll();
     });
-// --- 置き換え後ここまで ---
 
 
 
@@ -2369,11 +2425,15 @@
     if (toEditBtnEl) {
       toEditBtnEl.addEventListener('click', () => {
         console.log("✅ 編集 ボタンが押されました");
-        // arrange controls（保存/編集の小メニュー）を隠す（編集モードへ）
+
+        // 分岐コントロール等を隠す（安全に）
         const arrange = document.getElementById('arrangeControls');
         if (arrange) arrange.style.display = 'none';
 
-        // ふわっと表示して視線誘導（右上プレビューも表示されます）
+        const previewTop = document.getElementById('previewBtnTopRight');
+        if (previewTop) previewTop.style.display = 'block';
+
+        // アニメーションで編集メニューを表示（最左をハイライト）
         showEditMenuWithAnimation({ focusFirstItem: true });
       });
     }
