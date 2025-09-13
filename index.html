@@ -294,20 +294,21 @@
 
     /* === CapCut風：横スクロールツールバー === */
 
-    /* --- ここから追加: 編集メニューを画面下に固定表示 --- */
-    #area-decorations { 
+    /* --- ここから追加: 編集メニューを画面下に固定表示（修正版） --- */
+    #area-decorations {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
       margin: 0 auto;
-      z-index: 9999; /* 必要なら上に出す */
-      max-height: 40%; /* 高さ調整（任意で30%〜50%など調整可） */
+      z-index: 1000; /* 周辺オーバーレイと整合する現実的な値へ */
+      max-height: 55vh; /* 40% だと狭すぎる端末があるため vh 基準に */
       overflow-y: auto;
       background: #fff; /* 背景が透けないように */
-      box-shadow: 0 -4px 12px rgba(0,0,0,0.1); /* 上に影をつけて浮いてる感 */
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
       border-top-left-radius: 12px;
       border-top-right-radius: 12px;
+      padding-bottom: env(safe-area-inset-bottom, 12px); /* セーフエリア余白確保 */
     }
     /* --- ここまで追加 --- */
 
@@ -434,24 +435,25 @@
 
 
     /* === 画面下固定（CapCut風） === */
-    /* ツールバー本体を下固定 */
+    /* ツールバー本体を下固定（修正版） */
     .cc-toolbar {
       position: fixed;
       left: 0;
       right: 0;
       bottom: env(safe-area-inset-bottom, 0);
-      z-index: 1000;
-      margin: 0;                 /* 既存の margin を打ち消す */
+      z-index: 1100; /* #area-decorations(1000)より上に出す（ボタンが隠れないように） */
+      margin: 0;
       border-top: 1px solid #eee;
       border-bottom: 0;
-      background: #fff;
-      padding: 8px 6px;
+      background: transparent; /* 背景は親の白を見せる（好みで #fff に） */
+      padding: 10px 8px; /* 少し余裕を持たせる */
       display: flex;
       gap: 12px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       scroll-snap-type: x proximity;
     }
+
     .cc-toolbar::-webkit-scrollbar { display: none; }
 
     /* パネル（ツールの中身）も下固定：ツールバーの“すぐ上”に出す */
@@ -475,6 +477,11 @@
     /* キャンバスが下固定UIに隠れないようボディ下に余白をつける */
     body {
       padding-bottom: calc(220px + env(safe-area-inset-bottom, 0));
+    }
+
+    /* デバッグ用：要素の枠線を可視化（確認できたら削除） */
+    #area-decorations, .cc-toolbar, .cc-panels {
+      outline: 2px dashed rgba(255,0,0,0.5);
     }
 
   </style>
