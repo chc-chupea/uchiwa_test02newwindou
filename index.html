@@ -293,6 +293,37 @@
     }
 
     /* === CapCut風：横スクロールツールバー === */
+    /* --- ここから追加: 編集メニューのふわっと表示 & 注目パルス --- */
+    /* area-decorations の初期（非表示）スタイル：表示時は JS で display:block をセットしてから .visible を付与します */
+    #area-decorations {
+      opacity: 0;
+      transform: translateY(18px) scale(0.995);
+      will-change: transform, opacity;
+      /* デフォルトのトランジション（JS側でもセットするので冗長でもOK） */
+      transition: opacity 360ms cubic-bezier(.2,.9,.3,1), transform 420ms cubic-bezier(.16,.8,.36,1);
+    }
+
+    /* .visible が付くとふわっと上がって来る */
+    #area-decorations.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    /* ツールバーの一時的な注目パルス（視線誘導用） */
+    .cc-toolbar.attention {
+      animation: cc-toolbar-pulse 1.1s cubic-bezier(.2,.9,.3,1);
+      /* 少し強めに見せるために影を強調（アニメの中で戻る） */
+      box-shadow: 0 12px 30px rgba(0,0,0,0.10);
+    }
+
+    @keyframes cc-toolbar-pulse {
+      0%   { transform: translateY(6px) scale(0.995); box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
+      40%  { transform: translateY(0)   scale(1.02);  box-shadow: 0 14px 34px rgba(0,0,0,0.14); }
+      100% { transform: translateY(0)   scale(1);     box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
+    }
+    /* --- ここまで追加 --- */
+
+
     .cc-toolbar {
       display: flex;
       gap: 12px;
@@ -846,8 +877,66 @@
 
     // 初期表示は何も開かない（選択時に自動オープン）
     hidePanels()
+    
+    /* --- ここから追加：編集メニューをふわっと表示して注目させるユーティリティ --- */
+    function showEditMenuWithAnimation(opts = {}) {
+      // DOM をここで確実に取得（この関数はどこからでも呼べる）
+      const el = document.getElementById('area-decorations');
+      if (!el) return;
 
+      const arrange = document.getElementById('arrangeControls');
+      const previewTopBtn = document.getElementById('previewBtnTopRight');
+      // 1) 分岐コントロールを隠す（もし表示されていれば）
+      if (arrange) arrange.style.display = 'none';
 
+      // 2) 右上のプレビュー（編集モード用）を表示（存在すれば）
+      if (previewTopBtn) previewTopBtn.style.display = 'block';
+
+      // 3) 表示（display:block にしてからトランジションを走らせる）
+      el.style.display = 'block';          // まず表示（inline style）
+      // reset / 初期状態
+      el.classList.remove('visible');
+      // 効果を確実に出すために inline で初期値を与え、強制再描画させる
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(18px) scale(0.995)';
+      el.style.transition = 'none';
+      // 強制再描画（これで次の状態遷移がトランジションされる）
+      void el.offsetWidth;
+
+      // 4) トランジションを有効にして「見せる」
+      // （CSS側でも transition を定義してあるため class を付けるだけでも動きます）
+      el.style.transition = 'opacity 360ms cubic-bezier(.2,.9,.3,1), transform 420ms cubic-bezier(.16,.8,.36,1)';
+      el.classList.add('visible');
+
+      // 5) ツールバー（.cc-toolbar）を短いパルスで注目させる
+      const toolbar = el.querySelector('.cc-toolbar');
+      if (toolbar) {
+        // ensure no stacking of many classes
+        toolbar.classList.remove('attention');
+        // 少し遅らせて付与 (視線誘導の方が自然)
+        setTimeout(() => {
+          toolbar.classList.add('attention');
+          // 自動で外す
+          setTimeout(() => toolbar.classList.remove('attention'), 1200);
+        }, 120); // 120ms 遅延
+      }
+
+      // 6) スムーズにスクロールして画面内に寄せる（補助）
+      try { el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(e){/* ignore */ }
+
+      // オプション：フォーカスを当てたい要素を渡せる（未指定なら最左の .cc-item をハイライト）
+      if (opts.focusFirstItem) {
+        const first = el.querySelector('.cc-item');
+        if (first) {
+          // 視覚的なフォーカス（DOM focus ではなく class で強調する方が UX に優しい場合も）
+          first.classList.add('active');
+          setTimeout(() => first.classList.remove('active'), 1200);
+          // 横スクロールで中央に寄せる
+          first.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+      }
+    }
+    /* --- ここまで追加 --- */
 
 
 
@@ -1359,31 +1448,32 @@
     
     // ====> この行の直後に追加 <====
 
-    // 新規追加: 背景色ピッカーの変更イベント
+    // --- 置き換え後 ---
     backgroundColorPicker.addEventListener('input', (e) => {
-        backgroundColor = e.target.value; 
-        e.target.style.backgroundColor = e.target.value; 
-        uploadedImg = null; 
-        photoObject = null;
-        isPhotoLocked = true;
+      // 値の更新（見た目もすぐに反映）
+      backgroundColor = e.target.value;
+      e.target.style.backgroundColor = e.target.value;
 
-        // デコレーションエリアを表示
-        areaDecorations.style.display = 'block'; 
+      // 写真周りはリセットして色のみの背景モードに
+      uploadedImg = null;
+      photoObject = null;
+      isPhotoLocked = true;
 
-        // 完成エリアは閉じる
-        areaResult.style.display = 'none'; 
+      // 結果エリアは閉じる
+      const areaResultEl = document.getElementById('area-result');
+      if (areaResultEl) areaResultEl.style.display = 'none';
 
-        // 写真配置確定ボタンや再編集ボタンは非表示にする
-        reEditPhotoBtn.style.display = 'none';
-        confirmPhotoBtn.style.display = 'none';
+      // 写真確定 / 再編集ボタンを非表示に
+      if (reEditPhotoBtn) reEditPhotoBtn.style.display = 'none';
+      if (confirmPhotoBtn) confirmPhotoBtn.style.display = 'none';
 
-        // すぐ編集パネルにスクロールさせると親切
-        areaDecorations.scrollIntoView({ behavior: 'smooth' });
+      // ここで「ふわっ」表示を呼ぶ（視線誘導付き）
+      showEditMenuWithAnimation({ focusFirstItem: true });
 
-        drawAll(); 
+      // canvas 再描画（背景色反映）
+      drawAll();
     });
-
-    // ====> ここまで <====
+// --- 置き換え後ここまで ---
 
 
 
@@ -2275,15 +2365,19 @@
       });
     }
 
+    // --- 置き換え後 ---
     if (toEditBtnEl) {
       toEditBtnEl.addEventListener('click', () => {
         console.log("✅ 編集 ボタンが押されました");
-        document.getElementById('arrangeControls').style.display = 'none';
-        areaDecorations.style.display = 'block';
-        document.getElementById('previewBtnTopRight').style.display = 'block';
-        document.getElementById('area-decorations').scrollIntoView({ behavior: 'smooth' });
+        // arrange controls（保存/編集の小メニュー）を隠す（編集モードへ）
+        const arrange = document.getElementById('arrangeControls');
+        if (arrange) arrange.style.display = 'none';
+
+        // ふわっと表示して視線誘導（右上プレビューも表示されます）
+        showEditMenuWithAnimation({ focusFirstItem: true });
       });
     }
+    // --- 置き換え後ここまで ---
 
     if (previewBtnTopRightEl) {
       previewBtnTopRightEl.addEventListener('click', async () => {
