@@ -444,30 +444,7 @@
     body {
       padding-bottom: calc(220px + env(safe-area-inset-bottom, 0));
     }
-    
-    /* 配置確定後の2つのボタン */
-    #arrangeControls {
-      display: none;            /* 初期は非表示 */
-      position: fixed;
-      bottom: calc(78px + env(safe-area-inset-bottom, 0));
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1100;
 
-      /* 追加：横並び */
-      display: flex;            /* ← JavaScriptで表示切替されたときにflexになる */
-      flex-direction: row;
-      justify-content: center;
-      gap: 12px;
-    }
-
-    #arrangeControls .form-button {
-      flex: 1;                  /* 横幅を均等に伸ばす */
-      padding: 10px 0;          /* 平たい見た目に */
-      border-radius: 10px;
-      font-size: 16px;
-      box-shadow: none;
-    }
   </style>
 </head>
 <body>
@@ -503,9 +480,26 @@
     <button id="confirmPhotoBtn" style="margin-top: 10px;">写真の配置を確定</button>
     <button id="reEditPhotoBtn" style="margin-top: 10px; display: none;">写真の配置をやり直す</button>
     <!-- 追加：配置完了後の分岐コントロール（保存→プレビュー / 編集） -->
-    <div id="arrangeControls" style="display:none; position: fixed; bottom: calc(78px + env(safe-area-inset-bottom, 0)); left: 50%; transform: translateX(-50%); z-index: 1100;">
-      <button id="toPreviewBtn" class="form-button">決定 → プレビュー</button>
-      <button id="toEditBtn" class="form-button">デコレーション</button>
+    <div id="arrangeControls" style="display:none; position: fixed; bottom: calc(78px + env(safe-area-inset-bottom, 0)); left: 50%; transform: translateX(-50%); z-index: 1100; gap:8px;">
+      <button id="toPreviewBtn" class="form-button"
+              style="display:inline-block; width:auto;
+                     padding:4px 18px; margin-right:8px;
+                     border:none; background:#1976d2; color:#fff;
+                     border-radius:12px; font-weight:500;
+                     font-size:14px; line-height:1.4;
+                     box-shadow:0 2px 4px rgba(0,0,0,0.15);">
+        決定 → プレビュー
+      </button>
+
+      <button id="toEditBtn" class="form-button"
+              style="display:inline-block; width:auto;
+                     padding:4px 18px;
+                     background:#fff; color:#1976d2;
+                     border:1px solid #1976d2;
+                     border-radius:12px; font-weight:500;
+                     font-size:14px; line-height:1.4;">
+        デコレーション
+      </button>
     </div>
   </div>
 
