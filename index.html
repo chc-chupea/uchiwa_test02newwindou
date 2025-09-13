@@ -1354,12 +1354,19 @@
           areaDecorations.style.display = 'none'; // デコレーションエリアを非表示
           areaResult.style.display = 'none'; // 完成イメージエリアも非表示にリセット
           drawAll(); // 全体を再描画
+          // ====== ここから追加（画像の読み込みと描画が終わった後にスクロール） ======
+          setTimeout(function(){
+            var el = document.getElementById("area-design");
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }, 120);
+          // ====== ここまで追加 ======
         };
         uploadedImg.src = event.target.result;
       };
       reader.readAsDataURL(file);
-      // 写真を選び終えたら「2)画面をデザイン」エリアへスクロール
-      document.getElementById("area-design").scrollIntoView({ behavior: "smooth" });
+      
     });
 
     /**
