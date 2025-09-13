@@ -293,6 +293,24 @@
     }
 
     /* === CapCut風：横スクロールツールバー === */
+
+    /* --- ここから追加: 編集メニューを画面下に固定表示 --- */
+    #area-decorations { 
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      margin: 0 auto;
+      z-index: 9999; /* 必要なら上に出す */
+      max-height: 40%; /* 高さ調整（任意で30%〜50%など調整可） */
+      overflow-y: auto;
+      background: #fff; /* 背景が透けないように */
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.1); /* 上に影をつけて浮いてる感 */
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+    }
+    /* --- ここまで追加 --- */
+
     /* --- ここから追加: 編集メニューのふわっと表示 & 注目パルス --- */
     /* area-decorations の初期（非表示）スタイル：表示時は JS で display:block をセットしてから .visible を付与します */
     #area-decorations {
@@ -881,16 +899,13 @@ function showEditMenuWithAnimation(opts = {}) {
         }, 120);
       }
 
-      // 5) 画面内にスクロール（あると親切）
-      try { el.scrollIntoView({ behavior: 'smooth', block: 'end' }); } catch (e) { /* ignore */ }
 
-      // 6) オプション：最左のツールを一時ハイライトして目を誘導する
+      // 5) オプション：最左のツールを一時ハイライトして目を誘導する
       if (opts.focusFirstItem) {
         const first = el.querySelector('.cc-item');
         if (first) {
           first.classList.add('active');
           setTimeout(() => first.classList.remove('active'), 1200);
-          try { first.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch(e) {}
         }
       }
     }
