@@ -303,12 +303,6 @@
       transition: opacity 360ms cubic-bezier(.2,.9,.3,1), transform 420ms cubic-bezier(.16,.8,.36,1);
     }
 
-    /* .visible が付くとふわっと上がって来る */
-    #area-decorations.visible {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-
     /* ツールバーの一時的な注目パルス（視線誘導用） */
     .cc-toolbar.attention {
       animation: cc-toolbar-pulse 1.1s cubic-bezier(.2,.9,.3,1);
@@ -936,67 +930,6 @@ function showEditMenuWithAnimation(opts = {}) {
     // 初期表示は何も開かない（選択時に自動オープン）
     hidePanels()
     
-    /* --- ここから追加：編集メニューをふわっと表示して注目させるユーティリティ --- */
-    function showEditMenuWithAnimation(opts = {}) {
-      // DOM をここで確実に取得（この関数はどこからでも呼べる）
-      const el = document.getElementById('area-decorations');
-      if (!el) return;
-
-      const arrange = document.getElementById('arrangeControls');
-      const previewTopBtn = document.getElementById('previewBtnTopRight');
-      // 1) 分岐コントロールを隠す（もし表示されていれば）
-      if (arrange) arrange.style.display = 'none';
-
-      // 2) 右上のプレビュー（編集モード用）を表示（存在すれば）
-      if (previewTopBtn) previewTopBtn.style.display = 'block';
-
-      // 3) 表示（display:block にしてからトランジションを走らせる）
-      el.style.display = 'block';          // まず表示（inline style）
-      // reset / 初期状態
-      el.classList.remove('visible');
-      // 効果を確実に出すために inline で初期値を与え、強制再描画させる
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(18px) scale(0.995)';
-      el.style.transition = 'none';
-      // 強制再描画（これで次の状態遷移がトランジションされる）
-      void el.offsetWidth;
-
-      // 4) トランジションを有効にして「見せる」
-      // （CSS側でも transition を定義してあるため class を付けるだけでも動きます）
-      el.style.transition = 'opacity 360ms cubic-bezier(.2,.9,.3,1), transform 420ms cubic-bezier(.16,.8,.36,1)';
-      el.classList.add('visible');
-
-      // 5) ツールバー（.cc-toolbar）を短いパルスで注目させる
-      const toolbar = el.querySelector('.cc-toolbar');
-      if (toolbar) {
-        // ensure no stacking of many classes
-        toolbar.classList.remove('attention');
-        // 少し遅らせて付与 (視線誘導の方が自然)
-        setTimeout(() => {
-          toolbar.classList.add('attention');
-          // 自動で外す
-          setTimeout(() => toolbar.classList.remove('attention'), 1200);
-        }, 120); // 120ms 遅延
-      }
-
-      // 6) スムーズにスクロールして画面内に寄せる（補助）
-      try { el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(e){/* ignore */ }
-
-      // オプション：フォーカスを当てたい要素を渡せる（未指定なら最左の .cc-item をハイライト）
-      if (opts.focusFirstItem) {
-        const first = el.querySelector('.cc-item');
-        if (first) {
-          // 視覚的なフォーカス（DOM focus ではなく class で強調する方が UX に優しい場合も）
-          first.classList.add('active');
-          setTimeout(() => first.classList.remove('active'), 1200);
-          // 横スクロールで中央に寄せる
-          first.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        }
-      }
-    }
-    /* --- ここまで追加 --- */
-
-
 
     // この配列の順序／内容は <select id="fontPicker"> と揃えています
     const FONT_CANDIDATES = [
