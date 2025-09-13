@@ -445,31 +445,6 @@
       padding-bottom: calc(220px + env(safe-area-inset-bottom, 0));
     }
 
-    /* 決定→プレビュー / デコレーション ボタンの横長スタイル */
-      #arrangeControls {
-        display: flex !important;
-        gap: 12px;
-        width: 90%;
-        max-width: 400px;
-      }
-
-      #arrangeControls button {
-        flex: 1;
-        display: block;
-        width: 100%;
-        white-space: nowrap;
-      }
-
-      /* デコレーションボタン専用スタイル */
-      #toEditBtn {
-        background: #fff !important;
-        color: #1976d2 !important;       /* 濃い青文字 */
-        border: 2px solid #1976d2;       /* 青い枠線 */
-      }
-
-      #toEditBtn:hover {
-        background: #e3f2fd !important;  /* 薄い水色でホバー */
-      }
   </style>
 </head>
 <body>
@@ -505,14 +480,24 @@
     <button id="confirmPhotoBtn" style="margin-top: 10px;">写真の配置を確定</button>
     <button id="reEditPhotoBtn" style="margin-top: 10px; display: none;">写真の配置をやり直す</button>
     <!-- 追加：配置完了後の分岐コントロール（保存→プレビュー / 編集） -->
-    <div id="arrangeControls" style="display:none; position: fixed;
-         bottom: calc(78px + env(safe-area-inset-bottom, 0));
-         left: 50%; transform: translateX(-50%); z-index: 1100;">
-      <button id="toPreviewBtn" class="form-button">
+    <div id="arrangeControls" style="display:none; position: fixed; bottom: calc(78px + env(safe-area-inset-bottom, 0)); left: 50%; transform: translateX(-50%); z-index: 1100; gap:8px;">
+      <button id="toPreviewBtn" class="form-button"
+              style="display:inline-block; width:auto;
+                     padding:4px 18px; margin-right:8px;
+                     border:none; background:#1976d2; color:#fff;
+                     border-radius:12px; font-weight:500;
+                     font-size:14px; line-height:1.4;
+                     box-shadow:0 2px 4px rgba(0,0,0,0.15);">
         決定 → プレビュー
       </button>
 
-      <button id="toEditBtn" class="form-button">
+      <button id="toEditBtn" class="form-button"
+              style="display:inline-block; width:auto;
+                     padding:4px 18px;
+                     background:#fff; color:#1976d2;
+                     border:1px solid #1976d2;
+                     border-radius:12px; font-weight:500;
+                     font-size:14px; line-height:1.4;">
         デコレーション
       </button>
     </div>
@@ -576,7 +561,7 @@
           </select>
           <div class="font-picker-wrap">
             <button id="fontPickerBtn" type="button">フォントを選ぶ</button>
-            <button onclick="addTextToOverlay()">メッセージをうちわに表示</button>
+            <button onclick="addTextToOverlay()">テキスト追加</button>
             <div id="fontDropdown" hidden></div>
           </div>
         </div>
