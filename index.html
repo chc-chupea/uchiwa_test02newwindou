@@ -1354,14 +1354,54 @@
           areaDecorations.style.display = 'none'; // デコレーションエリアを非表示
           areaResult.style.display = 'none'; // 完成イメージエリアも非表示にリセット
           drawAll(); // 全体を再描画
-          // ====== ここから追加（画像の読み込みと描画が終わった後にスクロール） ======
-          setTimeout(function(){
-            var el = document.getElementById("area-design");
-            if (el) {
-              el.scrollIntoView({ behavior: "smooth", block: "start" });
-            }
-          }, 120);
-          // ====== ここまで追加 ======
+
+          // ====== ここから置き換え（描画反映を待って確実にスクロール） ======
+          // 1) requestAnimationFrame を二回使いレイアウト反映を待つ
+          requestAnimationFrame(function(){
+            requestAnimationFrame(function(){
+              var el = document.getElementById("area-design");
+              if (!el) {
+                console.log("[scroll] #area-design が見つかりません");
+                return;
+              }
+
+              // 2) 最も近いスクロール可能な祖先を探す（window なら window）
+              function getScrollableAncestor(node) {
+                while (node && node !== document.body) {
+                  var style = window.getComputedStyle(node);
+                  if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && node.scrollHeight > node.clientHeight) {
+                    return node;
+                  }
+                  node = node.parentNode;
+                }
+                return window;
+              }
+              var container = getScrollableAncestor(el);
+
+              // 3) コンテナに応じてスクロール量を計算して実行（スムース）
+              if (container === window) {
+                var top = el.getBoundingClientRect().top + window.scrollY;
+                window.scrollTo({ top: top, behavior: 'smooth' });
+              } else {
+                var contRect = container.getBoundingClientRect();
+                var elRect = el.getBoundingClientRect();
+                var offsetTop = elRect.top - contRect.top + container.scrollTop;
+                container.scrollTo({ top: offsetTop, behavior: 'smooth' });
+              }
+
+              // 4) 固定ヘッダーで隠れる可能性があるなら少し上へ戻す（必要に応じて数値を調整）
+              setTimeout(function(){
+                var headerOffset = 60; // 固定ヘッダーの高さ（px）に合わせて調整してください
+                if (container === window) {
+                  window.scrollBy(0, -headerOffset);
+                } else {
+                  container.scrollBy(0, -headerOffset);
+                }
+              }, 350);
+            });
+          });
+          // ====== ここまで置き換え ======
+
         };
         uploadedImg.src = event.target.result;
       };
