@@ -701,7 +701,7 @@
       </div>
 
       <div style="color:#fff; font-size:14px; text-align:center; margin-top:8px;">
-        画像を＜長押し＞して「画像を保存」してください
+        画像を＜長押し👆＞して「画像を保存」してください
       </div>
       <!-- 長押し保存の説明の下に閉じるボタン配置 -->
       <button id="previewCloseBtn"
@@ -1358,6 +1358,8 @@
         uploadedImg.src = event.target.result;
       };
       reader.readAsDataURL(file);
+      // 写真を選び終えたら「2)画面をデザイン」エリアへスクロール
+      document.getElementById("area-design").scrollIntoView({ behavior: "smooth" });
     });
 
     /**
