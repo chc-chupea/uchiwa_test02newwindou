@@ -882,7 +882,7 @@ function showEditMenuWithAnimation(opts = {}) {
       }
 
       // 5) 画面内にスクロール（あると親切）
-      try { el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) { /* ignore */ }
+      try { el.scrollIntoView({ behavior: 'smooth', block: 'end' }); } catch (e) { /* ignore */ }
 
       // 6) オプション：最左のツールを一時ハイライトして目を誘導する
       if (opts.focusFirstItem) {
