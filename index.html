@@ -270,49 +270,59 @@
       color: #000;  /* ← これを追加 */
     }
 
-    /* --- 追加: テキストツール横並び（小カラーピッカー + 小フォントボタン + 大きな追加ボタン） --- */
-    #panel-text .text-tools-row { display:flex; gap:8px; align-items:center; width:100%; box-sizing:border-box; }
+    /* --- 追加: テキストツール横並び（修正版） --- */
+    #panel-text .text-tools-row {
+      display:flex;
+      gap:8px;
+      align-items:center;
+      width:100%;
+      box-sizing:border-box;
+      height:48px; /* 高さを統一 */
+    }
+
+    /* フォントカラー（正方形） */
     #panel-text .text-tools-row input[type="color"] {
       width:48px !important;
-      height:48px;
+      height:100% !important; /* 高さを揃える */
       flex:0 0 48px;
       padding:4px;
       border-radius:10px;
       box-sizing:border-box;
     }
 
-    /* フォントボタン（小さなアイコン） */
+    /* フォントを選ぶボタン（残り幅の大部分を使用） */
     #panel-text .text-tools-row #fontPickerBtn,
     #panel-text .text-tools-row .font-icon-btn {
-      width:48px !important;
-      height:48px !important;
-      min-width:48px !important;
-      padding:0 6px !important;
+      flex:2 1 0;             /* 「テキスト追加」の2倍の幅を持たせる */
+      height:100% !important; /* 高さを揃える */
+      min-width:0;
+      padding:0 10px !important;
       border-radius:10px !important;
-      text-align:center;
-      font-size:14px;
-      display:inline-flex;
+      font-size:15px;
+      display:flex;
       align-items:center;
       justify-content:center;
       box-sizing:border-box;
     }
 
-    /* テキスト追加ボタンは残り幅を使う */
+    /* テキスト追加ボタン（フォント選択の半分の幅） */
     #panel-text .text-tools-row .add-text-btn,
     #panel-text .text-tools-row button[onclick^="addTextToOverlay"] {
-      flex:1 1 auto !important;
+      flex:1 1 0;             /* フォントボタンの半分 */
+      height:100% !important; /* 高さを揃える */
       min-width:0;
-      padding:10px 12px !important;
+      padding:0 12px !important;
       border-radius:12px !important;
       box-sizing:border-box;
     }
 
     /* 小さい画面向け微調整（iPhone 14 等） */
     @media (max-width:420px) {
-      #panel-text .text-tools-row { gap:8px; }
-      /* もしテキストが長くてはみ出す場合の省スペース表示（任意） */
-      #panel-text .text-tools-row .add-text-btn { font-size:15px; padding:9px 10px; }
+      #panel-text .text-tools-row { gap:6px; }
+      #panel-text .text-tools-row .add-text-btn { font-size:14px; }
+      #panel-text .text-tools-row #fontPickerBtn { font-size:14px; }
     }
+
 
     #fontDropdown {
       position: absolute;
