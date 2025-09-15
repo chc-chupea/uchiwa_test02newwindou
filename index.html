@@ -859,6 +859,18 @@
         // 見た目（背景色）も更新
         colorPicker.style.backgroundColor = "#ff69b4";
         outlineColorPicker.style.backgroundColor = "#ffc9d2";
+
+        // ★ 初回ガイドモーダル表示（ここから追加）
+        const guide = document.getElementById('firstGuide');
+        const closeBtn = document.getElementById('guideCloseBtn');
+        if (!localStorage.getItem('myUchiwaGuideSeen')) {
+          guide.style.display = 'flex';
+        }
+        closeBtn.addEventListener('click', () => {
+          guide.style.display = 'none';
+          localStorage.setItem('myUchiwaGuideSeen', 'true');
+        });
+        // ★ ここまで追加
       });
 
     // DOM要素の取得
@@ -2597,17 +2609,6 @@
       // 編集サイドメニューは閉じる（UI整理）
       const arrange = document.getElementById('arrangeControls');
       if (arrange) arrange.style.display = "none";
-
-      // ★ 初回ガイドモーダル表示 ★
-      const guide = document.getElementById('firstGuide');
-      const closeBtn = document.getElementById('guideCloseBtn');
-      if (!localStorage.getItem('myUchiwaGuideSeen')) {
-        guide.style.display = 'flex';
-      }
-      closeBtn.addEventListener('click', () => {
-        guide.style.display = 'none';
-        localStorage.setItem('myUchiwaGuideSeen', 'true');
-      }); 
     });
   </script>
     <!-- 初回ガイドモーダル -->
