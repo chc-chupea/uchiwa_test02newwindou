@@ -502,6 +502,39 @@
       padding-bottom: calc(220px + env(safe-area-inset-bottom, 0));
     }
 
+
+    /* === 初回ガイドモーダル用 === */
+    .guide-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .guide-content {
+      background: #fff;
+      color: #333;
+      max-width: 320px;
+      width: 90%;
+      border-radius: 20px;
+      padding: 24px;
+      text-align: left;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    }
+    .guide-content h2 {
+      margin-top: 0;
+      font-size: 20px;
+      text-align: center;
+      color: #1565c0;
+    }
+    .guide-content ol {
+      margin: 12px 0 20px;
+      padding-left: 20px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
@@ -2564,7 +2597,31 @@
       // 編集サイドメニューは閉じる（UI整理）
       const arrange = document.getElementById('arrangeControls');
       if (arrange) arrange.style.display = "none";
+
+      // ★ 初回ガイドモーダル表示 ★
+      const guide = document.getElementById('firstGuide');
+      const closeBtn = document.getElementById('guideCloseBtn');
+      if (!localStorage.getItem('myUchiwaGuideSeen')) {
+        guide.style.display = 'flex';
+      }
+      closeBtn.addEventListener('click', () => {
+        guide.style.display = 'none';
+        localStorage.setItem('myUchiwaGuideSeen', 'true');
+      }); 
     });
   </script>
+    <!-- 初回ガイドモーダル -->
+    <div id="firstGuide" class="guide-overlay" style="display:none;">
+      <div class="guide-content">
+        <h2>この順番で操作してください</h2>
+        <ol>
+          <li>背景を決める（色 or 写真）</li>
+          <li>写真を配置して「決定」</li>
+          <li>文字やスタンプでデコレーション</li>
+          <li>プレビュー画像を保存</li>
+        </ol>
+        <button id="guideCloseBtn" class="form-button">OK</button>
+      </div>
+    </div>
 </body>
 </html>
