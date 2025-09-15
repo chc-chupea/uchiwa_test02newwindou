@@ -270,106 +270,70 @@
       color: #000;  /* ← これを追加 */
     }
 
-    /* ====== ここを丸ごと置き換えてください（開始） ====== */
-    /* --- テキストツール横並び（下端揃え・高さ統一） --- */
+    /* --- 追加: テキストツール横並び（修正版 v3） --- */
     #panel-text .text-tools-row {
-      display: flex;
-      gap: 8px;
-      align-items: flex-end;      /* 親は下端揃え */
-      width: 100%;
-      box-sizing: border-box;
-      height: 44px;               /* 全体高さを固定 */
-      margin: 0;
-      padding: 0;
+      display:flex;
+      gap:8px;
+      align-items:flex-end;  /* 👈 下端そろえに変更 */
+      width:100%;
+      box-sizing:border-box;
+      height:44px; /* 3つともこの高さに統一 */
     }
 
-    /* 共通：各直下の子要素は余白ゼロ・下端揃え・同じボックス基準に */
-    #panel-text .text-tools-row > * {
-      margin: 0 !important;
-      padding: 0 !important;
-      box-sizing: border-box !important;
-      align-self: flex-end !important;   /* 各アイテムを確実に下端揃え */
-      display: inline-flex !important;    /* ボタンやラッパーを同じ基準のボックスに */
-      vertical-align: bottom !important;
-      transform: none !important;         /* 位置ズレの原因を消す */
-      position: static !important;
+    /* 左：カラー（正方形） */
+    #panel-text .text-tools-row input[type="color"] {
+      width:44px !important;
+      height:44px !important;
+      flex:0 0 44px;
+      padding:2px;
+      border-radius:8px;
+      box-sizing:border-box;
+      margin:0; /* 👈 余計な隙間を消す */
     }
 
-    /* カラーはラッパーで包んでいる前提（.color-wrap を使用） */
-    #panel-text .text-tools-row .color-wrap {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      height: 44px;
-      flex: 0 0 44px;
-      margin: 0 !important;
-      padding: 0 !important;
-      box-sizing: border-box;
-    }
-
-    /* input[type="color"] をブロック表示にしてボタンと同じ高さに */
-    #panel-text .text-tools-row .color-wrap input[type="color"] {
-      width: 44px !important;
-      height: 44px !important;
-      display: block !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      border: none;
-      border-radius: 8px;
-      box-sizing: border-box;
-      background-clip: padding-box;
-    }
-
-    /* フォント選択ボタン（中央） */
+    /* 中央：フォントを選ぶ（残り幅の約1.2倍を確保） */
     #panel-text .text-tools-row #fontPickerBtn,
     #panel-text .text-tools-row .font-icon-btn {
-      flex: 1.2 1 0;
-      height: 44px !important;
-      min-width: 0;
-      padding: 0 10px !important;
-      border-radius: 8px !important;
-      font-size: 15px;
-      align-items: center;
-      justify-content: center;
-      display: inline-flex !important;
-      margin: 0 !important;
-      box-sizing: border-box;
+      flex:1.2 1 0;
+      height:44px !important;
+      min-width:0;
+      padding:0 10px !important;
+      border-radius:8px !important;
+      font-size:15px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-sizing:border-box;
     }
 
-    /* 右：文字をうちわに配置ボタン */
+    /* 右：文字をうちわに配置（幅を広げて文字数に対応） */
     #panel-text .text-tools-row .add-text-btn,
     #panel-text .text-tools-row button[onclick^="addTextToOverlay"] {
-      flex: 1.5 1 0;
-      height: 44px !important;
-      min-width: 0;
-      padding: 0 12px !important;
-      border-radius: 8px !important;
-      box-sizing: border-box;
-      font-size: 14px;
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      margin: 0 !important;
+      flex:1.5 1 0;  /* フォントボタンより少し広め */
+      height:44px !important;
+      min-width:0;
+      padding:0 12px !important;
+      border-radius:8px !important;
+      box-sizing:border-box;
+      font-size:14px;  /* 文字数が多いので少し小さめに */
+      white-space:nowrap; /* 折り返さず1行に収める */
     }
 
-    /* 念のためボタン群の余白・line-height をリセット */
-    #panel-text .text-tools-row button,
-    #panel-text .text-tools-row input {
-      line-height: 1 !important;
-      margin: 0 !important;
-      padding-top: 0 !important;
-      padding-bottom: 0 !important;
-      transform: none !important;
-      position: static !important;
+    /* 右端の「文字をうちわに配置」ボタンを下端にそろえる */
+    #panel-text .text-tools-row .add-text-btn,
+    #panel-text .text-tools-row button[onclick^="addTextToOverlay"] {
+      display:flex;
+      align-items:flex-end;   /* ← 下端に合わせる */
+      justify-content:center;
+      line-height:1;          /* テキストの余白を抑える */
     }
 
-    /* 小画面微調整 */
-    @media (max-width: 420px) {
-      #panel-text .text-tools-row { gap: 6px; height: 44px; }
-      #panel-text .text-tools-row #fontPickerBtn { font-size: 13px; }
-      #panel-text .text-tools-row .add-text-btn { font-size: 13px; }
+    /* 小さい画面向け微調整（iPhone 14 等） */
+    @media (max-width:420px) {
+      #panel-text .text-tools-row { gap:6px; }
+      #panel-text .text-tools-row #fontPickerBtn { font-size:13px; }
+      #panel-text .text-tools-row .add-text-btn { font-size:13px; }
     }
-    /* ====== ここを丸ごと置き換えてください（終了） ====== */
 
 
     #fontDropdown {
@@ -651,10 +615,7 @@
         <!-- ====== ここを丸ごと置き換えます（開始） ====== -->
         <div class="text-tools-row" style="display:flex; gap:8px; align-items:center; margin-bottom:10px;" id="textToolsRow">
           <!-- 小さなカラーピッカー（サイズはCSSで統一） -->
-          <!-- 置換後（必ず .color-wrap で包む） -->
-          <div class="color-wrap">
-            <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
-          </div>
+          <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
 
           <!-- フォント選択と追加ボタンを同じ行に並べるラッパー -->
           <div class="font-picker-wrap" style="display:flex; gap:8px; align-items:center;">
