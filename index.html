@@ -140,11 +140,22 @@
       margin-left: auto;
       margin-right: auto;
     }
+
     .form-button:hover {
       background: linear-gradient(135deg, #1976d2, #0d47a1);
       transform: translateY(-2px);
       box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
     }
+    /* 決定 → プレビューボタンを編集画面右上に常時表示 */
+    #toPreviewBtn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: inline-block !important;
+      z-index: 1100;
+    }
+
+
     /* プレビュー画像のスタイル */
     #previewWrapper img {
       max-width: 100%;
@@ -1915,13 +1926,8 @@
       if (no) {
         no.addEventListener('click', function() {
           hideBackConfirmDialog();
-          // 「いいえ」→ 注文へ進む表示のみ
-          const orderBtn = document.getElementById('goToOrderFormBtn');
-          const orderNote = document.getElementById('orderNote');
-          const backBtn = document.getElementById('makeBackBtn');
-          if (backBtn) backBtn.style.display = 'none';
-          if (orderBtn) orderBtn.style.display = 'block';
-          if (orderNote) orderNote.style.display = 'block';
+          // 「いいえ」→ 注文フォームへ即ジャンプ
+          window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform";
         });
       }
     })();
@@ -2001,6 +2007,9 @@
 
       // 7) スクロールして1番目のエリアへ
       if (areaSelect) areaSelect.scrollIntoView({ behavior: 'smooth' });
+
+      // 8) プレビューボタンを常に表示
+      document.getElementById('toPreviewBtn').style.display = 'inline-block';
     });
     // ここまで追加
 
@@ -2725,6 +2734,7 @@
         if (orderBtn) orderBtn.style.display = 'block';
         if (orderNote) orderNote.style.display = 'block';
       }
+        document.getElementById('toPreviewBtn').style.display = 'inline-block';
     });
   </script>
     <!-- 初回ガイドモーダル -->
