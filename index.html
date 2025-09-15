@@ -140,22 +140,11 @@
       margin-left: auto;
       margin-right: auto;
     }
-
     .form-button:hover {
       background: linear-gradient(135deg, #1976d2, #0d47a1);
       transform: translateY(-2px);
       box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
     }
-    /* 決定 → プレビューボタンを編集画面右上に常時表示 */
-    #toPreviewBtn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      display: inline-block !important;
-      z-index: 1100;
-    }
-
-
     /* プレビュー画像のスタイル */
     #previewWrapper img {
       max-width: 100%;
@@ -847,45 +836,6 @@
     </div>
   </div>
   <!-- ここまで追加 -->
-
-  <!-- ↓ ここから追加：裏面作成確認ダイアログ（表プレビュー時のみ表示） -->
-  <style>
-    /* シンプルなモーダルスタイル（既存デザインに合わせて微調整可） */
-    #backConfirmDialog {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 1400;
-      background: rgba(0,0,0,0.6);
-      align-items: center;
-      justify-content: center;
-    }
-    #backConfirmDialog .dialog {
-      background: #fff;
-      padding: 16px;
-      border-radius: 12px;
-      max-width: 320px;
-      width: 92%;
-      text-align: center;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-    }
-    #backConfirmDialog .dialog p { margin: 8px 0 14px; color: #333; font-size:16px; }
-    #backConfirmDialog .dialog .btns { display:flex; gap:10px; justify-content:center; }
-    #backConfirmDialog .dialog .btns button { flex:1; padding:10px 8px; border-radius:10px; border:none; cursor:pointer; font-weight:600; }
-    #backConfirmDialog .dialog .btn-yes { background: linear-gradient(135deg,#ff9fcf,#ff6fa6); color:white; }
-    #backConfirmDialog .dialog .btn-no  { background: #f0f0f0; color:#333; }
-  </style>
-
-  <div id="backConfirmDialog" role="dialog" aria-modal="true">
-    <div class="dialog" role="document">
-      <p>裏面も作りますか？</p>
-      <div class="btns">
-        <button id="backConfirmYes" class="btn-yes" type="button">はい → 裏面を作る</button>
-        <button id="backConfirmNo"  class="btn-no"  type="button">いいえ → 注文へ進む</button>
-      </div>
-    </div>
-  </div>
-  <!-- ↑ ここまで追加 -->
 
   <footer style="font-size: 6px; color: #888; margin-top: 20px;">
     © 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br />
@@ -1856,82 +1806,10 @@
       }
     });
     // --- ここまで置き換え ---
-    // ===== ここから追加：プレビュー閉鎖後の統合処理とダイアログ操作 =====
-    function closePreviewAndShowResult() {
-      // 1) プレビューオーバーレイを閉じる
-      const previewScreen = document.getElementById('previewScreen');
-      if (previewScreen) previewScreen.style.display = 'none';
 
-      // 2) 完成領域を表示（だがまずはボタン類は隠しておく）
-      const areaResultEl = document.getElementById('area-result');
-      if (areaResultEl) areaResultEl.style.display = 'block';
 
-      const backBtn = document.getElementById('makeBackBtn');
-      const orderBtn = document.getElementById('goToOrderFormBtn');
-      const orderNote = document.getElementById('orderNote');
 
-      // 事前に非表示リセット（ダイアログで制御）
-      if (backBtn) backBtn.style.display = 'none';
-      if (orderBtn) orderBtn.style.display = 'none';
-      if (orderNote) orderNote.style.display = 'none';
 
-      // サイドメニューは閉じる（UI整理）
-      const arrange = document.getElementById('arrangeControls');
-      if (arrange) arrange.style.display = 'none';
-
-      if (mode === 'front') {
-        // 表プレビュー → 裏面を作るか確認するダイアログを表示
-        showBackConfirmDialog();
-      } else {
-        // 裏プレビュー → 注文のみ表示
-        if (orderBtn) orderBtn.style.display = 'block';
-        if (orderNote) orderNote.style.display = 'block';
-        // makeBackBtn は裏面作成済のため表示しない（要件どおり）
-      }
-    }
-
-    // ダイアログ表示 / 非表示
-    function showBackConfirmDialog() {
-      const dlg = document.getElementById('backConfirmDialog');
-      if (!dlg) return;
-      dlg.style.display = 'flex';
-    }
-    function hideBackConfirmDialog() {
-      const dlg = document.getElementById('backConfirmDialog');
-      if (!dlg) return;
-      dlg.style.display = 'none';
-    }
-
-    // ダイアログのボタンイベント（存在確認をしてから登録）
-    (function registerBackDialogHandlers() {
-      const yes = document.getElementById('backConfirmYes');
-      const no  = document.getElementById('backConfirmNo');
-
-      if (yes) {
-        yes.addEventListener('click', function() {
-          hideBackConfirmDialog();
-          // 「はい」→ 裏面作成処理を既存の makeBackBtn に委譲（同じ処理を再利用）
-          const makeBackBtn = document.getElementById('makeBackBtn');
-          if (makeBackBtn) {
-            // 裏面作成フラグをセット（既存処理と整合）
-            backSideCreated = true;
-            makeBackBtn.click();
-          } else {
-            // フォールバック：直接 mode 切替（軽微）
-            mode = 'back';
-          }
-        });
-      }
-
-      if (no) {
-        no.addEventListener('click', function() {
-          hideBackConfirmDialog();
-          // 「いいえ」→ 注文フォームへ即ジャンプ
-          window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform";
-        });
-      }
-    })();
-    // ===== ここまで追加 =====
 
     // ここから追加：裏面作成モードに切り替える処理（変更：裏面は完全リセットして "1) 裏面の背景を決める" から開始）
     document.getElementById('makeBackBtn').addEventListener('click', () => {
@@ -2007,9 +1885,6 @@
 
       // 7) スクロールして1番目のエリアへ
       if (areaSelect) areaSelect.scrollIntoView({ behavior: 'smooth' });
-
-      // 8) プレビューボタンを常に表示
-      document.getElementById('toPreviewBtn').style.display = 'inline-block';
     });
     // ここまで追加
 
@@ -2685,16 +2560,8 @@
 
         // 5) UI 表示
         previewScreen.style.display = 'flex';
-        // 背景クリックで閉じるときは「閉じるボタンと同じ処理」にする（ダイアログ表示の統一）
         previewScreen.onclick = function(e) {
-          if (e.target === previewScreen) {
-            // 統一処理関数を呼ぶ（後で定義する closePreviewAndShowResult）
-            if (typeof closePreviewAndShowResult === 'function') {
-              closePreviewAndShowResult();
-            } else {
-              previewScreen.style.display = 'none'; // フォールバック
-            }
-          }
+          if (e.target === previewScreen) previewScreen.style.display = 'none';
         };
       } catch (err) {
         console.error('preview canvas toDataURL error:', err);
@@ -2714,27 +2581,34 @@
       // 裏面用の処理（すでにある処理をここに書く）
     });
 
-    // --- プレビュー閉じる処理（置き換え） ---
+    // --- プレビュー閉じる処理 ---
     document.getElementById('previewCloseBtn').addEventListener('click', () => {
-      console.log("✅ previewCloseBtn pressed (new handler)");
+      console.log("✅ 閉じるボタン押された"); // デバッグ確認用
 
-      // 統一処理関数を呼び出す（未定義なら従来の単純非表示）
-      if (typeof closePreviewAndShowResult === 'function') {
-        closePreviewAndShowResult();
-      } else {
-        const previewScreen = document.getElementById('previewScreen');
-        if (previewScreen) previewScreen.style.display = 'none';
-        const areaResult = document.getElementById('area-result');
-        if (areaResult) areaResult.style.display = 'block';
-        // フォールバックで従来の表示を復元
-        const orderBtn = document.getElementById('goToOrderFormBtn');
-        const makeBackBtn = document.getElementById('makeBackBtn');
-        const orderNote = document.getElementById('orderNote');
-        if (makeBackBtn && !backSideCreated) makeBackBtn.style.display = 'block';
-        if (orderBtn) orderBtn.style.display = 'block';
-        if (orderNote) orderNote.style.display = 'block';
-      }
-        document.getElementById('toPreviewBtn').style.display = 'inline-block';
+      // プレビューオーバーレイを閉じる
+      const previewScreen = document.getElementById('previewScreen');
+      if (previewScreen) previewScreen.style.display = "none";
+
+      // 完成領域（#area-result）を表示して、その中のボタンを見えるようにする
+      const areaResult = document.getElementById('area-result');
+      if (areaResult) areaResult.style.display = "block";
+
+      const backBtn = document.getElementById('makeBackBtn');
+      const orderBtn = document.getElementById('goToOrderFormBtn');
+      const orderNote = document.getElementById('orderNote');
+
+      console.log("取得した要素:", backBtn, orderBtn, orderNote);
+
+      // まだ裏面を作っていないときだけ「裏面も作る」を表示
+      if (!backSideCreated && backBtn) backBtn.style.display = "block";
+
+      // 注文フォームボタンと注釈は常に表示
+      if (orderBtn) orderBtn.style.display = "block";
+      if (orderNote) orderNote.style.display = "block";
+
+      // 編集サイドメニューは閉じる（UI整理）
+      const arrange = document.getElementById('arrangeControls');
+      if (arrange) arrange.style.display = "none";
     });
   </script>
     <!-- 初回ガイドモーダル -->
