@@ -280,10 +280,10 @@
       height:48px; /* 高さを統一 */
     }
 
-    /* フォントカラー（正方形） */
+    /* カラーピッカー：横幅はそのまま、高さだけフォントボタンに揃える */
     #panel-text .text-tools-row input[type="color"] {
-      width:48px !important;
-      height:100% !important; /* 高さを揃える */
+      width:48px !important;     /* 横幅は従来通り */
+      height:100% !important;    /* 高さをフォントボタンに揃える */
       flex:0 0 48px;
       padding:4px;
       border-radius:10px;
@@ -305,11 +305,11 @@
       box-sizing:border-box;
     }
 
-    /* テキスト追加ボタン（フォント選択の半分の幅） */
+    /* テキスト追加ボタン：横幅は現状のまま、高さをフォントボタンに揃える */
     #panel-text .text-tools-row .add-text-btn,
     #panel-text .text-tools-row button[onclick^="addTextToOverlay"] {
-      flex:1 1 0;             /* フォントボタンの半分 */
-      height:100% !important; /* 高さを揃える */
+      flex:1 1 auto;             /* 横幅は現状維持 */
+      height:100% !important;    /* 高さをフォントボタンに揃える */
       min-width:0;
       padding:0 12px !important;
       border-radius:12px !important;
