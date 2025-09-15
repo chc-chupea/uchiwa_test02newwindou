@@ -270,6 +270,50 @@
       color: #000;  /* ← これを追加 */
     }
 
+    /* --- 追加: テキストツール横並び（小カラーピッカー + 小フォントボタン + 大きな追加ボタン） --- */
+    #panel-text .text-tools-row { display:flex; gap:8px; align-items:center; width:100%; box-sizing:border-box; }
+    #panel-text .text-tools-row input[type="color"] {
+      width:48px !important;
+      height:48px;
+      flex:0 0 48px;
+      padding:4px;
+      border-radius:10px;
+      box-sizing:border-box;
+    }
+
+    /* フォントボタン（小さなアイコン） */
+    #panel-text .text-tools-row #fontPickerBtn,
+    #panel-text .text-tools-row .font-icon-btn {
+      width:48px !important;
+      height:48px !important;
+      min-width:48px !important;
+      padding:0 6px !important;
+      border-radius:10px !important;
+      text-align:center;
+      font-size:14px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      box-sizing:border-box;
+    }
+
+    /* テキスト追加ボタンは残り幅を使う */
+    #panel-text .text-tools-row .add-text-btn,
+    #panel-text .text-tools-row button[onclick^="addTextToOverlay"] {
+      flex:1 1 auto !important;
+      min-width:0;
+      padding:10px 12px !important;
+      border-radius:12px !important;
+      box-sizing:border-box;
+    }
+
+    /* 小さい画面向け微調整（iPhone 14 等） */
+    @media (max-width:420px) {
+      #panel-text .text-tools-row { gap:8px; }
+      /* もしテキストが長くてはみ出す場合の省スペース表示（任意） */
+      #panel-text .text-tools-row .add-text-btn { font-size:15px; padding:9px 10px; }
+    }
+
     #fontDropdown {
       position: absolute;
       z-index: 9999;
@@ -546,8 +590,24 @@
       <!-- テキスト -->
       <section id="panel-text" class="cc-panel">
                 <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
-        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-          <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" style="width: 50px;" />
+        <!-- ====== ここを丸ごと置き換えます（開始） ====== -->
+        <div class="text-tools-row" style="display:flex; gap:8px; align-items:center; margin-bottom:10px;" id="textToolsRow">
+          <!-- 小さなカラーピッカー（サイズはCSSで統一） -->
+          <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
+
+          <!-- フォント選択と追加ボタンを同じ行に並べるラッパー -->
+          <div class="font-picker-wrap" style="display:flex; gap:8px; align-items:center;">
+            <!-- 小さなアイコン風フォントボタン（表示は "Aa"） -->
+            <button id="fontPickerBtn" type="button" class="font-icon-btn" aria-label="フォントを選ぶ">Aa</button>
+
+            <!-- 大きく横に広がる「テキスト追加」ボタン（既存の addText 関数を利用） -->
+            <button class="add-text-btn" onclick="addTextToOverlay()">テキスト追加</button>
+
+            <!-- ドロップダウンはここに置く（表示/非表示は既存のJSで制御） -->
+            <div id="fontDropdown" hidden></div>
+          </div>
+
+          <!-- hidden の native select（値保持のためそのまま DOM に残す） -->
           <select id="fontPicker" class="native-font-select">
             <option value="Arial, sans-serif">Arial</option>
             <option value="'DotGothic16', sans-serif">ドットゴシック</option>
@@ -562,12 +622,8 @@
             <option value="'Yomogi', cursive">Yomogi</option>
             <option value="'Hachi Maru Pop', cursive">Hachi Maru Pop</option>
           </select>
-          <div class="font-picker-wrap">
-            <button id="fontPickerBtn" type="button">フォントを選ぶ</button>
-            <button onclick="addTextToOverlay()">テキスト追加</button>
-            <div id="fontDropdown" hidden></div>
-          </div>
         </div>
+        <!-- ====== ここを丸ごと置き換えます（終了） ====== -->
 
         <!-- ▼ 縁取り設定（ここから追加） -->
           <div id="outlineControls" class="control-row" style="margin-bottom: 10px;">
