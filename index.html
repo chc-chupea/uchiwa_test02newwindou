@@ -270,7 +270,7 @@
       color: #000;  /* ← これを追加 */
     }
 
-    /* --- 追加: テキストツール横並び（修正版 v2） --- */
+    /* --- 追加: テキストツール横並び（修正版 v3） --- */
     #panel-text .text-tools-row {
       display:flex;
       gap:8px;
@@ -290,10 +290,10 @@
       box-sizing:border-box;
     }
 
-    /* 中央：フォントを選ぶ（残り幅の約2/3を占有） */
+    /* 中央：フォントを選ぶ（残り幅の約1.2倍を確保） */
     #panel-text .text-tools-row #fontPickerBtn,
     #panel-text .text-tools-row .font-icon-btn {
-      flex:2 1 0;
+      flex:1.2 1 0;
       height:44px !important;
       min-width:0;
       padding:0 10px !important;
@@ -305,23 +305,24 @@
       box-sizing:border-box;
     }
 
-    /* 右：テキスト追加（中央の約半分の幅） */
+    /* 右：文字をうちわに配置（幅を広げて文字数に対応） */
     #panel-text .text-tools-row .add-text-btn,
     #panel-text .text-tools-row button[onclick^="addTextToOverlay"] {
-      flex:1 1 0;
+      flex:1.5 1 0;  /* フォントボタンより少し広め */
       height:44px !important;
       min-width:0;
-      padding:0 10px !important;
+      padding:0 12px !important;
       border-radius:8px !important;
       box-sizing:border-box;
-      font-size:15px;
+      font-size:14px;  /* 文字数が多いので少し小さめに */
+      white-space:nowrap; /* 折り返さず1行に収める */
     }
 
     /* 小さい画面向け微調整（iPhone 14 等） */
     @media (max-width:420px) {
       #panel-text .text-tools-row { gap:6px; }
-      #panel-text .text-tools-row #fontPickerBtn,
-      #panel-text .text-tools-row .add-text-btn { font-size:14px; }
+      #panel-text .text-tools-row #fontPickerBtn { font-size:13px; }
+      #panel-text .text-tools-row .add-text-btn { font-size:13px; }
     }
 
 
@@ -612,7 +613,7 @@
             <button id="fontPickerBtn" type="button" class="font-icon-btn" aria-label="フォントを選ぶ">Aa</button>
 
             <!-- 大きく横に広がる「テキスト追加」ボタン（既存の addText 関数を利用） -->
-            <button class="add-text-btn" onclick="addTextToOverlay()">うちわへ配置</button>
+            <button class="add-text-btn" onclick="addTextToOverlay()">文字をうちわへ配置</button>
 
             <!-- ドロップダウンはここに置く（表示/非表示は既存のJSで制御） -->
             <div id="fontDropdown" hidden></div>
