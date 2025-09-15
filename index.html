@@ -319,6 +319,15 @@
       white-space:nowrap; /* 折り返さず1行に収める */
     }
 
+    /* 右端の「文字をうちわに配置」ボタンを下端にそろえる */
+    #panel-text .text-tools-row .add-text-btn,
+    #panel-text .text-tools-row button[onclick^="addTextToOverlay"] {
+      display:flex;
+      align-items:flex-end;   /* ← 下端に合わせる */
+      justify-content:center;
+      line-height:1;          /* テキストの余白を抑える */
+    }
+
     /* 小さい画面向け微調整（iPhone 14 等） */
     @media (max-width:420px) {
       #panel-text .text-tools-row { gap:6px; }
