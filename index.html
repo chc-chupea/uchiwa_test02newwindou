@@ -323,6 +323,61 @@
       margin: 0 6px;
     }
 
+    /* ====== 追加：縁取りコントロールの高さを左右で揃える ====== */
+    #outlineControls .row-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* ラベル自体を「ボックスに見える横並び要素」にして高さを固定 */
+    #outlineControls .row-top label {
+      display: inline-flex;        /* 横並びで中身を中央揃えにする */
+      align-items: center;
+      gap: 8px;                    /* テキストと input の間隔 */
+      padding: 8px 12px;           /* 上下の余白を小さめに固定（高さ揃えの肝） */
+      height: 44px;                /* 好みの高さに調整（40〜48pxが目安） */
+      box-sizing: border-box;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      background: #fff;
+      font-size: 14px;
+      margin: 0;                   /* グローバル label の余白を上書き */
+      white-space: nowrap;         /* テキスト折返しを防止 */
+    }
+
+    /* チェックボックスをラベル内で適正な大きさに */
+    #outlineControls .row-top label input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin: 0;      /* label の gap で間隔を取るので余計な margin は消す */
+      flex-shrink: 0; /* 縮まらないようにする */
+    }
+
+    /* カラーピッカーもラベル高さに合わせる */
+    #outlineControls .row-top label input[type="color"] {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      flex-shrink: 0;
+    }
+
+    /* 小さい画面では少し小さくする（必要に応じて調整） */
+    @media (max-width: 420px) {
+      #outlineControls .row-top label {
+        height: 40px;
+        padding: 6px 10px;
+        font-size: 13px;
+      }
+
+      #outlineControls .row-top label input[type="color"] {
+        width: 26px;
+        height: 26px;
+      }
+    }
+
 
     /* 左：カラー（正方形） */
     #panel-text .text-tools-row input[type="color"] {
