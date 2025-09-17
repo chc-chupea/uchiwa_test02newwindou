@@ -280,20 +280,26 @@
       height:44px; /* 3つともこの高さに統一 */
     }
 
-    /* --- 縁取りコントロール横並び --- */
+    /* --- 縁取りコントロール 2段レイアウト --- */
     #outlineControls {
       display: flex;
-      align-items: center;   /* 縦位置をそろえる */
-      gap: 12px;             /* 各項目の間隔 */
-      margin-bottom: 8px;    /* 下余白を少し詰める */
-      flex-wrap: nowrap;       /* スマホで狭い時は自動折返し */
+      flex-direction: column; /* 👈 縦に2段並べる */
+      align-items: flex-start; /* 左寄せ */
+      gap: 6px;               /* 行間を少し詰める */
+      margin-bottom: 8px;
+    }
+
+    #outlineControls .row-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;  /* 「ON/OFF」と「色」の間隔 */
     }
 
     #outlineControls label {
       display: flex;
       align-items: center;
       font-size: 14px;
-      margin: 0;             /* 余計な上下マージンをリセット */
+      margin: 0;
     }
 
     #outlineControls input[type="color"] {
@@ -305,7 +311,7 @@
     }
 
     #outlineControls input[type="range"] {
-      margin: 0 4px;
+      margin: 0 6px;
     }
 
 
@@ -701,18 +707,20 @@
         <!-- ====== ここを丸ごと置き換えます（終了） ====== -->
 
         <!-- ▼ 縁取り設定（ここから追加） -->
-          <div id="outlineControls" class="control-row" style="margin-bottom: 10px;">
+          <div id="outlineControls" class="control-row">
+            <div class="row-top">
+              <label>
+                <input type="checkbox" id="outlineToggle" checked>
+                縁取りON/OFF
+              </label>
+
+              <label>
+                外側の縁の色：
+                <input type="color" id="outlineColorPicker" value="#ffffff" title="縁取り色" />
+              </label>
+            </div>
+
             <label>
-              <input type="checkbox" id="outlineToggle" checked>
-              縁取りON/OFF
-            </label>
-
-            <label style="margin-left:8px;">
-              外側の縁の色：
-              <input type="color" id="outlineColorPicker" value="#ffffff" title="縁取り色" style="width: 50px;" />
-            </label>
-
-            <label style="margin-left:8px;">
               外側の縁の太さ：
               <input type="range" id="outlineWidthPercent" min="0" max="30" value="12" step="1">
               <span id="outlineWidthValue">12%</span>
