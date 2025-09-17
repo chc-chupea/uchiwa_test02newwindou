@@ -280,6 +280,35 @@
       height:44px; /* 3つともこの高さに統一 */
     }
 
+    /* --- 縁取りコントロール横並び --- */
+    #outlineControls {
+      display: flex;
+      align-items: center;   /* 縦位置をそろえる */
+      gap: 12px;             /* 各項目の間隔 */
+      margin-bottom: 8px;    /* 下余白を少し詰める */
+      flex-wrap: wrap;       /* スマホで狭い時は自動折返し */
+    }
+
+    #outlineControls label {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      margin: 0;             /* 余計な上下マージンをリセット */
+    }
+
+    #outlineControls input[type="color"] {
+      width: 36px;
+      height: 28px;
+      margin-left: 4px;
+      padding: 0;
+      border-radius: 6px;
+    }
+
+    #outlineControls input[type="range"] {
+      margin: 0 4px;
+    }
+
+
     /* 左：カラー（正方形） */
     #panel-text .text-tools-row input[type="color"] {
       width:44px !important;
