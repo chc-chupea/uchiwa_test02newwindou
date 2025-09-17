@@ -294,7 +294,14 @@
       align-items: center;
       gap: 12px;  /* 「ON/OFF」と「色」の間隔 */
     }
-
+    
+    #outlineControls .row-top label {
+      display: flex;
+      align-items: center;
+      white-space: nowrap;   /* 👈 テキストの折返し禁止 */
+      min-width: 140px;      /* 👈 横幅を確保して1行に収める */
+    }
+ 
     #outlineControls label {
       display: flex;
       align-items: center;
@@ -303,9 +310,10 @@
     }
 
     #outlineControls input[type="color"] {
-      width: 36px;
+      flex-shrink: 0;        /* 👈 狭い画面でも縮まない */
+      width: 44px;           /* 👈 横幅を少し広めに */
       height: 28px;
-      margin-left: 4px;
+      margin-left: 6px;
       padding: 0;
       border-radius: 6px;
     }
