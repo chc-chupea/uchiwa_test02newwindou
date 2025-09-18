@@ -363,13 +363,15 @@
       background: #fff;
     }
 
-      #archControls .arch-options label {
-      flex: 1 1 45%;
-      min-width: 120px;
-      padding: 5px 8px;   /* モバイルではさらに少し小さく */
-      height: 36px;       /* モバイル向けに少し低めに調整 */
-      box-sizing: border-box;
-    }
+      /* モバイル画面用 */
+      @media (max-width:420px) {
+        #archControls .arch-options label {
+          flex: 1 1 45%;
+          min-width: 120px;
+          padding: 5px 8px;   /* ← ここもPCと同じにして高さを揃えたいなら修正 */
+          border-radius: 10px; /* ← PCと同じ角丸に */
+          box-sizing: border-box;
+        }
       }
 
     /* ====== 追加：縁取りコントロールの高さを左右で揃える ====== */
