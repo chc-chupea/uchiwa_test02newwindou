@@ -379,6 +379,21 @@
     }
 
 
+      /* === アーチ文字設定の横並び用 === */
+      #archControls {
+        display: flex;
+        align-items: center;  /* 高さを揃える */
+        gap: 16px;            /* 各枠の間隔 */
+        flex-wrap: wrap;      /* 狭い画面では折り返し */
+      }
+
+      #archControls > label,
+      #archControls > div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
     /* 左：カラー（正方形） */
     #panel-text .text-tools-row input[type="color"] {
       width:44px !important;
@@ -799,14 +814,15 @@
               アーチ文字にする
             </label>
 
-            <div style="margin-top:8px;">              
-              <label style="margin-right:10px;">
+            <div>              
+              <label>
                 <input type="radio" name="archStyle" value="rainbow" checked> 虹型（∩）
               </label>
               <label>
                 <input type="radio" name="archStyle" value="smile"> スマイル型（∪）
               </label>
             </div>
+          </div>
 
             <div style="margin-top:8px;">
               <span style="min-width:6em; display:inline-block;">カーブ：</span>
