@@ -344,21 +344,24 @@
     }
 
     #archControls .arch-options {
-      display:flex;
-      gap:12px;
-      align-items:center;
-      margin-top:8px;
+      display: flex;
+      gap: 10px;           /* ラベル間の間隔（必要に応じて調整） */
+      align-items: center;
+      margin-top: 6px;     /* 上下の余白をわずかに詰める */
     }
 
-    /* ラジオのラベルをタッチしやすくする */
+    /* ラジオのラベル（枠）の見た目高さを少し縮め、縦位置を揃える */
     #archControls .arch-options label {
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 12px;
-      border-radius:10px;
-      border:1px solid #eee;
-      background:#fff;
+      display: inline-flex;
+      align-items: center;   /* 中央揃え（テキスト縦中央） */
+      gap: 8px;              /* テキストとラジオの間隔 */
+      padding: 6px 10px;     /* ← ここを小さくして「高さ」を縮めます（元は8px 12px） */
+      height: 40px;          /* 明示的な高さを指定して、虹/スマイルで縦がズレないようにする */
+      line-height: 1;        /* テキストの行間安定化 */
+      box-sizing: border-box;/* height に padding を含める（計算が安定） */
+      border-radius: 8px;    /* 角丸（小さめに） */
+      border: 1px solid #eee;
+      background: #fff;
     }
 
     /* モバイルで狭ければ横並びを折り返す */
