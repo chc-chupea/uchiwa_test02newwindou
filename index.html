@@ -676,6 +676,20 @@
       padding-left: 20px;
       font-size: 16px;
     }
+
+
+    /* --- テキストツールのボタン配置調整 --- */
+    #textToolsRow {
+      gap: 6px !important; /* ボタン間の間隔を狭くする */
+    }
+
+    #textToolsRow .add-text-btn {
+      padding: 6px 10px;   /* ボタンの余白を少し縮小 */
+      font-size: 14px;     /* 文字サイズも少し小さめ */
+      white-space: nowrap; /* ボタン内で改行しない */
+      flex-shrink: 0;      /* 縮小されても折り返さない */
+      max-width: 150px;    /* 横幅の上限を設定（必要に応じて調整） */
+    }
   </style>
 </head>
 <body>
