@@ -378,6 +378,7 @@
       }
     }
 
+
     /* 左：カラー（正方形） */
     #panel-text .text-tools-row input[type="color"] {
       width:44px !important;
@@ -633,21 +634,6 @@
       padding-left: 20px;
       font-size: 16px;
     }
-
-    /* === アーチ文字設定：常に横並び、文字サイズ14px === */
-    #archControls {
-      display: flex;
-      align-items: center;   /* 高さを揃える */
-      gap: 16px;             /* 各枠の間隔 */
-      flex-wrap: nowrap;     /* 常に１行に収める */
-    }
-
-    #archControls label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;       /* すべてのラベルに統一して効かせる */
-    }
   </style>
 </head>
 <body>
@@ -813,15 +799,14 @@
               アーチ文字にする
             </label>
 
-            <div>              
-              <label>
+            <div style="margin-top:8px;">              
+              <label style="margin-right:10px;">
                 <input type="radio" name="archStyle" value="rainbow" checked> 虹型（∩）
               </label>
               <label>
                 <input type="radio" name="archStyle" value="smile"> スマイル型（∪）
               </label>
             </div>
-          </div>
 
             <div style="margin-top:8px;">
               <span style="min-width:6em; display:inline-block;">カーブ：</span>
