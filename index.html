@@ -777,12 +777,10 @@
       <!-- テキスト -->
       <section id="panel-text" class="cc-panel">
                 <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
+
         <!-- ====== ここを丸ごと置き換えます（開始） ====== -->
         <div class="text-tools-row" style="display:flex; gap:8px; align-items:center; margin-bottom:10px;" id="textToolsRow">
-          <!-- 小さなカラーピッカー（サイズはCSSで統一） -->
-          <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
-
-          <!-- フォント選択と追加ボタンを同じ行に並べるラッパー -->
+          <!-- フォント選択と追加ボタンを同じ行に並べるラッパー（左側に移動） -->
           <div class="font-picker-wrap" style="display:flex; gap:8px; align-items:center;">
             <!-- 小さなアイコン風フォントボタン（表示は "Aa"） -->
             <button id="fontPickerBtn" type="button" class="font-icon-btn" aria-label="フォントを選ぶ">Aa</button>
@@ -793,6 +791,9 @@
             <!-- ドロップダウンはここに置く（表示/非表示は既存のJSで制御） -->
             <div id="fontDropdown" hidden></div>
           </div>
+
+          <!-- 小さなカラーピッカー（右側に移動） -->
+          <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
 
           <!-- hidden の native select（値保持のためそのまま DOM に残す） -->
           <select id="fontPicker" class="native-font-select">
