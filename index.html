@@ -634,12 +634,13 @@
       font-size: 16px;
     }
 
-    /* === アーチ文字設定：常に横並び === */
+    /* === アーチ文字設定：常に横並び、文字サイズ14px === */
     #archControls {
       display: flex;
-      align-items: center;  /* 高さを揃える */
-      gap: 16px;            /* 各枠の間隔 */
-      flex-wrap: nowrap;    /* 常に１行に収める */
+      align-items: center;   /* 高さを揃える */
+      gap: 8px;             /* 各枠の間隔 */
+      flex-wrap: nowrap;     /* 常に１行に収める */
+      font-size: 14px;       /* 全体の文字サイズを14pxに */
     }
 
     #archControls > label,
@@ -647,6 +648,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      font-size: 14px;       /* 子要素のラベルも揃えて14px */
     }
   </style>
 </head>
