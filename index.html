@@ -854,28 +854,25 @@
           <!-- ▲ 縁取り設定（ここまで追加） -->
 
           <!-- ▼ アーチ文字設定（ここから追加） -->
-          <div id="archControls" class="control-row" style="margin:10px 0 14px;">
-            <!-- 1行目：チェックボックス（1行に表示） -->
-            <label style="display:block; width:100%; box-sizing:border-box; padding:8px 12px; border-radius:10px; border:1px solid #eee; background:#fff;">
-              <input type="checkbox" id="archToggle" style="margin-right:8px;">
+          <div id="archControls" class="control-row" style="margin:6px 0 10px;">
+            <!-- チェックボックス行：余白をなくす -->
+            <label style="display:block; margin:0; padding:0 0 2px 0;">
+              <input type="checkbox" id="archToggle" style="vertical-align:middle; margin-right:8px;">
               アーチ文字にする
             </label>
 
-          <!-- 2行目：ラジオ（虹型 / スマイル型）を横並びに -->
-          <div class="arch-options" style="display:flex; gap:12px; align-items:center; margin-top:8px;">
-              <label style="display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; border:1px solid #eee; background:#fff;">
-                <input type="radio" name="archStyle" value="rainbow" checked>
-                虹型（∩）
+            <!-- 虹型 / スマイル型 の行：まさに次の行、margin-top を小さくして高さをそろす -->
+            <div style="margin-top:4px; display:flex; gap:12px; align-items:center;">
+              <label style="margin:0; display:inline-flex; align-items:center; gap:6px;">
+                <input type="radio" name="archStyle" value="rainbow" checked> 虹型（∩）
               </label>
-
-              <label style="display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; border:1px solid #eee; background:#fff;">
-                <input type="radio" name="archStyle" value="smile">
-                スマイル型（∪）
+              <label style="margin:0; display:inline-flex; align-items:center; gap:6px;">
+                <input type="radio" name="archStyle" value="smile"> スマイル型（∪）
               </label>
             </div>
 
-            <!-- 3行目：カーブ（スライダー）はその下に -->
-            <div style="margin-top:8px;">
+            <!-- カーブスライダー行：少しだけ間隔を調整（必要ならここも数値変更可） -->
+            <div style="margin-top:6px;">
               <span style="min-width:6em; display:inline-block;">カーブ：</span>
               <input type="range" id="archAmount" min="0" max="100" value="50" step="1">
               <span id="archAmountValue">50</span>
