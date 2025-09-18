@@ -323,6 +323,48 @@
       margin: 0 6px;
     }
 
+    /* --- アーチ文字コントロールの横並びスタイル --- */
+    #archControls { margin:10px 0 14px; }
+
+    #archControls > label {
+      display:block;
+      width:100%;
+      box-sizing:border-box;
+      padding:8px 12px;
+      border-radius:10px;
+      border:1px solid #eee;
+      background:#fff;
+    }
+
+    #archControls .arch-options {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-top:8px;
+    }
+
+    /* ラジオのラベルをタッチしやすくする */
+    #archControls .arch-options label {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:10px;
+      border:1px solid #eee;
+      background:#fff;
+    }
+
+    /* モバイルで狭ければ横並びを折り返す */
+    @media (max-width:420px) {
+      #archControls .arch-options {
+        gap:8px;
+        flex-wrap:wrap;
+      }
+      #archControls .arch-options label {
+        flex: 1 1 45%;
+        min-width: 120px;
+      }
+    }
     /* ====== 追加：縁取りコントロールの高さを左右で揃える ====== */
     #outlineControls .row-top {
       display: flex;
@@ -794,20 +836,26 @@
 
           <!-- ▼ アーチ文字設定（ここから追加） -->
           <div id="archControls" class="control-row" style="margin:10px 0 14px;">
-            <label>
-              <input type="checkbox" id="archToggle">
+            <!-- 1行目：チェックボックス（1行に表示） -->
+            <label style="display:block; width:100%; box-sizing:border-box; padding:8px 12px; border-radius:10px; border:1px solid #eee; background:#fff;">
+              <input type="checkbox" id="archToggle" style="margin-right:8px;">
               アーチ文字にする
             </label>
 
-            <div style="margin-top:8px;">              
-              <label style="margin-right:10px;">
-                <input type="radio" name="archStyle" value="rainbow" checked> 虹型（∩）
+          <!-- 2行目：ラジオ（虹型 / スマイル型）を横並びに -->
+          <div class="arch-options" style="display:flex; gap:12px; align-items:center; margin-top:8px;">
+              <label style="display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; border:1px solid #eee; background:#fff;">
+                <input type="radio" name="archStyle" value="rainbow" checked>
+                虹型（∩）
               </label>
-              <label>
-                <input type="radio" name="archStyle" value="smile"> スマイル型（∪）
+
+              <label style="display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; border:1px solid #eee; background:#fff;">
+                <input type="radio" name="archStyle" value="smile">
+                スマイル型（∪）
               </label>
             </div>
 
+            <!-- 3行目：カーブ（スライダー）はその下に -->
             <div style="margin-top:8px;">
               <span style="min-width:6em; display:inline-block;">カーブ：</span>
               <input type="range" id="archAmount" min="0" max="100" value="50" step="1">
