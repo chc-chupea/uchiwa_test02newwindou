@@ -779,23 +779,20 @@
                 <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
 
         <!-- ====== ここを丸ごと置き換えます（開始） ====== -->
-        <div class="text-tools-row" style="display:flex; gap:8px; align-items:center; margin-bottom:10px;" id="textToolsRow">
-          <!-- フォント選択と追加ボタンを同じ行に並べるラッパー（左側に移動） -->
+        <div class="text-tools-row" style="display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:10px;" id="textToolsRow">
+          <!-- 左端：フォント選択ボタンとドロップダウン -->
           <div class="font-picker-wrap" style="display:flex; gap:8px; align-items:center;">
-            <!-- 小さなアイコン風フォントボタン（表示は "Aa"） -->
             <button id="fontPickerBtn" type="button" class="font-icon-btn" aria-label="フォントを選ぶ">Aa</button>
-
-            <!-- 大きく横に広がる「テキスト追加」ボタン（既存の addText 関数を利用） -->
-            <button class="add-text-btn" onclick="addTextToOverlay()">文字をうちわへ配置</button>
-
-            <!-- ドロップダウンはここに置く（表示/非表示は既存のJSで制御） -->
             <div id="fontDropdown" hidden></div>
           </div>
 
-          <!-- 小さなカラーピッカー（右側に移動） -->
+          <!-- 中央：カラーピッカー -->
           <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
 
-          <!-- hidden の native select（値保持のためそのまま DOM に残す） -->
+          <!-- 右端：文字追加ボタン -->
+          <button class="add-text-btn" onclick="addTextToOverlay()">文字をうちわへ配置</button>
+
+          <!-- hidden の native select（値保持用） -->
           <select id="fontPicker" class="native-font-select">
             <option value="Arial, sans-serif">Arial</option>
             <option value="'DotGothic16', sans-serif">ドットゴシック</option>
