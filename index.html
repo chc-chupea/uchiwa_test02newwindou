@@ -1480,37 +1480,41 @@
       const theta   = Math.max(0.001, MAX_RAD * (amount / 100)); // 全体角度
 
       const R = totalWidth / theta; // 弧長 = R * θ
-      // ← ここを入れ替えます（虹型=rainbow を U ＝下に膨らむにする）
-      const dir = (obj.archStyle === 'rainbow') ? +1 : -1; // rainbow=U(下にふくらむ), smile=∩(上にふくらむ)
+      const dir = (obj.archStyle === 'rainbow') ? +1 : -1; // rainbow=下にふくらむ(∪)、smile=上にふくらむ(∩)
 
+      // アーチの高さを縮める係数（0.0 = 平ら、1.0 = 元の高さ）
+      // 少し縮めたいなら 0.5〜0.8 の範囲で調整してください（デフォルトは 0.6）
+      const heightFactor = 0.6;
+
+      // --- まず各文字の中心角(mid)と「補正前の y(rawY)」を計算して配列に保存 ---
       let angle = -theta / 2; // 左端スタート
+      const charData = [];
       for (let i = 0; i < chars.length; i++) {
         const w = widths[i];
         const charAngle = w / R;
         const mid = angle + charAngle / 2; // その文字の中心角
+        const rawY = dir * R * (1 - Math.cos(mid)); // 補正前の y（方向付き）
+        charData.push({ mid, charAngle, rawY });
+        angle += charAngle;
+      }
 
+      // --- 垂直方向の中心を揃える ---
+      // 文字ごとの rawY の平均を引くことで、虹/スマイル切替時に全体の高さ位置が揃います
+      const meanY = charData.reduce((s, c) => s + c.rawY, 0) / (charData.length || 1);
+
+      // --- 描画ループ：平均 y を引いて高さ係数を掛ける ---
+      for (let i = 0; i < chars.length; i++) {
+        const { mid } = charData[i];
         const x = R * Math.sin(mid);
-        const y = dir * R * (1 - Math.cos(mid)); // φ=0 で y=0 になる座標系
-
+        const y = (charData[i].rawY - meanY) * heightFactor;
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(dir * mid); // 接線方向に回転
-
         strokeAndFill(chars[i]);
-
         ctx.restore();
-        angle += charAngle;
       }
     }
     // --------------------------------------------------------------
-
-
-
-
-
-
-
-
     /**
      * デコレーションオブジェクト（テキスト、スタンプ）をキャンバスに描画します。
      */
