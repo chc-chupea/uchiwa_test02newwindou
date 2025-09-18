@@ -1197,9 +1197,9 @@
       // 2) 既存の「change」処理をそのまま動かす
       fontPicker.dispatchEvent(new Event('change', { bubbles: true }));
 
-      // 3) ボタン自体も選んだフォントで表示
+      // 3) ボタン自体も選んだフォントで表示（フォント名は表示しない）
       fontPickerBtn.style.fontFamily = value;
-      fontPickerBtn.textContent = 'Aa あア愛 – ' + label;
+      fontPickerBtn.textContent = 'Aa あア愛';
     }
 
     // ボタンをタップ／クリックでメニュー開閉
