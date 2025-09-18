@@ -378,22 +378,6 @@
       }
     }
 
-
-      /* === アーチ文字設定の横並び用 === */
-      #archControls {
-        display: flex;
-        align-items: center;  /* 高さを揃える */
-        gap: 16px;            /* 各枠の間隔 */
-        flex-wrap: wrap;      /* 狭い画面では折り返し */
-      }
-
-      #archControls > label,
-      #archControls > div {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
     /* 左：カラー（正方形） */
     #panel-text .text-tools-row input[type="color"] {
       width:44px !important;
@@ -648,6 +632,21 @@
       margin: 12px 0 20px;
       padding-left: 20px;
       font-size: 16px;
+    }
+
+    /* === アーチ文字設定：常に横並び === */
+    #archControls {
+      display: flex;
+      align-items: center;  /* 高さを揃える */
+      gap: 16px;            /* 各枠の間隔 */
+      flex-wrap: nowrap;    /* 常に１行に収める */
+    }
+
+    #archControls > label,
+    #archControls > div {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
   </style>
 </head>
