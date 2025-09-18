@@ -353,13 +353,12 @@
     /* ラジオのラベル（枠）の見た目高さを少し縮め、縦位置を揃える */
     #archControls .arch-options label {
       display: inline-flex;
-      align-items: center;   /* 中央揃え（テキスト縦中央） */
-      gap: 8px;              /* テキストとラジオの間隔 */
-      padding: 6px 10px;     /* ← ここを小さくして「高さ」を縮めます（元は8px 12px） */
-      height: 40px;          /* 明示的な高さを指定して、虹/スマイルで縦がズレないようにする */
-      line-height: 1;        /* テキストの行間安定化 */
-      box-sizing: border-box;/* height に padding を含める（計算が安定） */
-      border-radius: 8px;    /* 角丸（小さめに） */
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;        /* ← 「アーチ文字にする」と同じに揃える */
+      line-height: 1;
+      box-sizing: border-box;
+      border-radius: 10px;      /* ← 同じ角丸にする */
       border: 1px solid #eee;
       background: #fff;
     }
