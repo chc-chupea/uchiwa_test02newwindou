@@ -323,6 +323,13 @@
       margin: 0 6px;
     }
 
+    /* --- アーチ文字の行間を詰める（チェックボックス行とラジオ行） --- */
+    #archControls { margin: 6px 0 10px; }            /* 全体の上下マージンを少し縮める */
+    #archControls > label { margin: 0; display:block; padding:0 0 2px 0; } /* チェックボックス行の余白を消す */
+    #archControls > div { margin-top: 4px; }        /* 次の行（虹/スマイル）との間隔を狭める */
+    #archControls > div + div { margin-top: 6px; }  /* カーブスライダー行は少しマージンを残す */
+    #archControls label { margin: 0; }               /* ラジオラベルの余白をリセットして高さを揃える */
+
     /* --- アーチ文字コントロールの横並びスタイル --- */
     #archControls { margin:10px 0 14px; }
 
